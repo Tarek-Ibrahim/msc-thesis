@@ -67,7 +67,7 @@ def collect_rollout(env,policy):
 
 
 #model
-class PE:
+class PE():
     #Probabilistic Ensemble: ensemble of B-many bootsrapped probabilistic NNs (i.e. output parameters of a prob distribution) used to approximate a dynamics model function:
     # a- ‘probabilistic networks[/network models/network dynamics models]’: to capture aleatoric uncertainty (inherent system stochasticity) [through each model encoding a distribution (as opposed to a point estimate/prediction)]
     # b- ‘ensembles’: to capture epistemic uncertainty (subjective uncertainty, due to limited data --> isolating it is especially useful for directing exploration [out of scope])
@@ -152,33 +152,30 @@ class PE:
         # input is 3D: [B,batch_size,input_size] --> input is a function of current observation/state
         # output is 3D: [B, batch_size, output_size] --> output size is obs/target_size * 2 (first half is for expectation/mu/mean of [Delta_]obs distribution and second half is for log(variance) of it) --> ∆s_t+1 = f (s_t; a_t) such that s_t+1 = s_t + ∆s_t+1
         
-        with tf.GradientTape() as g:
-            self.tape=g
+        #normalize inputs
+        inputs = (inputs - self.mu) / self.sigma
         
-            #normalize inputs
-            inputs = (inputs - self.mu) / self.sigma
-            
-            inputs = tf.matmul(inputs,self.w0) + self.b0
-            inputs = tf.keras.activations.swish(inputs) #swish(inputs)
-            inputs = tf.matmul(inputs,self.w1) + self.b1
-            inputs = tf.keras.activations.swish(inputs) #swish(inputs)
-            inputs = tf.matmul(inputs,self.w2) + self.b2
-            inputs = tf.keras.activations.swish(inputs) #swish(inputs)
-            inputs = tf.matmul(inputs,self.w3) + self.b3
-           
-            # #fwd pass
-            # for l in range(self.n+1):
-            #     inputs = inputs.matmul(self.w[l]) + self.b[l] #after size (till before last layer) = [B,input samples,h]; after NN size=[B,input samples,out_size]
-            #     if l<self.n: #skips for last iteration/layer
-            #         inputs = nn.SiLU()(inputs) #swish(inputs)
-            
-            #extract mean and log(var) from network output
-            mean = inputs[:, :, :self.out_size // 2]
-            logvar = inputs[:, :, self.out_size // 2:]
-            
-            #bounding variance (becase network gives arbitrary variance for OOD points --> could lead to numerical problems)
-            logvar = self.max_logvar - tf.nn.softplus(self.max_logvar - logvar)
-            logvar = self.min_logvar + tf.nn.softplus(logvar - self.min_logvar)
+        inputs = tf.matmul(inputs,self.w0) + self.b0
+        inputs = tf.keras.activations.swish(inputs) #swish(inputs)
+        inputs = tf.matmul(inputs,self.w1) + self.b1
+        inputs = tf.keras.activations.swish(inputs) #swish(inputs)
+        inputs = tf.matmul(inputs,self.w2) + self.b2
+        inputs = tf.keras.activations.swish(inputs) #swish(inputs)
+        inputs = tf.matmul(inputs,self.w3) + self.b3
+       
+        # #fwd pass
+        # for l in range(self.n+1):
+        #     inputs = inputs.matmul(self.w[l]) + self.b[l] #after size (till before last layer) = [B,input samples,h]; after NN size=[B,input samples,out_size]
+        #     if l<self.n: #skips for last iteration/layer
+        #         inputs = nn.SiLU()(inputs) #swish(inputs)
+        
+        #extract mean and log(var) from network output
+        mean = inputs[:, :, :self.out_size // 2]
+        logvar = inputs[:, :, self.out_size // 2:]
+        
+        #bounding variance (becase network gives arbitrary variance for OOD points --> could lead to numerical problems)
+        logvar = self.max_logvar - tf.nn.softplus(self.max_logvar - logvar)
+        logvar = self.min_logvar + tf.nn.softplus(logvar - self.min_logvar)
         
         return mean, logvar
 
@@ -243,15 +240,21 @@ class MPC:
                 # inputs=self.inputs[batch_idxs]
                 # targets=self.targets[batch_idxs]
                 # Operate on batches:
-                mean, logvar = self.model(inputs) #fwd pass
-                var = tf.math.exp(-logvar)
-                # Calculate grad, loss & backpropagate
-                loss = tf.math.reduce_mean(tf.math.reduce_mean(((mean - targets)**2) * var + logvar, axis=-1), axis=-1) #MSE losses #???: why does mean over target dimension make sense?
-                loss += tf.math.reduce_mean(tf.math.reduce_mean(logvar, axis=-1), axis=-1) #var losses
-                loss += 0.01 * (tf.math.reduce_sum(self.model.max_logvar) - tf.math.reduce_sum(self.model.min_logvar)) # a constant
-                # loss += self.model.compute_decays() 
+                with tf.GradientTape() as tape:
+                    mean, logvar = self.model(inputs) #fwd pass
+                    var = tf.math.exp(-logvar)
+                    # Calculate grad, loss & backpropagate
+                    loss = tf.math.reduce_mean(tf.math.reduce_mean(((mean - targets)**2) * var + logvar, axis=-1), axis=-1) #MSE losses #???: why does mean over target dimension make sense?
+                    loss += tf.math.reduce_mean(tf.math.reduce_mean(logvar, axis=-1), axis=-1) #var losses
+                    # loss += 0.01 * (tf.math.reduce_sum(self.model.max_logvar) - tf.math.reduce_sum(self.model.min_logvar)) # a constant
+                    # loss += self.model.compute_decays() 
                 
-                self.optimizer.minimize(loss,self.model.opt_vars,tape=self.model.tape)
+                gradients = tape.gradient(loss, self.model.opt_vars)
+                self.optimizer.apply_gradients(zip(gradients, self.model.opt_vars))
+
+                
+                # self.optimizer.minimize(loss,self.model.opt_vars,tape=self.model.tape)
+                # self.optimizer.minimize(loss,self.model.opt_vars)
                 
             # shuffle idxs
             idxs_of_idxs = np.argsort(np.random.uniform(size=idxs.shape), axis=-1)
@@ -334,7 +337,7 @@ class MPC:
         ac_seqs = tf.reshape(tf.tile(ac_seqs,[1, 1, self.p, 1]), [self.H, -1, self.da])
         
         #reshape obs --> from (ds) to (pop_size*p,ds)
-        obs=tf.tile(obs[None], [dim * self.p, 1])
+        obs=tf.tile(obs[None].astype(np.float32), [dim * self.p, 1])
 
         costs = tf.zeros([dim, self.p]) #initialize costs ; size=[pop_size,p] #sum of costs over the planning horizon
         
@@ -347,7 +350,7 @@ class MPC:
             costs += cost
             obs = obs_next
         
-        costs=tf.where(tf.is_nan(costs), 1e6 * tf.ones_like(costs), costs) #replace NaNs with a high cost 
+        costs=tf.where(tf.math.is_nan(costs), 1e6 * tf.ones_like(costs), costs) #replace NaNs with a high cost 
         
         return tf.math.reduce_mean(costs,axis=1) #mean of costs # dim is dim to reduce (i.e. for dim=1, it will take the mean of each row (dim=0)) #i.e. here we average over the particles of each sol
     
@@ -366,7 +369,7 @@ class MPC:
         inputs=tf.concat([obs_reshaped, curr_acs], axis=-1)
         mean, logvar = self.model(inputs) #here, input smaples will be = pop_size*p/B #???: does it make sense how inputs are normalized in this call??
         var = tf.math.exp(logvar)
-        delta_obs_next=mean + tf.random_normal(shape=tf.shape(mean), mean=0, stddev=1) * tf.sqrt(var) #var.sqrt() = std
+        delta_obs_next=mean + tf.random.normal(shape=tf.shape(mean), mean=0, stddev=1) * tf.sqrt(var) #var.sqrt() = std
         #reshape delta_obs_next/predictions [back to original shape]  #(B,pop_size,p/B,ds) --> (pop_size*p,ds)
         dim=tf.shape(delta_obs_next)[-1]
         delta_obs_next=tf.transpose(tf.reshape(delta_obs_next,[self.model.B, -1, self.p // self.model.B, dim]),[1, 0, 2, 3])

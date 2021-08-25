@@ -268,7 +268,7 @@ class MPC:
                 # Calculate grad, loss & backpropagate
                 loss = (((mean - targets) ** 2) * var + logvar).mean(-1).mean(-1).sum() #train losses: MSE loss + var loss #???: why does mean over target dimension make sense?
                 loss += 0.01 * (self.model.max_logvar.sum() - self.model.min_logvar.sum()) # a constant (~= 0.42)
-                loss += self.model.compute_decays() 
+                # loss += self.model.compute_decays() #L2 regularization
                 # loss_value=loss.item()
                 
                 self.optimizer.zero_grad()
