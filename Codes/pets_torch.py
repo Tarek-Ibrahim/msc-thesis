@@ -5,7 +5,7 @@ Created on Sun Aug  8 16:56:16 2021
 @author: TIB001
 """
 #TODO: unify all ac/act and ob/obs
-#TODO: debug to make it work
+#TODO: investigate why consistency is inferior to tf implementations
 #TODO: run with different reward functions and env parameters
 #TODO: try with different env than cartpole (e.g. half-cheetah)
 #TODO: repeat each experiment with different random seeds (for K trials?), and report the mean and standard deviation of the cost for each condition
@@ -34,7 +34,6 @@ from torch.optim import Adam
 #%% Functions
 
 progress=lambda x: tqdm.trange(x, leave=True) #for visualizing/monitoring training progress
-# swish = lambda x: x * torch.sigmoid(x)
 
 def set_seed(seed,env,det=True):
     import random
@@ -50,7 +49,7 @@ def set_seed(seed,env,det=True):
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
 
-def truncated_normal(tensor: torch.Tensor, mean: float = 0, std: float = 1):
+def truncated_normal(tensor: torch.Tensor, mean: float = 0, std: float = 1,device="cpu"):
     torch.nn.init.normal_(tensor, mean=mean, std=std)
     while True:
         cond = torch.logical_or(tensor < mean - 2.0 * std, tensor > mean + 2.0 * std)
@@ -66,12 +65,9 @@ def collect_rollout(env,policy):
     T=env._max_episode_steps #task horizon
     O, A, rewards= [env.reset()], [], []
 
-    policy.reset() #policy is MPC #amounts to resetting CEM optimizer's prev sol to its initial value (-> array of size H with all values = avg of action space value range)
+    policy.reset() #policy is MPC #amounts to resetting CEM optimizer's prev sol to its initial value (--> array of size H with all values = avg of action space value range)
     for t in range(T):
-        a=policy.act(O[t]) #first optimal action in sequence (initially random: policy.act= np.random.uniform(ac_lb, ac_ub, ac_lb.shape))
-        
-        # with torch.no_grad():
-        #     a=policy.act(O[t]) #first optimal action in sequence (initially random: policy.act= np.random.uniform(ac_lb, ac_ub, ac_lb.shape))
+        a=policy.act(O[t]) #first optimal action in sequence (initially random)
 
         obs, r, done, _ = env.step(a) #execute first action from optimal actions
         
@@ -106,14 +102,6 @@ class PE(nn.Module):
         self.mu = nn.Parameter(torch.zeros(self.in_size), requires_grad=False)
         self.sigma = nn.Parameter(torch.ones(self.in_size), requires_grad=False)
         
-        # self.w, self.b = [], []
-        # for l in range(n+1):
-        #     ip=in_size if l==0 else h
-        #     op=out_size if l==n else h
-        #     w, b = self.initialize(ip,op)
-        #     self.w.append(w)
-        #     self.b.append(b)
-        
         self.w0,self.b0=self.initialize(in_size,h)
         self.w1,self.b1=self.initialize(h,h)
         self.w2,self.b2=self.initialize(h,h)
@@ -126,23 +114,20 @@ class PE(nn.Module):
         mu=0.0
         std=1.0/(2.0*np.sqrt(in_size))
         
-        w = nn.Parameter(torch.rand(self.B,in_size,out_size,device=self.device,dtype=torch.float32))
+        # w = nn.Parameter(torch.rand(self.B,in_size,out_size,device=self.device,dtype=torch.float32))
+        # w.data = truncated_normal(w.data, mean=mu, std=std, device=self.device)
+        # b=nn.Parameter(torch.rand(self.B, 1, out_size,device=self.device,dtype=torch.float32))
+        # b.data.fill_(0.0)
         
-        truncated_normal(w.data, mean=mu, std=std)
-        b=nn.Parameter(torch.rand(self.B, 1, out_size,device=self.device,dtype=torch.float32))
-        b.data.fill_(0.0)
-        
-        # w = truncnorm.rvs(mu-2*std,mu+2*std,loc=mu,scale=std,size=(self.B,in_size,out_size))
-        # w = nn.Parameter(torch.tensor(w,device=self.device,dtype=torch.float32))
-        # b = nn.Parameter(torch.zeros(self.B,1,out_size,device=self.device,dtype=torch.float32))
+        w = truncnorm.rvs(mu-2.0*std,mu+2.0*std,loc=mu,scale=std,size=(self.B,in_size,out_size))
+        w = nn.Parameter(torch.tensor(w,device=self.device,dtype=torch.float32))
+        b = nn.Parameter(torch.zeros(self.B,1,out_size,device=self.device,dtype=torch.float32))
+        # torch.nn.init.zeros_(b.data)
         
         return w, b
     
     def fit_input_stats(self, inputs):
         #get mu and sigma of [all] input data fpr later normalization of model [batch] inputs
-        
-        # self.mu = nn.Parameter(torch.zeros(self.in_size), requires_grad=False)
-        # self.sigma = nn.Parameter(torch.zeros(self.in_size), requires_grad=False)
 
         mu = np.mean(inputs, axis=0, keepdims=True) #over cols (each observation/action col of input) and keeping same col size --> result has size = (1,input_size)
         sigma = np.std(inputs, axis=0, keepdims=True)
@@ -154,17 +139,6 @@ class PE(nn.Module):
     def compute_decays(self):
         #returns decays.sum() #decays[layer] = decay_coeffs[layer]*MSE(w[layer]) #decay_coeffs=[input=0.0001, h=0.00025, output=0.0005]
         
-        # decays, decays_coeffs = [], [0.0001,0.00025,0.00025,0.0005]
-        # for l in range(self.n+1):
-        #     decay=decays_coeffs[l]*(self.w[l]**2).sum() / 2.0
-        #     decays.append(decay)
-        # return sum(decays)
-        
-        # lin0_decays = 0.0001 * (self.w[0] ** 2).sum() / 2.0
-        # lin1_decays = 0.00025 * (self.w[1] ** 2).sum() / 2.0
-        # lin2_decays = 0.00025 * (self.w[2] ** 2).sum() / 2.0
-        # lin3_decays = 0.0005 * (self.w[3] ** 2).sum() / 2.0
-        
         lin0_decays = 0.0001 * (self.w0 ** 2).sum() / 2.0
         lin1_decays = 0.00025 * (self.w1 ** 2).sum() / 2.0
         lin2_decays = 0.00025 * (self.w2 ** 2).sum() / 2.0
@@ -172,7 +146,6 @@ class PE(nn.Module):
 
         return lin0_decays + lin1_decays + lin2_decays + lin3_decays
 
-    
     def forward(self,inputs):
         # input is 3D: [B,batch_size,input_size] --> input is a function of current observation/state
         # output is 3D: [B, batch_size, output_size] --> output size is obs/target_size * 2 (first half is for expectation/mu/mean of [Delta_]obs distribution and second half is for log(variance) of it) --> ∆s_t+1 = f (s_t; a_t) such that s_t+1 = s_t + ∆s_t+1
@@ -180,19 +153,14 @@ class PE(nn.Module):
         #normalize inputs
         inputs = (inputs - self.mu) / self.sigma
         
+        #fwd pass
         inputs = inputs.matmul(self.w0) + self.b0
-        inputs = nn.SiLU()(inputs) #swish(inputs)
+        inputs = nn.SiLU()(inputs) 
         inputs = inputs.matmul(self.w1) + self.b1
-        inputs = nn.SiLU()(inputs) #swish(inputs)
+        inputs = nn.SiLU()(inputs) 
         inputs = inputs.matmul(self.w2) + self.b2
-        inputs = nn.SiLU()(inputs) #swish(inputs)
+        inputs = nn.SiLU()(inputs)
         inputs = inputs.matmul(self.w3) + self.b3
-       
-        # #fwd pass
-        # for l in range(self.n+1):
-        #     inputs = inputs.matmul(self.w[l]) + self.b[l] #after size (till before last layer) = [B,input samples,h]; after NN size=[B,input samples,out_size]
-        #     if l<self.n: #skips for last iteration/layer
-        #         inputs = nn.SiLU()(inputs) #swish(inputs)
         
         #extract mean and log(var) from network output
         mean = inputs[:, :, :self.out_size // 2]
@@ -284,24 +252,15 @@ class MPC:
         
         if self.initial:
             action = np.random.uniform(self.ac_lb, self.ac_ub, self.ac_lb.shape)
-            return action
+            
         else:
-            if self.act_buff.shape[0] > 0:
-                action, self.act_buff = self.act_buff[0], self.act_buff[1:] #pop out the optimal action from buffer
-                return action
-            sol=self.CEM(obs) #get CEM optimizer's sol
-            
-            self.prev_sol=np.concatenate([np.copy(sol)[self.da:], np.zeros(self.da)]) #update prev sol --> take out first action in sol and pad leftover sequence with trailing zeros to maintain same sol/prev sol shape #???: how is this correct??
-            self.act_buff = sol[:self.da].reshape(-1, self.da) #has the first action in the sequence = optimal action
-            return self.act(obs)
-            
-            # while self.act_buff.shape[0] == 0:
-            #     sol=self.CEM(obs) #get CEM optimizer's sol
-            #     self.prev_sol=np.concatenate([np.copy(sol)[self.da:], np.zeros(self.da)]) #update prev sol --> take out first action in sol and pad leftover sequence with trailing zeros to maintain same sol/prev sol shape
-            #     self.act_buff = sol[:self.da].reshape(-1, self.da) #has the first action in the sequence = optimal action
-            # action, self.act_buff = self.act_buff[0], self.act_buff[1:] #pop out the optimal action from buffer
+            while self.act_buff.shape[0] == 0:
+                sol=self.CEM(obs) #get CEM optimizer's sol
+                self.prev_sol=np.concatenate([np.copy(sol)[self.da:], np.zeros(self.da)]) #update prev sol --> take out first action in sol and pad leftover sequence with trailing zeros to maintain same sol/prev sol shape #???: how is this correct??
+                self.act_buff = sol[:self.da].reshape(-1, self.da) #has the first action in the sequence = optimal action
+            action, self.act_buff = self.act_buff[0], self.act_buff[1:] #pop out the optimal action from buffer
         
-        # return action
+        return action
         
     
     def CEM(self,obs): #MPC's optimizer: an action sequence optimizer
@@ -316,7 +275,7 @@ class MPC:
         ub=np.tile(self.ac_ub,[self.H])
         
         mean, var, t = self.prev_sol, self.init_var, 0.0
-        X = truncnorm(-2, 2, loc=np.zeros_like(mean), scale=np.ones_like(var))
+        X = truncnorm(-2, 2, loc=np.zeros_like(mean), scale=np.ones_like(mean))
 
         while (t < self.opt_max_iters) and np.max(var) > epsilon:
             lb_dist = mean - lb
@@ -384,12 +343,12 @@ class MPC:
         dim=obs.shape[-1]
         obs_reshaped=obs.view(-1, self.model.B, self.p // self.model.B, dim).transpose(0, 1) #(pop_size*p,ds) --> (B,pop_size,p/B,ds)
         obs_reshaped=obs_reshaped.contiguous().view(self.model.B, -1, dim) #(B,pop_size,p/B,ds) --> (B,pop_size*p/B,ds)
-        #reshape curr_acs  #(1,pop_size*p,da) --> (B,pop_size*p/B,da) ##i.e. divide the pop_size*p curr_acs among B networks
+        #reshape curr_acs  #(1,pop_size*p,da) --> (B,pop_size*p/B,da) #i.e. divide the pop_size*p curr_acs among B networks
         dim=curr_acs.shape[-1]
         curr_acs=curr_acs.view(-1, self.model.B, self.p // self.model.B, dim).transpose(0, 1)
         curr_acs=curr_acs.contiguous().view(self.model.B, -1, dim)
         
-        inputs=torch.cat((obs_reshaped, curr_acs), dim=-1)
+        inputs=torch.cat([obs_reshaped, curr_acs], dim=-1)
         mean, logvar = self.model(inputs) #here, input smaples will be = pop_size*p/B #???: does it make sense how inputs are normalized in this call??
         var = torch.exp(logvar)
         delta_obs_next=mean + torch.randn_like(mean, device=self.model.device) * var.sqrt() #var.sqrt() = std

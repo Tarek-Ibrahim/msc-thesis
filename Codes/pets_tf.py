@@ -5,7 +5,6 @@ Created on Sun Aug  8 16:56:16 2021
 @author: TIB001
 """
 #TODO: unify all ac/act and ob/obs
-#TODO: debug to make it work
 #TODO: run with different reward functions and env parameters
 #TODO: try with different env than cartpole (e.g. half-cheetah)
 #TODO: repeat each experiment with different random seeds (for K trials?), and report the mean and standard deviation of the cost for each condition
@@ -31,7 +30,6 @@ import tensorflow as tf
 #%% Functions
 
 progress=lambda x: tqdm.trange(x, leave=True) #for visualizing/monitoring training progress
-# swish = lambda x: x * torch.sigmoid(x)
 
 def set_seed(seed,env,det=True):
     import random
@@ -48,9 +46,9 @@ def collect_rollout(env,policy):
     T=env._max_episode_steps #task horizon
     O, A, rewards= [env.reset()], [], []
 
-    policy.reset() #policy is MPC #amounts to resetting CEM optimizer's prev sol to its initial value (-> array of size H with all values = avg of action space value range)
+    policy.reset() #policy is MPC #amounts to resetting CEM optimizer's prev sol to its initial value (--> array of size H with all values = avg of action space value range)
     for t in range(T):
-        a=policy.act(O[t]) #first optimal action in sequence (initially random: policy.act= np.random.uniform(ac_lb, ac_ub, ac_lb.shape))
+        a=policy.act(O[t]) #first optimal action in sequence (initially random)
 
         obs, r, done, _ = env.step(a) #execute first action from optimal actions
         
@@ -84,38 +82,32 @@ class PE(tf.keras.Model):
         self.mu = tf.Variable(initial_value=tf.keras.initializers.Zeros()(shape=[1,self.in_size]), trainable=False)
         self.sigma = tf.Variable(initial_value=tf.keras.initializers.Ones()(shape=[1,self.in_size]), trainable=False)
         
-        # self.w, self.b = [], []
-        # for l in range(n+1):
-        #     ip=in_size if l==0 else h
-        #     op=out_size if l==n else h
-        #     w, b = self.initialize(ip,op)
-        #     self.w.append(w)
-        #     self.b.append(b)
-        self.w0,self.b0=self.initialize(in_size,h)
-        self.w1,self.b1=self.initialize(h,h)
-        self.w2,self.b2=self.initialize(h,h)
-        self.w3,self.b3=self.initialize(h,out_size)
+        self.w, self.b = [], []
+        for l in range(n+1):
+            ip=in_size if l==0 else h
+            op=out_size if l==n else h
+            w, b = self.initialize(ip,op)
+            self.w.append(w)
+            self.b.append(b)
         
-        self.opt_vars=[self.w0,self.b0,self.w1,self.b1,self.w2,self.b2,self.w3,self.b3,self.max_logvar,self.min_logvar]
+        # self.w0,self.b0=self.initialize(in_size,h)
+        # self.w1,self.b1=self.initialize(h,h)
+        # self.w2,self.b2=self.initialize(h,h)
+        # self.w3,self.b3=self.initialize(h,out_size)
+        
+        # self.opt_vars=[self.w0,self.b0,self.w1,self.b1,self.w2,self.b2,self.w3,self.b3,self.max_logvar,self.min_logvar]
         
     def initialize(self,in_size,out_size):
         #truncated normal for weights (i.e. draw from normal distribution with samples outside 2*std from mean discarded and resampled)
         #zeros for biases
         
-        mu=0.0
-        std=1.0/(2.0*np.sqrt(in_size))
-        
-        w=tf.Variable(initial_value=tf.keras.initializers.TruncatedNormal(mean=mu,stddev=std)(shape=[self.B,in_size,out_size]))
-        
+        w=tf.Variable(initial_value=tf.keras.initializers.TruncatedNormal(mean=0.0,stddev=1.0/(2.0*np.sqrt(in_size)))(shape=[self.B,in_size,out_size]))
         b=tf.Variable(initial_value=tf.keras.initializers.Zeros()(shape=[self.B, 1, out_size]))
         
         return w, b
     
     def fit_input_stats(self, inputs):
         #get mu and sigma of [all] input data fpr later normalization of model [batch] inputs
-        
-        # self.mu = nn.Parameter(torch.zeros(self.in_size), requires_grad=False)
-        # self.sigma = nn.Parameter(torch.zeros(self.in_size), requires_grad=False)
 
         mu = np.mean(inputs, axis=0, keepdims=True) #over cols (each observation/action col of input) and keeping same col size --> result has size = (1,input_size)
         sigma = np.std(inputs, axis=0, keepdims=True)
@@ -127,23 +119,23 @@ class PE(tf.keras.Model):
     def compute_decays(self):
         #returns decays.sum() #decays[layer] = decay_coeffs[layer]*MSE(w[layer]) #decay_coeffs=[input=0.0001, h=0.00025, output=0.0005]
         
-        # decays, decays_coeffs = [], [0.0001,0.00025,0.00025,0.0005]
-        # for l in range(self.n+1):
-        #     decay=decays_coeffs[l]*(self.w[l]**2).sum() / 2.0
-        #     decays.append(decay)
-        # return sum(decays)
+        decays, decays_coeffs = [], [0.0001,0.00025,0.00025,0.0005]
+        for l in range(self.n+1):
+            decay=tf.multiply(decays_coeffs[l] , tf.nn.l2_loss(self.w[l]))
+            decays.append(decay)
+        return sum(decays)
         
-        # lin0_decays = 0.0001 * (self.w[0] ** 2).sum() / 2.0
-        # lin1_decays = 0.00025 * (self.w[1] ** 2).sum() / 2.0
-        # lin2_decays = 0.00025 * (self.w[2] ** 2).sum() / 2.0
-        # lin3_decays = 0.0005 * (self.w[3] ** 2).sum() / 2.0
+        # lin0_decays = tf.multiply(0.0001 , tf.nn.l2_loss(self.w[0]))
+        # lin1_decays = tf.multiply(0.00025, tf.nn.l2_loss(self.w[1]))
+        # lin2_decays = tf.multiply(0.00025 , tf.nn.l2_loss(self.w[2]))
+        # lin3_decays = tf.multiply(0.0005 , tf.nn.l2_loss(self.w[3]))
         
-        lin0_decays = tf.multiply(0.0001 , tf.nn.l2_loss(self.w0))
-        lin1_decays = tf.multiply(0.00025, tf.nn.l2_loss(self.w1))
-        lin2_decays = tf.multiply(0.00025 , tf.nn.l2_loss(self.w2))
-        lin3_decays = tf.multiply(0.0005 , tf.nn.l2_loss(self.w3))
+        # lin0_decays = tf.multiply(0.0001 , tf.nn.l2_loss(self.w0))
+        # lin1_decays = tf.multiply(0.00025, tf.nn.l2_loss(self.w1))
+        # lin2_decays = tf.multiply(0.00025 , tf.nn.l2_loss(self.w2))
+        # lin3_decays = tf.multiply(0.0005 , tf.nn.l2_loss(self.w3))
 
-        return lin0_decays + lin1_decays + lin2_decays + lin3_decays
+        # return lin0_decays + lin1_decays + lin2_decays + lin3_decays
 
     
     def __call__(self,inputs):
@@ -153,19 +145,20 @@ class PE(tf.keras.Model):
         #normalize inputs
         inputs = (inputs - self.mu) / self.sigma
         
-        inputs = tf.matmul(inputs,self.w0) + self.b0
-        inputs = tf.keras.activations.swish(inputs) #swish(inputs)
-        inputs = tf.matmul(inputs,self.w1) + self.b1
-        inputs = tf.keras.activations.swish(inputs) #swish(inputs)
-        inputs = tf.matmul(inputs,self.w2) + self.b2
-        inputs = tf.keras.activations.swish(inputs) #swish(inputs)
-        inputs = tf.matmul(inputs,self.w3) + self.b3
+        #fwd pass
+        # inputs = tf.matmul(inputs,self.w0) + self.b0
+        # inputs = tf.keras.activations.swish(inputs)
+        # inputs = tf.matmul(inputs,self.w1) + self.b1
+        # inputs = tf.keras.activations.swish(inputs)
+        # inputs = tf.matmul(inputs,self.w2) + self.b2
+        # inputs = tf.keras.activations.swish(inputs)
+        # inputs = tf.matmul(inputs,self.w3) + self.b3
        
-        # #fwd pass
-        # for l in range(self.n+1):
-        #     inputs = inputs.matmul(self.w[l]) + self.b[l] #after size (till before last layer) = [B,input samples,h]; after NN size=[B,input samples,out_size]
-        #     if l<self.n: #skips for last iteration/layer
-        #         inputs = nn.SiLU()(inputs) #swish(inputs)
+        #fwd pass
+        for l in range(self.n+1):
+            inputs = tf.matmul(inputs,self.w[l]) + self.b[l] #after size (till before last layer) = [B,input samples,h]; after NN size=[B,input samples,out_size]
+            if l<self.n: #skips for last iteration/layer
+                inputs = tf.keras.activations.swish(inputs)
         
         #extract mean and log(var) from network output
         mean = inputs[:, :, :self.out_size // 2]
@@ -193,8 +186,8 @@ class MPC:
         self.ds=env.observation_space.shape[0] #state dims
         self.da=env.action_space.shape[0] #action dims
         self.initial=True
-        self.ac_lb= env.action_space.low #env.ac_lb
-        self.ac_ub= env.action_space.high #env.ac_ub
+        self.ac_lb= env.action_space.low
+        self.ac_ub= env.action_space.high
         self.cost_obs= env.cost_o
         self.cost_act= env.cost_a
         self.reset() #sol's initial mu/mean
@@ -226,30 +219,31 @@ class MPC:
             
         #get mean & var of tr inputs
         self.model.fit_input_stats(self.inputs)
+        
         #create random_idxs from 0 to (no. of tr samples - 1) with size = [B,no. of tr samples]
         idxs = np.random.randint(self.inputs.shape[0], size=[self.model.B, self.inputs.shape[0]])
         num_batches = int(np.ceil(idxs.shape[-1] / b)) #(no. of batches=roundup(no. of [model] training input examples so far / batch size))
+        
+        #training loop
         for _ in range(epochs): #for each epoch
             for batch_num in range(num_batches): # for each batch 
                 # choose a batch from tr and target inputs randomly (i.e. pick random entries/rows/samples from inputs to construct a batch, via: input[random_idxs[:,batch_idxs]]) --> batch_idxs change with each inner iteration as a function of current batch no. and b, while rest stay constant; this also inserts an additional dimension at the beginning to inputs = B; random_idxs used for each net are shuffled row-wise with each outer loop; idxs are reset w/ every call to train func [i.e. each tr_ep] (which would also have different no. of tr samples)
                 batch_idxs = idxs[:, batch_num * b : (batch_num + 1) * b]
                 inputs = tf.convert_to_tensor(self.inputs[batch_idxs],dtype=tf.float32)
                 targets = tf.convert_to_tensor(self.targets[batch_idxs],dtype=tf.float32)
-                # inputs=self.inputs[batch_idxs]
-                # targets=self.targets[batch_idxs]
                 # Operate on batches:
                 with tf.GradientTape() as tape:
                     mean, logvar = self.model(inputs) #fwd pass
                     var = tf.math.exp(-logvar)
-                    # Calculate grad, loss & backpropagate
+                    # Calculate loss
                     loss = tf.math.reduce_mean(tf.math.reduce_mean(tf.math.square(mean - targets) * var, axis=-1), axis=-1) #MSE losses #???: why does mean over target dimension make sense?
-                    loss += tf.math.reduce_mean(tf.math.reduce_mean(logvar, axis=-1), axis=-1) #var losses
+                    loss += tf.math.reduce_mean(tf.math.reduce_mean(logvar, axis=-1), axis=-1) #var losses #???: why does mean over target dimension make sense?
                     loss = tf.math.reduce_sum(loss) 
                     loss += 0.01 * (tf.math.reduce_sum(self.model.max_logvar) - tf.math.reduce_sum(self.model.min_logvar)) # a constant
-                    # loss += self.model.compute_decays() 
+                    # loss += self.model.compute_decays() #L2 regularization
                 
-                gradients = tape.gradient(loss, self.model.trainable_variables)
-                self.optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
+                gradients = tape.gradient(loss, self.model.trainable_variables) #calculate gradient
+                self.optimizer.apply_gradients(zip(gradients, self.model.trainable_variables)) #backpropagate
                 
             # shuffle idxs
             idxs_of_idxs = np.argsort(np.random.uniform(size=idxs.shape), axis=-1)
@@ -260,24 +254,14 @@ class MPC:
         
         if self.initial:
             action = np.random.uniform(self.ac_lb, self.ac_ub, self.ac_lb.shape)
-            return action
         else:
-            if self.act_buff.shape[0] > 0:
-                action, self.act_buff = self.act_buff[0], self.act_buff[1:] #pop out the optimal action from buffer
-                return action
-            sol=self.CEM(obs) #get CEM optimizer's sol
-            
-            self.prev_sol=np.concatenate([np.copy(sol)[self.da:], np.zeros(self.da)]) #update prev sol --> take out first action in sol and pad leftover sequence with trailing zeros to maintain same sol/prev sol shape #???: how is this correct??
-            self.act_buff = sol[:self.da].reshape(-1, self.da) #has the first action in the sequence = optimal action
-            return self.act(obs)
-            
-            # while self.act_buff.shape[0] == 0:
-            #     sol=self.CEM(obs) #get CEM optimizer's sol
-            #     self.prev_sol=np.concatenate([np.copy(sol)[self.da:], np.zeros(self.da)]) #update prev sol --> take out first action in sol and pad leftover sequence with trailing zeros to maintain same sol/prev sol shape
-            #     self.act_buff = sol[:self.da].reshape(-1, self.da) #has the first action in the sequence = optimal action
-            # action, self.act_buff = self.act_buff[0], self.act_buff[1:] #pop out the optimal action from buffer
+            while self.act_buff.shape[0] == 0:
+                sol=self.CEM(obs) #get CEM optimizer's sol
+                self.prev_sol=np.concatenate([np.copy(sol)[self.da:], np.zeros(self.da)]) #update prev sol --> take out first action in sol and pad leftover sequence with trailing zeros to maintain same sol/prev sol shape #???: how is this correct??
+                self.act_buff = sol[:self.da].reshape(-1, self.da) #has the first action in the sequence = optimal action
+            action, self.act_buff = self.act_buff[0], self.act_buff[1:] #pop out the optimal action from buffer
         
-        # return action
+        return action
         
     
     def CEM(self,obs): #MPC's optimizer: an action sequence optimizer
@@ -347,7 +331,7 @@ class MPC:
         
         costs=tf.where(tf.math.is_nan(costs), 1e6 * tf.ones_like(costs), costs) #replace NaNs with a high cost 
         
-        return tf.math.reduce_mean(costs,axis=1) #mean of costs # dim is dim to reduce (i.e. for dim=1, it will take the mean of each row (dim=0)) #i.e. here we average over the particles of each sol
+        return tf.math.reduce_mean(costs,axis=1) #mean of costs # axis is dim to reduce (i.e. for axis=1, it will take the mean of each row (axis=0)) #i.e. here we average over the particles of each sol
     
     
     def TS(self,obs,curr_acs): #trajectory sampling: propagate state particles (aka: predict next observations)
