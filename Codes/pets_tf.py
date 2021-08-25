@@ -26,8 +26,6 @@ import tqdm
 from scipy.stats import truncnorm
 
 import tensorflow as tf
-# import keras
-
 
 
 #%% Functions
@@ -67,13 +65,13 @@ def collect_rollout(env,policy):
 
 
 #model
-class PE():
+class PE(tf.keras.Model):
     #Probabilistic Ensemble: ensemble of B-many bootsrapped probabilistic NNs (i.e. output parameters of a prob distribution) used to approximate a dynamics model function:
     # a- ‘probabilistic networks[/network models/network dynamics models]’: to capture aleatoric uncertainty (inherent system stochasticity) [through each model encoding a distribution (as opposed to a point estimate/prediction)]
     # b- ‘ensembles’: to capture epistemic uncertainty (subjective uncertainty, due to limited data --> isolating it is especially useful for directing exploration [out of scope])
     
     def __init__(self, B, in_size, n, h, out_size):
-        # super().__init__()
+        super().__init__()
         
         self.B=B
         self.n=n
@@ -200,14 +198,14 @@ class MPC:
         self.cost_obs= env.cost_o
         self.cost_act= env.cost_a
         self.reset() #sol's initial mu/mean
-        self.init_var= np.tile(((self.ac_ub - self.ac_lb) / 4)**2, [self.H]) #sol's intial variance
+        self.init_var= np.tile(((self.ac_ub - self.ac_lb) / 4.0)**2, [self.H]) #sol's intial variance
         self.act_buff=np.empty((0,self.da))
         self.inputs=np.empty((0,self.model.in_size))
         self.targets=np.empty((0,self.ds))
         
         
     def reset(self):
-        self.prev_sol = np.tile((self.ac_lb + self.ac_ub) / 2, [self.H])
+        self.prev_sol = np.tile((self.ac_lb + self.ac_ub) / 2.0, [self.H])
     
     
     def train(self,rollout,b): #Train the policy with rollouts
@@ -244,17 +242,14 @@ class MPC:
                     mean, logvar = self.model(inputs) #fwd pass
                     var = tf.math.exp(-logvar)
                     # Calculate grad, loss & backpropagate
-                    loss = tf.math.reduce_mean(tf.math.reduce_mean(((mean - targets)**2) * var + logvar, axis=-1), axis=-1) #MSE losses #???: why does mean over target dimension make sense?
+                    loss = tf.math.reduce_mean(tf.math.reduce_mean(tf.math.square(mean - targets) * var, axis=-1), axis=-1) #MSE losses #???: why does mean over target dimension make sense?
                     loss += tf.math.reduce_mean(tf.math.reduce_mean(logvar, axis=-1), axis=-1) #var losses
-                    # loss += 0.01 * (tf.math.reduce_sum(self.model.max_logvar) - tf.math.reduce_sum(self.model.min_logvar)) # a constant
+                    loss = tf.math.reduce_sum(loss) 
+                    loss += 0.01 * (tf.math.reduce_sum(self.model.max_logvar) - tf.math.reduce_sum(self.model.min_logvar)) # a constant
                     # loss += self.model.compute_decays() 
                 
-                gradients = tape.gradient(loss, self.model.opt_vars)
-                self.optimizer.apply_gradients(zip(gradients, self.model.opt_vars))
-
-                
-                # self.optimizer.minimize(loss,self.model.opt_vars,tape=self.model.tape)
-                # self.optimizer.minimize(loss,self.model.opt_vars)
+                gradients = tape.gradient(loss, self.model.trainable_variables)
+                self.optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
                 
             # shuffle idxs
             idxs_of_idxs = np.argsort(np.random.uniform(size=idxs.shape), axis=-1)
@@ -302,14 +297,14 @@ class MPC:
         while (t < self.opt_max_iters) and np.max(var) > epsilon:
             lb_dist = mean - lb
             ub_dist = ub - mean
-            constrained_var = np.minimum(np.minimum((lb_dist / 2)**2, (ub_dist / 2)**2), var)
+            constrained_var = np.minimum(np.minimum((lb_dist / 2.0)**2, (ub_dist / 2.0)**2), var)
             
             #1- generate sols
             samples = X.rvs(size=[self.pop_size, sol_dim]) * np.sqrt(constrained_var) + mean #sample from destandardized/denormalized distributiion
             samples = samples.astype(np.float32)
 
             #2- propagate state particles & evaluate actions
-            costs = self.get_costs(obs,samples)
+            costs = tf.stop_gradient(self.get_costs(obs,samples))
 
             #3- update CEM distribution
             
@@ -369,7 +364,7 @@ class MPC:
         inputs=tf.concat([obs_reshaped, curr_acs], axis=-1)
         mean, logvar = self.model(inputs) #here, input smaples will be = pop_size*p/B #???: does it make sense how inputs are normalized in this call??
         var = tf.math.exp(logvar)
-        delta_obs_next=mean + tf.random.normal(shape=tf.shape(mean), mean=0, stddev=1) * tf.sqrt(var) #var.sqrt() = std
+        delta_obs_next=mean + tf.random.normal(shape=tf.shape(mean)) * tf.sqrt(var) #var.sqrt() = std
         #reshape delta_obs_next/predictions [back to original shape]  #(B,pop_size,p/B,ds) --> (pop_size*p,ds)
         dim=tf.shape(delta_obs_next)[-1]
         delta_obs_next=tf.transpose(tf.reshape(delta_obs_next,[self.model.B, -1, self.p // self.model.B, dim]),[1, 0, 2, 3])
@@ -405,14 +400,12 @@ out_size=ds*2
 model = PE(B,in_size,n,h,out_size)#dynamics model
 optimizer=tf.keras.optimizers.Adam(learning_rate=lr) #model optimizer #TODO: use per-parameter options (and adjust model weights and biases into layers) to add different weight decays to each layer's weights
 policy = MPC(env,model,optimizer,H,p,pop_size,opt_max_iters,epochs)
-#traj_obs, traj_acs, traj_rs_sum, traj_rs = [], [], [], []
 plot_rewards=[]
 
 # %% Implementation
 
 #1- Initialize data D with a random controller for one/r trial(s): sample an initial rollout from the agent with random policy
 rollout = collect_rollout(env,policy)
-#FILLME: apppend to lists: traj_obs, traj_acs, traj_rets, traj_rews
 
 # 2- Training
 episodes=progress(tr_eps)
@@ -421,7 +414,6 @@ for episode in episodes:
     policy.train(rollout,b)
     #sample a [new] rollout from the agent with MPC policy
     rollout = collect_rollout(env,policy)
-    #FILLME: record outcome: extend with the sampled rollouts: traj_obs, traj_acs, traj_rets, traj_rews
     #log iteration results & statistics
     plot_rewards.append(rollout[-1])
     if episode % 1 == 0:

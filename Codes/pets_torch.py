@@ -53,7 +53,7 @@ def set_seed(seed,env,det=True):
 def truncated_normal(tensor: torch.Tensor, mean: float = 0, std: float = 1):
     torch.nn.init.normal_(tensor, mean=mean, std=std)
     while True:
-        cond = torch.logical_or(tensor < mean - 2 * std, tensor > mean + 2 * std)
+        cond = torch.logical_or(tensor < mean - 2.0 * std, tensor > mean + 2.0 * std)
         if not torch.sum(cond):
             break
         tensor = torch.where(cond,torch.nn.init.normal_(torch.ones(tensor.shape, device=device), mean=mean, std=std),tensor,)
@@ -225,14 +225,14 @@ class MPC:
         self.cost_obs= env.cost_o
         self.cost_act= env.cost_a
         self.reset() #sol's initial mu/mean
-        self.init_var= np.tile(((self.ac_ub - self.ac_lb) / 4)**2, [self.H]) #sol's intial variance
+        self.init_var= np.tile(((self.ac_ub - self.ac_lb) / 4.0)**2, [self.H]) #sol's intial variance
         self.act_buff=np.empty((0,self.da))
         self.inputs=np.empty((0,self.model.in_size))
         self.targets=np.empty((0,self.ds))
         
         
     def reset(self):
-        self.prev_sol = np.tile((self.ac_lb + self.ac_ub) / 2, [self.H])
+        self.prev_sol = np.tile((self.ac_lb + self.ac_ub) / 2.0, [self.H])
     
     
     def train(self,rollout,b): #Train the policy with rollouts
@@ -266,7 +266,7 @@ class MPC:
                 mean, logvar = self.model(inputs) #fwd pass
                 var = torch.exp(-logvar)
                 # Calculate grad, loss & backpropagate
-                loss = (((mean - targets) ** 2) * var + logvar).mean(-1).mean(-1).sum() #train losses: MSE loss + var loss #???: why does mean over target dimension make sense?
+                loss = (torch.square(mean - targets) * var + logvar).mean(-1).mean(-1).sum() #train losses: MSE loss + var loss #???: why does mean over target dimension make sense?
                 loss += 0.01 * (self.model.max_logvar.sum() - self.model.min_logvar.sum()) # a constant (~= 0.42)
                 # loss += self.model.compute_decays() #L2 regularization
                 # loss_value=loss.item()
@@ -315,13 +315,13 @@ class MPC:
         lb=np.tile(self.ac_lb,[self.H])
         ub=np.tile(self.ac_ub,[self.H])
         
-        mean, var, t = self.prev_sol, self.init_var, 0
+        mean, var, t = self.prev_sol, self.init_var, 0.0
         X = truncnorm(-2, 2, loc=np.zeros_like(mean), scale=np.ones_like(var))
 
         while (t < self.opt_max_iters) and np.max(var) > epsilon:
             lb_dist = mean - lb
             ub_dist = ub - mean
-            constrained_var = np.minimum(np.minimum((lb_dist / 2)**2, (ub_dist / 2)**2), var)
+            constrained_var = np.minimum(np.minimum((lb_dist / 2.0)**2, (ub_dist / 2.0)**2), var)
             
             #1- generate sols
             samples = X.rvs(size=[self.pop_size, sol_dim]) * np.sqrt(constrained_var) + mean #sample from destandardized/denormalized distributiion
@@ -429,14 +429,12 @@ device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'
 model = PE(B,in_size,n,h,out_size,device).to(device) #dynamics model
 optimizer=Adam(model.parameters(),lr=lr) #model optimizer #TODO: use per-parameter options (and adjust model weights and biases into layers) to add different weight decays to each layer's weights
 policy = MPC(env,model,optimizer,H,p,pop_size,opt_max_iters,epochs)
-#traj_obs, traj_acs, traj_rs_sum, traj_rs = [], [], [], []
 plot_rewards=[]
 
 # %% Implementation
 
 #1- Initialize data D with a random controller for one/r trial(s): sample an initial rollout from the agent with random policy
 rollout = collect_rollout(env,policy)
-#FILLME: apppend to lists: traj_obs, traj_acs, traj_rets, traj_rews
 
 # 2- Training
 episodes=progress(tr_eps)
@@ -445,7 +443,6 @@ for episode in episodes:
     policy.train(rollout,b)
     #sample a [new] rollout from the agent with MPC policy
     rollout = collect_rollout(env,policy)
-    #FILLME: record outcome: extend with the sampled rollouts: traj_obs, traj_acs, traj_rets, traj_rews
     #log iteration results & statistics
     plot_rewards.append(rollout[-1])
     if episode % 1 == 0:
