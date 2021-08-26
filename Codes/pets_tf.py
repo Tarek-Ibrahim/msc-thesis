@@ -5,6 +5,7 @@ Created on Sun Aug  8 16:56:16 2021
 @author: TIB001
 """
 #TODO: unify all ac/act and ob/obs
+#TODO: make tf work on gpu
 #TODO: run with different reward functions and env parameters
 #TODO: try with different env than cartpole (e.g. half-cheetah)
 #TODO: repeat each experiment with different random seeds (for K trials?), and report the mean and standard deviation of the cost for each condition
@@ -362,6 +363,10 @@ p=20 #no. of particles
 B=5 #no. of bootstraps (nets in ensemble)
 K=50 #no. of trials
 tr_eps=30 #30 #200 #no. of training episodes/iterations
+te_eps=10 #testing episodes
+test=False
+tr_log_ival=1 #tr logging interval
+# te_log_ival=10 #testing logging interval
 n=3 #no. of NN layers
 h=250 #500 #250 #size of hidden layers
 H=2 #25 #planning horizon
@@ -400,7 +405,7 @@ for episode in episodes:
     rollout = collect_rollout(env,policy)
     #log iteration results & statistics
     plot_rewards.append(rollout[-1])
-    if episode % 1 == 0:
+    if episode % tr_log_ival == 0:
         log_msg="Rewards Sum: {:.2f}".format(rollout[-1])
         episodes.set_description(desc=log_msg); episodes.refresh()
 
@@ -412,4 +417,39 @@ plt.plot(plot_rewards)
 plt.title(title)
 plt.show()
 
-# 4- Testing
+# %% Testing
+if test:
+    ep_rewards=[]
+    for te_ep in range(te_eps):
+        obs=env.reset()
+        O, A, rewards, done= [obs], [], [], False
+        policy.reset()
+        while not done:
+            a=policy.act(obs) #first optimal action in sequence (initially random)
+    
+            obs, r, done, _ = env.step(a) #execute first action from optimal actions
+            
+            A.append(a)
+            O.append(obs)
+            rewards.append(r)
+            
+            env.render()
+        
+        ep_rewards.append(np.sum(rewards))
+        
+# Results & Plots
+    title="Testing Control Actions"
+    plt.figure(figsize=(16,8))
+    plt.grid(1)
+    plt.plot(A)
+    plt.title(title)
+    plt.show()
+        
+    title="Testing Rewards"
+    plt.figure(figsize=(16,8))
+    plt.grid(1)
+    plt.plot(ep_rewards)
+    plt.title(title)
+    plt.show()
+    
+    env.close()
