@@ -4,7 +4,6 @@ Created on Sun Aug  8 16:56:16 2021
 
 @author: TIB001
 """
-#TODO: unify all ac/act and ob/obs
 #TODO: make tf work on gpu
 #TODO: run with different reward functions and env parameters
 #TODO: try with different env than cartpole (e.g. half-cheetah)
@@ -51,10 +50,10 @@ def collect_rollout(env,policy):
     for t in range(T):
         a=policy.act(O[t]) #first optimal action in sequence (initially random)
 
-        obs, r, done, _ = env.step(a) #execute first action from optimal actions
+        o, r, done, _ = env.step(a) #execute first action from optimal actions
         
         A.append(a)
-        O.append(obs)
+        O.append(o)
         rewards.append(r)
         
         if done:
@@ -95,9 +94,7 @@ class PE(tf.keras.Model):
         # self.w1,self.b1=self.initialize(h,h)
         # self.w2,self.b2=self.initialize(h,h)
         # self.w3,self.b3=self.initialize(h,out_size)
-        
-        # self.opt_vars=[self.w0,self.b0,self.w1,self.b1,self.w2,self.b2,self.w3,self.b3,self.max_logvar,self.min_logvar]
-        
+                
     def initialize(self,in_size,out_size):
         #truncated normal for weights (i.e. draw from normal distribution with samples outside 2*std from mean discarded and resampled)
         #zeros for biases
@@ -126,11 +123,6 @@ class PE(tf.keras.Model):
             decays.append(decay)
         return sum(decays)
         
-        # lin0_decays = tf.multiply(0.0001 , tf.nn.l2_loss(self.w[0]))
-        # lin1_decays = tf.multiply(0.00025, tf.nn.l2_loss(self.w[1]))
-        # lin2_decays = tf.multiply(0.00025 , tf.nn.l2_loss(self.w[2]))
-        # lin3_decays = tf.multiply(0.0005 , tf.nn.l2_loss(self.w[3]))
-        
         # lin0_decays = tf.multiply(0.0001 , tf.nn.l2_loss(self.w0))
         # lin1_decays = tf.multiply(0.00025, tf.nn.l2_loss(self.w1))
         # lin2_decays = tf.multiply(0.00025 , tf.nn.l2_loss(self.w2))
@@ -139,7 +131,7 @@ class PE(tf.keras.Model):
         # return lin0_decays + lin1_decays + lin2_decays + lin3_decays
 
     
-    def __call__(self,inputs):
+    def call(self,inputs):
         # input is 3D: [B,batch_size,input_size] --> input is a function of current observation/state
         # output is 3D: [B, batch_size, output_size] --> output size is obs/target_size * 2 (first half is for expectation/mu/mean of [Delta_]obs distribution and second half is for log(variance) of it) --> ∆s_t+1 = f (s_t; a_t) such that s_t+1 = s_t + ∆s_t+1
         
@@ -190,10 +182,10 @@ class MPC:
         self.ac_lb= env.action_space.low
         self.ac_ub= env.action_space.high
         self.cost_obs= env.cost_o
-        self.cost_act= env.cost_a
+        self.cost_acs= env.cost_a
         self.reset() #sol's initial mu/mean
         self.init_var= np.tile(((self.ac_ub - self.ac_lb) / 4.0)**2, [self.H]) #sol's intial variance
-        self.act_buff=np.empty((0,self.da))
+        self.ac_buff=np.empty((0,self.da))
         self.inputs=np.empty((0,self.model.in_size))
         self.targets=np.empty((0,self.ds))
         
@@ -251,21 +243,21 @@ class MPC:
             idxs = idxs[np.arange(idxs.shape[0])[:, None], idxs_of_idxs] #shuffles indicies of each row of idxs randomly (i.e. acc. to idxs_of_idxs)
         
     
-    def act(self,obs):
+    def act(self,ob):
         
         if self.initial:
             action = np.random.uniform(self.ac_lb, self.ac_ub, self.ac_lb.shape)
         else:
-            while self.act_buff.shape[0] == 0:
-                sol=self.CEM(obs) #get CEM optimizer's sol
+            while self.ac_buff.shape[0] == 0:
+                sol=self.CEM(ob) #get CEM optimizer's sol
                 self.prev_sol=np.concatenate([np.copy(sol)[self.da:], np.zeros(self.da)]) #update prev sol --> take out first action in sol and pad leftover sequence with trailing zeros to maintain same sol/prev sol shape #???: how is this correct??
-                self.act_buff = sol[:self.da].reshape(-1, self.da) #has the first action in the sequence = optimal action
-            action, self.act_buff = self.act_buff[0], self.act_buff[1:] #pop out the optimal action from buffer
+                self.ac_buff = sol[:self.da].reshape(-1, self.da) #has the first action in the sequence = optimal action
+            action, self.ac_buff = self.ac_buff[0], self.ac_buff[1:] #pop out the optimal action from buffer
         
         return action
         
     
-    def CEM(self,obs): #MPC's optimizer: an action sequence optimizer
+    def CEM(self,ob): #MPC's optimizer: an action sequence optimizer
         #solution = action sequence = sample
         #population-based method (samples candidate solutions from a distribution then evaluates them and constructs next distribution with best sols from prev one [acc to the defined cost function])
         
@@ -289,7 +281,7 @@ class MPC:
             samples = samples.astype(np.float32)
 
             #2- propagate state particles & evaluate actions
-            costs = tf.stop_gradient(self.get_costs(obs,samples))
+            costs = tf.stop_gradient(self.get_costs(ob,samples))
 
             #3- update CEM distribution
             
@@ -308,7 +300,7 @@ class MPC:
         return mean
     
     
-    def get_costs(self,obs,ac_seqs):
+    def get_costs(self,ob,ac_seqs):
         
         dim=tf.shape(ac_seqs)[0]
         
@@ -317,7 +309,7 @@ class MPC:
         ac_seqs = tf.reshape(tf.tile(ac_seqs,[1, 1, self.p, 1]), [self.H, -1, self.da])
         
         #reshape obs --> from (ds) to (pop_size*p,ds)
-        obs=tf.tile(obs[None].astype(np.float32), [dim * self.p, 1])
+        obs=tf.tile(ob[None].astype(np.float32), [dim * self.p, 1])
 
         costs = tf.zeros([dim, self.p]) #initialize costs ; size=[pop_size,p] #sum of costs over the planning horizon
         
@@ -325,7 +317,7 @@ class MPC:
             curr_acs=ac_seqs[t]
             obs_next = self.TS(obs,curr_acs) #propagate state particles using the PE dynamics model (aka: predict next observations)
             
-            cost=self.cost_obs(obs_next)+self.cost_act(curr_acs) #evaluate actions
+            cost=self.cost_obs(obs_next)+self.cost_acs(curr_acs) #evaluate actions
             cost = tf.reshape(cost,[-1, self.p]) #reshape costs to (pop_size,p)
             costs += cost
             obs = obs_next
@@ -420,17 +412,17 @@ plt.show()
 # %% Testing
 if test:
     ep_rewards=[]
-    for te_ep in range(te_eps):
-        obs=env.reset()
-        O, A, rewards, done= [obs], [], [], False
+    for _ in range(te_eps):
+        o=env.reset() #observation
+        O, A, rewards, done= [o], [], [], False
         policy.reset()
         while not done:
-            a=policy.act(obs) #first optimal action in sequence (initially random)
+            a=policy.act(o) #first optimal action in sequence (initially random)
     
-            obs, r, done, _ = env.step(a) #execute first action from optimal actions
+            o, r, done, _ = env.step(a) #execute first action from optimal actions
             
             A.append(a)
-            O.append(obs)
+            O.append(o)
             rewards.append(r)
             
             env.render()

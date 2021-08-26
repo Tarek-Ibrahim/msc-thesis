@@ -4,7 +4,6 @@ Created on Sun Aug  8 16:56:16 2021
 
 @author: TIB001
 """
-#TODO: unify all ac/act and ob/obs
 #TODO: investigate why consistency is inferior to tf implementations (probably because of wieghts truncated normal initializations)
 #TODO: run with different reward functions and env parameters
 #TODO: try with different env than cartpole (e.g. half-cheetah)
@@ -69,10 +68,10 @@ def collect_rollout(env,policy):
     for t in range(T):
         a=policy.act(O[t]) #first optimal action in sequence (initially random)
 
-        obs, r, done, _ = env.step(a) #execute first action from optimal actions
+        o, r, done, _ = env.step(a) #execute first action from optimal actions
         
         A.append(a)
-        O.append(obs)
+        O.append(o)
         rewards.append(r)
         
         if done:
@@ -185,16 +184,16 @@ class MPC:
         self.epochs=epochs
         self.optimizer=optimizer
         
-        self.ds=env.observation_space.shape[0] #state dims
+        self.ds=env.observation_space.shape[0] #state/observation dims
         self.da=env.action_space.shape[0] #action dims
         self.initial=True
         self.ac_lb= env.action_space.low #env.ac_lb
         self.ac_ub= env.action_space.high #env.ac_ub
         self.cost_obs= env.cost_o
-        self.cost_act= env.cost_a
+        self.cost_acs= env.cost_a
         self.reset() #sol's initial mu/mean
         self.init_var= np.tile(((self.ac_ub - self.ac_lb) / 4.0)**2, [self.H]) #sol's intial variance
-        self.act_buff=np.empty((0,self.da))
+        self.ac_buff=np.empty((0,self.da))
         self.inputs=np.empty((0,self.model.in_size))
         self.targets=np.empty((0,self.ds))
         
@@ -248,22 +247,22 @@ class MPC:
             idxs = idxs[np.arange(idxs.shape[0])[:, None], idxs_of_idxs] #shuffles indicies of each row of idxs randomly (i.e. acc. to idxs_of_idxs)
         
     
-    def act(self,obs):
+    def act(self,ob):
         
         if self.initial:
             action = np.random.uniform(self.ac_lb, self.ac_ub, self.ac_lb.shape)
             
         else:
-            while self.act_buff.shape[0] == 0:
-                sol=self.CEM(obs) #get CEM optimizer's sol
+            while self.ac_buff.shape[0] == 0:
+                sol=self.CEM(ob) #get CEM optimizer's sol
                 self.prev_sol=np.concatenate([np.copy(sol)[self.da:], np.zeros(self.da)]) #update prev sol --> take out first action in sol and pad leftover sequence with trailing zeros to maintain same sol/prev sol shape #???: how is this correct??
-                self.act_buff = sol[:self.da].reshape(-1, self.da) #has the first action in the sequence = optimal action
-            action, self.act_buff = self.act_buff[0], self.act_buff[1:] #pop out the optimal action from buffer
+                self.ac_buff = sol[:self.da].reshape(-1, self.da) #has the first action in the sequence = optimal action
+            action, self.ac_buff = self.ac_buff[0], self.ac_buff[1:] #pop out the optimal action from buffer
         
         return action
         
     
-    def CEM(self,obs): #MPC's optimizer: an action sequence optimizer
+    def CEM(self,ob): #MPC's optimizer: an action sequence optimizer
         #solution = action sequence = sample
         #population-based method (samples candidate solutions from a distribution then evaluates them and constructs next distribution with best sols from prev one [acc to the defined cost function])
         
@@ -287,7 +286,7 @@ class MPC:
             samples = samples.astype(np.float32)
 
             #2- propagate state particles & evaluate actions
-            costs = self.get_costs(obs,samples)
+            costs = self.get_costs(ob,samples)
 
             #3- update CEM distribution
             
@@ -306,7 +305,7 @@ class MPC:
         return mean
     
     @torch.no_grad()
-    def get_costs(self,obs,ac_seqs):
+    def get_costs(self,ob,ac_seqs):
         
         dim=ac_seqs.shape[0]
         
@@ -316,8 +315,8 @@ class MPC:
         ac_seqs = ac_seqs.expand(-1, -1, self.p, -1).contiguous().view(self.H, -1, self.da) #transform from (H,pop_size,da,1) to (H,pop_size*p,da)
         
         #reshape obs --> from (ds) to (pop_size*p,ds)
-        obs = torch.from_numpy(obs).float().to(self.model.device)
-        obs = obs[None].expand(dim * self.p, -1)
+        ob = torch.from_numpy(ob).float().to(self.model.device)
+        obs = ob[None].expand(dim * self.p, -1)
 
         costs = torch.zeros(dim, self.p, device=self.model.device) #initialize costs ; size=[pop_size,p] #sum of costs over the planning horizon
         
@@ -325,7 +324,7 @@ class MPC:
             curr_acs=ac_seqs[t]
             obs_next = self.TS(obs,curr_acs) #propagate state particles using the PE dynamics model (aka: predict next observations)
             
-            cost=self.cost_obs(obs_next)+self.cost_act(curr_acs) #evaluate actions
+            cost=self.cost_obs(obs_next)+self.cost_acs(curr_acs) #evaluate actions
             cost = cost.view(-1, self.p) #reshape costs to (pop_size,p)
             costs += cost
             obs = obs_next
@@ -367,8 +366,7 @@ K=50 #no. of trials
 tr_eps=30 #30 #200 #no. of training episodes/iterations
 te_eps=10 #testing episodes
 test=False
-tr_log_ival=1 #tr logging interval
-# te_log_ival=10 #testing logging interval
+log_ival=1 #tr logging interval
 n=3 #no. of NN layers
 h=250 #500 #250 #size of hidden layers
 H=2 #25 #planning horizon
@@ -408,7 +406,7 @@ for episode in episodes:
     rollout = collect_rollout(env,policy)
     #log iteration results & statistics
     plot_rewards.append(rollout[-1])
-    if episode % tr_log_ival == 0:
+    if episode % log_ival == 0:
         log_msg="Rewards Sum: {:.2f}".format(rollout[-1])
         episodes.set_description(desc=log_msg); episodes.refresh()
 
@@ -423,17 +421,17 @@ plt.show()
 # %% Testing
 if test:
     ep_rewards=[]
-    for te_ep in range(te_eps):
-        obs=env.reset()
-        O, A, rewards, done= [obs], [], [], False
+    for _ in range(te_eps):
+        o=env.reset() #observation
+        O, A, rewards, done= [o], [], [], False
         policy.reset()
         while not done:
-            a=policy.act(obs) #first optimal action in sequence (initially random)
+            a=policy.act(o) #first optimal action in sequence (initially random)
     
-            obs, r, done, _ = env.step(a) #execute first action from optimal actions
+            o, r, done, _ = env.step(a) #execute first action from optimal actions
             
             A.append(a)
-            O.append(obs)
+            O.append(o)
             rewards.append(r)
             
             env.render()
