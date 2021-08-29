@@ -4,9 +4,9 @@ Created on Sun Aug  8 16:56:16 2021
 
 @author: TIB001
 """
-#TODO: investigate why consistency is inferior to tf implementations (probably because of wieghts truncated normal initializations)
-#TODO: run with different reward functions and env parameters
-#TODO: try with different env than cartpole (e.g. half-cheetah)
+#TODO: learn how to interface with and modify mujoco envs (--> interface with a custom mujoco env)
+#TODO: try pets on half-cheetah
+#TODO: try with and report results for different reward functions and agent parameters (custom cartpole and half-cheetah)
 #TODO: repeat each experiment with different random seeds (for K trials?), and report the mean and standard deviation of the cost for each condition
 #TODO: add more comments/documentation
 
@@ -15,7 +15,7 @@ import numpy as np
 import gym
 #------only for spyder IDE
 for env in gym.envs.registration.registry.env_specs.copy():
-     if 'cartpole_custom' in env:
+     if 'custom' in env:
          print('Remove {} from registry'.format(env))
          del gym.envs.registration.registry.env_specs[env]
 #------
@@ -369,7 +369,7 @@ test=False
 log_ival=1 #tr logging interval
 n=3 #no. of NN layers
 h=250 #500 #250 #size of hidden layers
-H=2 #25 #planning horizon
+H=12 #25 #planning horizon
 # r=1 #no. of rollouts done in the environment for every training iteration AND no. of initial rollouts done before first train() call to controller #TODO: code is currently written for r=1; make code general to any r
 epochs=5 #5 #100 #propagation method epochs
 lr=0.001
@@ -378,7 +378,8 @@ pop_size=60 #400 #CEM population size: number of candidate solutions to be sampl
 opt_max_iters=5 #5 #CEM's max iterations (used as a termination condition)
 
 # %% Environment
-env=gym.make('cartpole_custom-v1')
+# env=gym.make('cartpole_custom-v1')
+env = gym.make('halfcheetah_custom-v1')
 ds=env.observation_space.shape[0] #state dims
 da=env.action_space.shape[0] #action dims
 set_seed(0,env)

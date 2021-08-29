@@ -4,9 +4,10 @@ Created on Sun Aug  8 16:56:16 2021
 
 @author: TIB001
 """
+#TODO: learn how to interface with and modify mujoco envs (--> interface with a custom mujoco env)
 #TODO: make tf work on gpu
-#TODO: run with different reward functions and env parameters
-#TODO: try with different env than cartpole (e.g. half-cheetah)
+#TODO: try pets on half-cheetah
+#TODO: try with and report results for different reward functions and agent parameters (custom cartpole and half-cheetah)
 #TODO: repeat each experiment with different random seeds (for K trials?), and report the mean and standard deviation of the cost for each condition
 #TODO: add more comments/documentation
 
@@ -15,7 +16,7 @@ import numpy as np
 import gym
 #------only for spyder IDE
 for env in gym.envs.registration.registry.env_specs.copy():
-      if 'cartpole_custom' in env:
+      if 'custom' in env:
         print('Remove {} from registry'.format(env))
         del gym.envs.registration.registry.env_specs[env]
 #------
@@ -371,6 +372,7 @@ opt_max_iters=5 #5 #CEM's max iterations (used as a termination condition)
 
 # %% Environment
 env=gym.make('cartpole_custom-v2')
+# env = gym.make('halfcheetah_custom-v1')
 ds=env.observation_space.shape[0] #state dims
 da=env.action_space.shape[0] #action dims
 set_seed(0,env)
