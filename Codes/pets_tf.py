@@ -4,9 +4,10 @@ Created on Sun Aug  8 16:56:16 2021
 
 @author: TIB001
 """
-#TODO: learn how to interface with and modify mujoco envs (--> interface with a custom mujoco env)
+#TODO: add obs and target pre and post proc funcs
+#TODO: save best running model during training (and load it in testing)
 #TODO: make tf work on gpu
-#TODO: try pets on half-cheetah
+#TODO: make pets work properly on half-cheetah
 #TODO: try with and report results for different reward functions and agent parameters (custom cartpole and half-cheetah)
 #TODO: repeat each experiment with different random seeds (for K trials?), and report the mean and standard deviation of the cost for each condition
 #TODO: add more comments/documentation
