@@ -4,8 +4,6 @@ Created on Sun Aug  8 16:56:16 2021
 
 @author: TIB001
 """
-#TODO: add obs and target pre and post proc funcs
-#TODO: save best running model during training (and load it in testing)
 #TODO: make tf work on gpu
 #TODO: make pets work properly on half-cheetah
 #TODO: try with and report results for different reward functions and agent parameters (custom cartpole and half-cheetah)
@@ -183,13 +181,16 @@ class MPC:
         self.initial=True
         self.ac_lb= env.action_space.low
         self.ac_ub= env.action_space.high
+        self.obs_preproc=env.obs_preproc
+        self.obs_postproc=env.obs_postproc
+        self.targ_proc=env.targ_proc
         self.cost_obs= env.cost_o
         self.cost_acs= env.cost_a
         self.reset() #sol's initial mu/mean
         self.init_var= np.tile(((self.ac_ub - self.ac_lb) / 4.0)**2, [self.H]) #sol's intial variance
         self.ac_buff=np.empty((0,self.da))
         self.inputs=np.empty((0,self.model.in_size))
-        self.targets=np.empty((0,self.ds))
+        self.targets=np.empty((0,self.model.out_size // 2))
         
         
     def reset(self):
@@ -203,11 +204,11 @@ class MPC:
         self.initial=False
         
         #1- Construct model training inputs
-        inputs=np.concatenate([obs[:-1], acs], axis=-1)
+        inputs=np.concatenate([self.obs_preproc(obs[:-1]), acs], axis=-1)
         self.inputs=np.concatenate([self.inputs,inputs])
         
         #2- Construct model training targets
-        targets = obs[1:] - obs[:-1]
+        targets = self.targ_proc(obs[:-1], obs[1:])
         self.targets=np.concatenate([self.targets,targets])
         
         #3- Train the model
@@ -333,6 +334,7 @@ class MPC:
         #implements TSinf
         
         #reshape obs  #(pop_size*p,ds) --> (B,pop_size*p/B,ds) #i.e. divide the pop_size*p observations among B networks
+        obs=self.obs_preproc(obs)
         dim=tf.shape(obs)[-1]
         obs_reshaped=tf.reshape(tf.transpose(tf.reshape(obs, [-1, self.model.B, self.p // self.model.B, dim]),[1, 0, 2, 3]),[self.model.B, -1, dim])
 
@@ -349,7 +351,7 @@ class MPC:
         delta_obs_next=tf.transpose(tf.reshape(delta_obs_next,[self.model.B, -1, self.p // self.model.B, dim]),[1, 0, 2, 3])
         delta_obs_next=tf.reshape(delta_obs_next,[-1, dim])
         
-        obs_next=delta_obs_next+obs
+        obs_next=self.obs_postproc(obs, delta_obs_next)
         return obs_next
 
 # %% Inputs
@@ -359,8 +361,7 @@ K=50 #no. of trials
 tr_eps=30 #30 #200 #no. of training episodes/iterations
 te_eps=10 #testing episodes
 test=False
-tr_log_ival=1 #tr logging interval
-# te_log_ival=10 #testing logging interval
+log_ival=1 #logging interval
 n=3 #no. of NN layers
 h=250 #500 #250 #size of hidden layers
 H=2 #25 #planning horizon
@@ -372,19 +373,22 @@ pop_size=60 #400 #CEM population size: number of candidate solutions to be sampl
 opt_max_iters=5 #5 #CEM's max iterations (used as a termination condition)
 
 # %% Environment
-env=gym.make('cartpole_custom-v2')
-# env = gym.make('halfcheetah_custom-v1')
+env_names=['cartpole_custom-v2','halfcheetah_custom-v2']
+env_name=env_names[1]
+env=gym.make(env_name)
 ds=env.observation_space.shape[0] #state dims
 da=env.action_space.shape[0] #action dims
 set_seed(0,env)
 
 # %% Initializations
-in_size=ds+da
-out_size=ds*2
+ds_vec=np.zeros([1,ds])
+in_size=da+env.obs_preproc(ds_vec).shape[-1]
+out_size=env.targ_proc(ds_vec,ds_vec).shape[-1]*2
 model = PE(B,in_size,n,h,out_size)#dynamics model
 optimizer=tf.keras.optimizers.Adam(learning_rate=lr) #model optimizer #TODO: use per-parameter options (and adjust model weights and biases into layers) to add different weight decays to each layer's weights
 policy = MPC(env,model,optimizer,H,p,pop_size,opt_max_iters,epochs)
 plot_rewards=[]
+best_reward=-1e6
 
 # %% Implementation
 
@@ -398,10 +402,15 @@ for episode in episodes:
     policy.train(rollout,b)
     #sample a [new] rollout from the agent with MPC policy
     rollout = collect_rollout(env,policy)
+    reward_ep=rollout[-1]
+    #save best running model
+    if reward_ep>best_reward: 
+        best_reward=reward_ep
+        policy.model.save_weights("models/"+env_name)
     #log iteration results & statistics
-    plot_rewards.append(rollout[-1])
-    if episode % tr_log_ival == 0:
-        log_msg="Rewards Sum: {:.2f}".format(rollout[-1])
+    plot_rewards.append(reward_ep)
+    if episode % log_ival == 0:
+        log_msg="Rewards Sum: {:.2f}".format(reward_ep)
         episodes.set_description(desc=log_msg); episodes.refresh()
 
 # 3- Results & Plot
@@ -414,8 +423,12 @@ plt.show()
 
 # %% Testing
 if test:
+    model = PE(B,in_size,n,h,out_size)
+    model.load_weights("models/"+env_name)
+    policy.model=model
     ep_rewards=[]
-    for _ in range(te_eps):
+    episodes=progress(te_eps)
+    for episode in episodes:
         o=env.reset() #observation
         O, A, rewards, done= [o], [], [], False
         policy.reset()
@@ -431,6 +444,9 @@ if test:
             env.render()
         
         ep_rewards.append(np.sum(rewards))
+        if episode % log_ival == 0:
+            log_msg="Rewards Sum: {:.2f}".format(np.sum(rewards))
+            episodes.set_description(desc=log_msg); episodes.refresh()
         
 # Results & Plots
     title="Testing Control Actions"
