@@ -341,16 +341,16 @@ class MPC:
         #implements TSinf
         
         #reshape obs  #(pop_size*p,ds) --> (B,pop_size*p/B,ds) #i.e. divide the pop_size*p observations among B networks
-        obs=self.obs_preproc(obs)
-        dim=obs.shape[-1]
-        obs_reshaped=obs.view(-1, self.model.B, self.p // self.model.B, dim).transpose(0, 1) #(pop_size*p,ds) --> (B,pop_size,p/B,ds)
-        obs_reshaped=obs_reshaped.contiguous().view(self.model.B, -1, dim) #(B,pop_size,p/B,ds) --> (B,pop_size*p/B,ds)
+        proc_obs=self.obs_preproc(obs)
+        dim=proc_obs.shape[-1]
+        proc_obs=proc_obs.view(-1, self.model.B, self.p // self.model.B, dim).transpose(0, 1) #(pop_size*p,ds) --> (B,pop_size,p/B,ds)
+        proc_obs=proc_obs.contiguous().view(self.model.B, -1, dim) #(B,pop_size,p/B,ds) --> (B,pop_size*p/B,ds)
         #reshape curr_acs  #(1,pop_size*p,da) --> (B,pop_size*p/B,da) #i.e. divide the pop_size*p curr_acs among B networks
         dim=curr_acs.shape[-1]
         curr_acs=curr_acs.view(-1, self.model.B, self.p // self.model.B, dim).transpose(0, 1)
         curr_acs=curr_acs.contiguous().view(self.model.B, -1, dim)
         
-        inputs=torch.cat([obs_reshaped, curr_acs], dim=-1)
+        inputs=torch.cat([proc_obs, curr_acs], dim=-1)
         mean, logvar = self.model(inputs) #here, input smaples will be = pop_size*p/B #???: does it make sense how inputs are normalized in this call??
         var = torch.exp(logvar)
         delta_obs_next=mean + torch.randn_like(mean, device=self.model.device) * var.sqrt() #var.sqrt() = std
@@ -367,12 +367,12 @@ p=20 #no. of particles
 B=5 #no. of bootstraps (nets in ensemble)
 K=30 #no. of trials
 tr_eps=50 #30 #200 #no. of training episodes/iterations
-te_eps=10 #testing episodes
+te_eps=1 #testing episodes
 test=False
 log_ival=1 #logging interval
 n=3 #no. of NN layers
 h=250 #500 #250 #size of hidden layers
-H=12 #25 #planning horizon
+H=20 #25 #planning horizon
 # r=1 #no. of rollouts done in the environment for every training iteration AND no. of initial rollouts done before first train() call to controller #TODO: code is currently written for r=1; make code general to any r
 epochs=5 #5 #100 #propagation method epochs
 lr=0.001
@@ -446,7 +446,7 @@ if test:
         o=env.reset() #observation
         O, A, rewards, done= [o], [], [], False
         policy.reset()
-        while not done:
+        for _ in range(1000):
             a=policy.act(o) #first optimal action in sequence (initially random)
     
             o, r, done, _ = env.step(a) #execute first action from optimal actions
@@ -456,6 +456,9 @@ if test:
             rewards.append(r)
             
             env.render()
+            
+            if done:
+                break
         
         ep_rewards.append(np.sum(rewards))
         if episode % log_ival == 0:
