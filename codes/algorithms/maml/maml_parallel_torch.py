@@ -35,20 +35,20 @@ import tqdm
 
 #utils
 # from scipy.stats import truncnorm
-from collections import namedtuple, OrderedDict
+from collections import OrderedDict #, namedtuple
 
 #ML
 import torch
 torch.cuda.empty_cache()
 from torch import nn
 # from torch.optim import Adam
-from torch.distributions import Normal, kl #, MultivariateNormal
+from torch.distributions import Normal, Independent #, MultivariateNormal
 from torch.distributions.kl import kl_divergence
 from torch.nn.utils.convert_parameters import parameters_to_vector, vector_to_parameters
 
 #multiprocessing
 import multiprocessing as mp
-import os
+# import os
 # os.environ["OMP_NUM_THREADS"] = "1"
 import queue as Q
 
@@ -77,6 +77,7 @@ def set_seed(seed,env,det=True):
 # Common
 #--------
 
+#???: why do rewards here seem to be larger than the ones from other codes? Is it because of the normalization wrapper used in other codes?
 def collect_rollout_batch(envs, ds, da, policy, T, b, n_workers, queue, device, params=None): # a batch of rollouts
     states=[[] for _ in range(b)]
     rewards = [[] for _ in range(b)]
@@ -129,8 +130,8 @@ def compute_advantages(states,rewards,value_net,gamma):
     values = torch.nn.functional.pad(values,(0,0,0,1))
     
     deltas = rewards + gamma * values[1:] - values[:-1] #delta = r + gamma * v - v' #TD error
-    advantages = torch.zeros_like(deltas).float()
-    advantage = torch.zeros_like(deltas[0]).float()
+    advantages = torch.zeros_like(deltas, dtype=torch.float32)
+    advantage = torch.zeros_like(deltas[0], dtype=torch.float32)
     
     for t in reversed(range(value_net.T)):
         advantage = advantage * gamma + deltas[t]
@@ -140,6 +141,10 @@ def compute_advantages(states,rewards,value_net,gamma):
     advantages = (advantages - advantages.mean()) / (advantages.std()+np.finfo(np.float32).eps)
     
     return advantages
+
+
+def reset_tasks(envs,tasks):
+    return all(envs.reset_task(tasks))
 
 #--------
 # Models
@@ -151,7 +156,7 @@ class PolicyNetwork(nn.Module):
         
         self.device=device
         
-        self.logvar = nn.Parameter(np.log(1)*torch.ones(1,out_size,device=device, dtype=torch.float32)) #???
+        self.logvar = nn.Parameter(np.log(1.0)*torch.ones(1,out_size,device=device, dtype=torch.float32)) #???
         
         self.layer1=nn.Linear(in_size, h)
         self.layer2=nn.Linear(h, h)
@@ -186,8 +191,9 @@ class PolicyNetwork(nn.Module):
         
         var = torch.exp(torch.clamp(params['logvar'], min=1e-6)) #???: how come this [i.e logvar] is not the output of the network (even if it is still updated with GD)
         
-        return Normal(mean,var) #???: how is this normal and not multivariate normal distribution (w/ iid vars)?
+        # return Normal(mean,var) #???: how is this normal and not multivariate normal distribution (w/ iid vars)?
         # return MultivariateNormal(mean,var)
+        return Independent(Normal(mean,var),1)
         
 
 class ValueNetwork(nn.Module):
@@ -207,6 +213,7 @@ class ValueNetwork(nn.Module):
         
         self.linear = nn.Linear(self.feature_size,1,bias=False)
         self.linear.weight.data.zero_()
+        self.w=nn.Parameter(torch.zeros((self.feature_size,1), dtype=torch.float32), requires_grad=False)
         
     def fit_params(self, states, rewards):
         
@@ -229,10 +236,12 @@ class ValueNetwork(nn.Module):
         B = torch.matmul(features.t(), features) 
         for _ in range(5):
             try:
-                sol = torch.linalg.lstsq(A, B + reg_coeff * self.eye)
+                #FIXME: which of the following versions is the correct one?
+                # sol = torch.linalg.lstsq(A, B + reg_coeff * self.eye)[0]
+                sol = torch.linalg.lstsq(B + reg_coeff * self.eye, A)[0]
                 
-                if torch.isnan(sol[0]).any() or torch.isinf(sol[0]).any():
-                    raise RuntimeError('NANs/Infs encountered')
+                if torch.isnan(sol).any() or torch.isinf(sol).any():
+                    raise RuntimeError('NANs/Infs encountered in baseline fitting')
                 
                 break
             except RuntimeError:
@@ -241,12 +250,14 @@ class ValueNetwork(nn.Module):
              raise RuntimeError('Unable to find a solution')
         
         #set weights vector
-        self.linear.weight.data = sol[0].data.t()
+        # self.linear.weight.data = sol.data.t()
+        self.w.data=sol#.t()
         
     def forward(self, states):
         features = torch.cat([states, states **2, self.timestep, self.timestep**2, self.timestep**3, self.ones],dim=2)
-        return torch.matmul(features,self.linear.weight.data)
+        # return torch.matmul(features,self.linear.weight.data)
         # return self.linear(features)
+        return torch.matmul(features,self.w.data)
     
     
 #--------
@@ -258,13 +269,13 @@ def conjugate_gradients(Avp_f, b, rdotr_tol=1e-10, nsteps=10):
     nsteps = max_iterations
     rdotr = residual
     """
-    x = torch.zeros_like(b).float()
+    x = torch.zeros_like(b,dtype=torch.float32)
     r = b.clone().detach()
     p = b.clone().detach()
     rdotr = torch.dot(r, r)
     
     for i in range(nsteps):
-        Avp = Avp_f(p).detach()
+        Avp = Avp_f(p,retain_graph=True).detach()
         alpha = rdotr / torch.dot(p, Avp)
         x += alpha * p
         r -= alpha * Avp
@@ -296,7 +307,8 @@ def line_search(policy, prev_loss, prev_pis, value_net, alpha, gamma, T, b, D_da
             advantages=compute_advantages(states,rewards,value_net,gamma)
             pi=policy(states)
             log_probs=pi.log_prob(actions)
-            loss=-(advantages*log_probs.sum(dim=2)).mean()
+            # loss=-(advantages*log_probs.sum(dim=2)).mean()
+            loss=-(log_probs*advantages).mean()
             theta_dash=policy.update_params(loss, alpha) 
             
             with torch.no_grad():  
@@ -305,7 +317,8 @@ def line_search(policy, prev_loss, prev_pis, value_net, alpha, gamma, T, b, D_da
                 advantages = compute_advantages(states,rewards,value_net,gamma)
                 pi=policy(states,params=theta_dash)
                 
-                loss = - (advantages * torch.exp((pi.log_prob(actions)-prev_pi.log_prob(actions)).sum(dim=2))).mean()
+                # loss = - (advantages * torch.exp((pi.log_prob(actions)-prev_pi.log_prob(actions)).sum(dim=2))).mean()
+                loss = - (advantages * torch.exp(pi.log_prob(actions)-prev_pi.log_prob(actions))).mean()
                 losses.append(loss)
                 
                 kl=kl_divergence(pi,prev_pi).mean()
@@ -316,13 +329,15 @@ def line_search(policy, prev_loss, prev_pis, value_net, alpha, gamma, T, b, D_da
         
         #check improvement
         actual_improve = loss - prev_loss
+        if torch.isnan(loss).any() or torch.isinf(loss).any():
+            raise RuntimeError('NANs/Infs encountered in line search')
         if (actual_improve.item() < 0.0) and (kl.item() < max_grad_kl):
             break
     else:
         vector_to_parameters(prev_params, policy.parameters())
         
 def HVP(grad_kl,policy,damping):
-    return lambda v: parameters_to_vector(torch.autograd.grad(torch.dot(grad_kl, v),policy.parameters(),retain_graph=True)) + damping * v
+    return lambda v, retain_graph: parameters_to_vector(torch.autograd.grad(torch.dot(grad_kl, v),policy.parameters(),retain_graph=retain_graph)) + damping * v
 
 
 #----------------
@@ -336,7 +351,7 @@ class SubprocVecEnv(gym.Env):
         self.workers = [EnvWorker(child_conn, env_func, queue, lock) for (child_conn, env_func) in zip(self.child_conns, env_funcs)]
         
         for worker in self.workers:
-            worker.daemon = True
+            worker.daemon = True #making child processes daemonic to not continue running when master process exists
             worker.start()
         for child_conn in self.child_conns:
             child_conn.close()
@@ -378,8 +393,8 @@ class SubprocVecEnv(gym.Env):
                 parent_conn.recv()
         for parent_conn in self.parent_conns:
             parent_conn.send(('close',None))
-        for child_conn in self.child_conns:
-            child_conn.join()
+        for worker in self.workers:
+            worker.join()
         self.closed = True
         
         
@@ -401,9 +416,11 @@ class EnvWorker(mp.Process):
                 self.rollout_idx = self.queue.get()
                 self.done = (self.rollout_idx is None)
             except Q.Empty:
-                self.done = True
-        
-        state = np.zeros(self.ds, dtype=np.float32) if self.done else self.env.reset()
+                self.done = True #!!!: [seems to be] unreached
+        if self.done:
+            state = np.zeros(self.ds, dtype=np.float32) #!!!: [seems to be] unreached
+        else:
+            state = self.env.reset()
         return state
     
     def run(self):
@@ -412,11 +429,11 @@ class EnvWorker(mp.Process):
             
             if func == 'step':
                 if self.done:
-                    state, reward, done, info = np.zeros(self.ds, dtype=np.float32), 0.0, True, {}
+                    state, reward, done, info = np.zeros(self.ds, dtype=np.float32), 0.0, True, {} #!!!: [seems to be] unreached
                 else:
                     state, reward, done, info = self.env.step(arg)
                 if done and not self.done:
-                    state = self.try_reset()
+                    state = self.try_reset() #!!!: [seems to be] unreached #!!!: is self.done needed?
                 self.child_conn.send((state,reward,done,self.rollout_idx,info))
                 
             elif func == 'reset':
@@ -430,13 +447,20 @@ class EnvWorker(mp.Process):
             elif func == 'close':
                 self.child_conn.close()
                 break
-        
+
+def make_env(env_name,seed=None):
+    def _make_env():
+        env = gym.make(env_name)
+        env.seed(seed)
+        return env
+    return _make_env
+
 #%% Main Func
 def main():
     # %% Inputs
     #model / policy
     n=2 #no. of NN layers
-    h=100 #size of hidden layers
+    h=64 #100 #size of hidden layers
     
     #optimizer
     alpha=0.1 #adaptation step size / learning rate
@@ -449,16 +473,16 @@ def main():
     # test=False
     log_ival=1 #logging interval
     # r=1 #no. of rollouts
-    b=16 #1 #batch size: Number of trajectories to sample from each task
-    meta_b=30 #30 #number of tasks sampled
+    b=20 #16 #1 #batch size: Number of trajectories to sample from each task
+    meta_b=15 #30 #number of tasks sampled
     log_ival = 1
     
     #VPG
-    gamma = 0.95
+    gamma = 0.95 #0.99
     
     #TRPO
     max_grad_kl=0.01 #0.001
-    max_backtracks=10
+    max_backtracks=10 #15
     accept_ratio=0.1 #0.0
     zeta=0.8 #0.5
     rdotr_tol=1e-10
@@ -474,6 +498,7 @@ def main():
     theta_dashes=[]
     D_dashes=[]
     Ds=[]
+    seed=0
     
     #multiprocessing
     queue = mp.Queue()
@@ -486,7 +511,8 @@ def main():
     T=env._max_episode_steps #200 #task horizon
     ds=env.observation_space.shape[0] #state dims
     da=env.action_space.shape[0] #action dims
-    env_funcs=[lambda : gym.make(env_name)] * n_workers #!!!: elements should be functions whose value is gym.make(env_name) 
+    # env_funcs=[lambda : gym.make(env_name)] * n_workers #!!!: elements should be functions whose value is gym.make(env_name)
+    env_funcs=[make_env(env_name,seed)] * n_workers
     envs=SubprocVecEnv(env_funcs, ds, da, queue, lock)
     
     #models
@@ -497,10 +523,13 @@ def main():
     value_net=ValueNetwork(in_size,T,b,gamma,device).to(device)
     
     #results 
-    plot_rewards=[]
+    plot_tr_rewards=[]
+    plot_val_rewards=[]
     rewards_tr_ep=[]
     rewards_val_ep=[]
     best_reward=-1e6
+    
+    set_seed(seed,env)
     
     # %% Implementation
     
@@ -535,8 +564,6 @@ def main():
     
     # [T,b,item_size]
     
-    set_seed(0,env)
-    
     episodes=progress(tr_eps)
     for episode in episodes:
         
@@ -545,8 +572,9 @@ def main():
         
         for task in tasks:
             
-            #set env task to current task 
-            envs.reset_task([task] * n_workers) 
+            #set env task to current task
+            reset_tasks(envs,[task] * n_workers)
+            # envs.reset_task([task] * n_workers) 
             
             #sample b trajectories/rollouts using f_theta
             D=collect_rollout_batch(envs, ds, da, policy, T, b, n_workers, queue, device)
@@ -559,9 +587,10 @@ def main():
             advantages=compute_advantages(states,rewards,value_net,gamma)
             pi=policy(states)
             log_probs=pi.log_prob(actions)
-            loss=-(advantages*log_probs.sum(dim=2)).mean()
+            # loss=-(log_probs.sum(dim=2)*advantages).mean()
+            loss=-(log_probs*advantages).mean()
             
-            #compute adapted params (via: GD)
+            #compute adapted params (via: GD) --> perform 1 gradient step update
             theta_dash=policy.update_params(loss, alpha) 
             theta_dashes.append(theta_dash)
             
@@ -580,10 +609,12 @@ def main():
             advantages = compute_advantages(states,rewards,value_net,gamma)
             
             pi=policy(states,params=theta_dash)
-            pi_fixed=Normal(loc=pi.loc.detach(),scale=pi.scale.detach())
+            # pi_fixed=Normal(loc=pi.loc.detach(),scale=pi.scale.detach())
+            pi_fixed=Independent(Normal(loc=pi.base_dist.loc.detach(),scale=pi.base_dist.scale.detach()),pi.reinterpreted_batch_ndims)
             pis.append(pi_fixed)
             prev_pi=pi_fixed
-            loss = - (advantages * torch.exp((pi.log_prob(actions)-prev_pi.log_prob(actions)).sum(dim=2))).mean()
+            # loss = - (advantages * torch.exp((pi.log_prob(actions)-prev_pi.log_prob(actions)).sum(dim=2))).mean()
+            loss = - (advantages * torch.exp(pi.log_prob(actions)-prev_pi.log_prob(actions))).mean()
             losses.append(loss)
             
             kl=kl_divergence(pi,prev_pi).mean()
@@ -591,11 +622,11 @@ def main():
     
         prev_loss=torch.mean(torch.stack(losses, dim=0))
         grads = parameters_to_vector(torch.autograd.grad(prev_loss, policy.parameters(),retain_graph=True))
-        kl=torch.mean(torch.stack(kls, dim=0))
+        kl=torch.mean(torch.stack(kls, dim=0)) #???: why is it always zero?
         grad_kl=parameters_to_vector(torch.autograd.grad(kl, policy.parameters(),create_graph=True))
         hvp=HVP(grad_kl,policy,damping)
         search_step_dir=conjugate_gradients(hvp, grads)
-        max_length=torch.sqrt(2 * max_grad_kl / torch.dot(search_step_dir, hvp(search_step_dir)))
+        max_length=torch.sqrt(2 * max_grad_kl / torch.dot(search_step_dir, hvp(search_step_dir,retain_graph=False)))
         full_step=search_step_dir*max_length
         
         prev_params = parameters_to_vector(policy.parameters())
@@ -608,16 +639,24 @@ def main():
             best_reward=reward_ep
             torch.save(policy.state_dict(), "saved_models/"+env_name+".pt")
         #log iteration results & statistics
-        plot_rewards.append(reward_ep)
+        plot_tr_rewards.append(reward_ep)
+        plot_val_rewards.append(reward_val)
         if episode % log_ival == 0:
             log_msg="Rewards Tr: {:.2f}, Rewards Val: {:.2f}".format(reward_ep,reward_val)
             episodes.set_description(desc=log_msg); episodes.refresh()
     
     #%% Results & Plot
-    title="Training Rewards (Learning Curve)"
+    title="Meta-Training Training Rewards (Learning Curve)"
     plt.figure(figsize=(16,8))
     plt.grid(1)
-    plt.plot(plot_rewards)
+    plt.plot(plot_tr_rewards)
+    plt.title(title)
+    plt.show()
+    
+    title="Meta-Training Testing Rewards (Learning Curve)"
+    plt.figure(figsize=(16,8))
+    plt.grid(1)
+    plt.plot(plot_val_rewards)
     plt.title(title)
     plt.show()
 
