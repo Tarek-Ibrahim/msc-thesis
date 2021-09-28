@@ -45,11 +45,6 @@ from torch.distributions import Normal, kl #, MultivariateNormal
 from torch.distributions.kl import kl_divergence
 from torch.nn.utils.convert_parameters import parameters_to_vector, vector_to_parameters
 
-#multiprocessing
-import multiprocessing as mp
-import os
-
-
 #%% Functions
 
 #--------

@@ -189,7 +189,7 @@ class PolicyNetwork(nn.Module):
         inputs=self.nonlinearity(nn.functional.linear(inputs,weight=params['layer3.weight'],bias= params['layer3.bias']))
         mean=nn.functional.linear(inputs,weight=params['layer4.weight'],bias= params['layer4.bias'])
         
-        var = torch.exp(torch.clamp(params['logvar'], min=np.log(1e-6))) #???: how come this [i.e logvar] is not the output of the network (even if it is still updated with GD)
+        var = torch.exp(torch.clamp(params['logvar'], min=1e-6)) #???: how come this [i.e logvar] is not the output of the network (even if it is still updated with GD)
         
         # return Normal(mean,var) #???: how is this normal and not multivariate normal distribution (w/ iid vars)?
         # return MultivariateNormal(mean,var)
@@ -206,7 +206,7 @@ class ValueNetwork(nn.Module):
         self.b = b
         self.gamma=gamma
         
-        self.ones = torch.ones(self.T,self.b,1,device=self.device,dtype=torch.float32)
+        self.ones = torch.ones(self.T,self.b,1,device=self.device)
         self.timestep= torch.cumsum(self.ones, dim=0) / 100. #torch.arange(self.T).view(-1, 1, 1) * self.ones / 100.0
         self.feature_size=2*in_size + 4
         self.eye=torch.eye(self.feature_size,dtype=torch.float32,device=self.device)
@@ -296,7 +296,7 @@ def line_search(policy, prev_loss, prev_pis, value_net, alpha, gamma, T, b, D_da
         vector_to_parameters(prev_params - step_frac * step, policy.parameters())
         
         #surrogate loss: compute new kl and loss
-        kls, losses =[], []
+        kls, losses, it =[], [], 0
         for D, D_dash, prev_pi in zip(Ds,D_dashes,prev_pis):
             
             #unpack
@@ -314,7 +314,7 @@ def line_search(policy, prev_loss, prev_pis, value_net, alpha, gamma, T, b, D_da
             with torch.no_grad():  
 
                 states, actions, rewards = D_dash
-                advantages = compute_advantages(states,rewards,value_net,gamma)
+                advantages = advs[it] #compute_advantages(states,rewards,value_net,gamma)
                 pi=policy(states,params=theta_dash)
                 
                 # loss = - (advantages * torch.exp((pi.log_prob(actions)-prev_pi.log_prob(actions)).sum(dim=2))).mean()
@@ -323,6 +323,8 @@ def line_search(policy, prev_loss, prev_pis, value_net, alpha, gamma, T, b, D_da
                 
                 kl=kl_divergence(pi,prev_pi).mean()
                 kls.append(kl)
+            
+            it+=1
             
         loss=torch.mean(torch.stack(losses, dim=0))
         kl=torch.mean(torch.stack(kls, dim=0))
@@ -486,7 +488,7 @@ def main():
     h=64 #100 #size of hidden layers
     
     #optimizer
-    alpha=0.1 #0.1 #0.5 #adaptation step size / learning rate
+    alpha=0.5 #0.1 #0.5 #adaptation step size / learning rate
     # beta=0.001 #meta step size / learning rate #TIP: controlled and adapted by TRPO (in maml step) [to guarantee monotonic improvement, etc]
     
     #general
@@ -501,7 +503,7 @@ def main():
     gamma = 0.95 #0.99
     
     #TRPO
-    max_grad_kl=1e-2 #0.01 #0.001
+    max_grad_kl=0.01 #0.001
     max_backtracks=10 #15
     accept_ratio=0.1 #0.0
     zeta=0.8 #0.5
@@ -589,7 +591,8 @@ def main():
         
         #sample batch of tasks
         tasks = env.sample_tasks(meta_b) 
-        advs=[]
+        kls, losses, pis, advs =[], [], [], []
+        
         for task in tasks:
             
             #set env task to current task
@@ -617,28 +620,13 @@ def main():
             #sample b trajectories/rollouts using f_theta'
             D_dash=collect_rollout_batch(envs, ds, da, policy, T, b, n_workers, queue, device, params=theta_dash)
             D_dashes.append(D_dash)
-        
-        #update meta-params (via: TRPO) 
-        #compute surrogate loss
-        kls, losses, pis =[], [], []
-        for D, D_dash in zip(Ds,D_dashes):
-            
-            #compute loss (via: VPG w/ baseline)
-            states, actions, rewards = D
-            value_net.fit_params(states,rewards)
-            advantages=compute_advantages(states,rewards,value_net,gamma)
-            pi=policy(states)
-            log_probs=pi.log_prob(actions)
-            # loss=-(log_probs.sum(dim=2)*advantages).mean()
-            loss=-(log_probs*advantages).mean()
-            theta_dash=policy.update_params(loss, alpha) 
-            
-            # unpack
             states, actions, rewards = D_dash
             rewards_val_ep.append(rewards)
             
+            #update meta-params (via: TRPO) 
+            #compute surrogate loss
             advantages = compute_advantages(states,rewards,value_net,gamma)
-            # advs.append(advantages)
+            advs.append(advantages)
             
             pi=policy(states,params=theta_dash)
             # pi_fixed=Normal(loc=pi.loc.detach(),scale=pi.scale.detach())
@@ -653,7 +641,7 @@ def main():
             kls.append(kl)
     
         prev_loss=torch.mean(torch.stack(losses, dim=0))
-        grads = parameters_to_vector(torch.autograd.grad(prev_loss, policy.parameters(),retain_graph=True)) #???: loss of percision?
+        grads = parameters_to_vector(torch.autograd.grad(prev_loss, policy.parameters(),retain_graph=True))
         kl=torch.mean(torch.stack(kls, dim=0)) #???: why is it always zero?
         grad_kl=parameters_to_vector(torch.autograd.grad(kl, policy.parameters(),create_graph=True))
         hvp=HVP(grad_kl,policy,damping)
@@ -661,8 +649,7 @@ def main():
         max_length=torch.sqrt(2.0 * max_grad_kl / torch.dot(search_step_dir, hvp(search_step_dir,retain_graph=False)))
         full_step=search_step_dir*max_length
         
-        # print("\n",grads,"\n")
-        # print("\n",search_step_dir,full_step,"\n")
+        # print(search_step_dir,full_step,"\n")
         
         prev_params = parameters_to_vector(policy.parameters())
         line_search(policy, prev_loss, pis, value_net, alpha, gamma, T, b, D_dashes, Ds, full_step, prev_params, max_grad_kl, advs, max_backtracks, zeta)
