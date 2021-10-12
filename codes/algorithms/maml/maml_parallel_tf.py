@@ -10,6 +10,7 @@ Created on Sun Sep  5 18:56:33 2021
 # TODO: include [custom] environments in the main repo (and remove the need for the gym-custom repo) 
 # TODO: study information theory, understand TRPO better, understand MAML better (incl. higher order derivatives in pytorch), summarize meta-learning, upload summaries to repo
 # TODO: implements GrBAL/ReBAL (MAML + model-based) --> 1st major milestone
+# TODO: look into performance and memory issues
 
 # %% Imports
 #general
@@ -35,12 +36,8 @@ from collections import OrderedDict #, namedtuple
 import copy
 
 #ML
-import torch
-torch.cuda.empty_cache()
-from torch import nn
-from torch.distributions import Normal, Independent , MultivariateNormal
-from torch.distributions.kl import kl_divergence
-from torch.nn.utils.convert_parameters import parameters_to_vector, _check_param_device #vector_to_parameters
+import tensorflow as tf
+import tensorflow_probability as tfp
 
 #multiprocessing
 import multiprocessing as mp
@@ -60,47 +57,17 @@ progress=lambda x: tqdm.trange(x, leave=True) #for visualizing/monitoring traini
 def set_seed(seed,env,det=True):
     import random
     
-    torch.manual_seed(seed)
+    tf.random.set_seed(seed)
     np.random.seed(seed)
     random.seed(seed)
     env.seed(seed)
-    
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
         
-
-def weighted_mean(tensor, lengths=None):
-    if lengths is None:
-        return torch.mean(tensor)
-    for i, length in enumerate(lengths):
-        tensor[length:, i].fill_(0.)
-
-    extra_dims = (1,) * (tensor.dim() - 2)
-    lengths = torch.as_tensor(lengths, dtype=torch.float32)
-
-    out = torch.sum(tensor, dim=0)
-    out.div_(lengths.view(-1, *extra_dims))
-
-    return out
-
-
-def weighted_normalize(tensor, lengths=None, epsilon=1e-8):
-    mean = weighted_mean(tensor, lengths=lengths)
-    out = tensor - mean.mean()
-    if lengths is not None: 
-        for i, length in enumerate(lengths):
-            out[length:, i].fill_(0.)
-
-    std = torch.sqrt(weighted_mean(out ** 2, lengths=lengths).mean())
-    out.div_(std + epsilon)
-
-    return out
-
+        
 #--------
 # Common
 #--------
 
-def collect_rollout_batch(envs, ds, da, policy, T, b, n_workers, queue, device, params=None): # a batch of rollouts
+def collect_rollout_batch(envs, ds, da, policy, T, b, n_workers, queue, params=None): # a batch of rollouts
     states=[[] for _ in range(b)]
     rewards = [[] for _ in range(b)]
     actions = [[] for _ in range(b)]
@@ -120,10 +87,9 @@ def collect_rollout_batch(envs, ds, da, policy, T, b, n_workers, queue, device, 
     dones=[False]
     
     while (not all(dones)) or (not queue.empty()):
-        with torch.no_grad():
-            state=torch.from_numpy(s).to(device)
-            dist=policy(state,params)
-            a=dist.sample().cpu().numpy()
+        state=tf.convert_to_tensor(s)
+        dist=policy(state,params)
+        a=dist.sample().numpy()
         s_dash, r, dones, rollout_idxs_new, _ = envs.step(a)
         #append to batch
         for state, action, reward, rollout_idx in zip(s,a,r,rollout_idxs):
@@ -139,30 +105,30 @@ def collect_rollout_batch(envs, ds, da, policy, T, b, n_workers, queue, device, 
         actions_mat[:,rollout_idx]= np.stack(actions[rollout_idx])
         rewards_mat[:,rollout_idx]= np.stack(rewards[rollout_idx])
     
-    states=torch.from_numpy(states_mat).to(device)
-    actions=torch.from_numpy(actions_mat).to(device)
-    rewards=torch.from_numpy(rewards_mat).to(device)
-    D=[states, actions, rewards]
+    D=[states_mat, actions_mat, rewards_mat]
     
     return D
 
 def compute_advantages(states,rewards,value_net,gamma):
     
     values = value_net(states)
-    values = values.squeeze(2).detach() if values.dim()>2 else values.detach()
-    values = torch.nn.functional.pad(values,(0,0,0,1))
+    if len(list(values.shape))>2: values = tf.squeeze(values, axis=2)
+    values = tf.pad(values,[[0, 1], [0, 0]])
     
     deltas = rewards + gamma * values[1:] - values[:-1] #delta = r + gamma * v - v' #TD error
-    advantages = torch.zeros_like(deltas, dtype=torch.float32)
-    advantage = torch.zeros_like(deltas[0], dtype=torch.float32)
+    # advantages = tf.zeros_like(deltas, dtype=tf.float32)
+    advantages = tf.TensorArray(tf.float32, *deltas.shape)
+    advantage = tf.zeros_like(deltas[0], dtype=tf.float32)
     
-    for t in range(value_net.T-1,-1,-1):
+    for t in range(value_net.T - 1, -1, -1): #reversed(range(-1,value_net.T -1 )):
         advantage = advantage * gamma + deltas[t]
-        advantages[t] = advantage
+        advantages = advantages.write(t, advantage)
+        # advantages[t] = advantage
+    
+    advantages = advantages.stack()
     
     #Normalize advantages to improve: learning, numerical stability & convergence
-    # advantages = (advantages - advantages.mean()) / (advantages.std()+np.finfo(np.float32).eps)
-    advantages = weighted_normalize(advantages)
+    advantages = (advantages - tf.math.reduce_mean(advantages)) / (tf.math.reduce_std(advantages)+np.finfo(np.float32).eps)
     
     return advantages
 
@@ -172,114 +138,109 @@ def reset_tasks(envs,tasks):
 
 
 def adapt(D,value_net,policy,alpha):
+    
     #unpack
     states, actions, rewards = D
     
-    #compute new adapted params 
     value_net.fit_params(states,rewards)
-    # with torch.set_grad_enabled(True):
-    advantages=compute_advantages(states,rewards,value_net,value_net.gamma)
-    pi=policy(states)
-    log_probs=pi.log_prob(actions)
-    # loss=-(advantages*log_probs.sum(dim=2)).mean() if log_probs.dim()>2 else -(log_probs*advantages).mean()
-    loss=-weighted_mean(log_probs.sum(dim=2)*advantages) if log_probs.dim()>2 else -weighted_mean(log_probs*advantages)
-    theta_dash=policy.update_params(loss, alpha)
     
-    return theta_dash     
+    with tf.GradientTape() as tape:
+        advantages=compute_advantages(states,rewards,value_net,value_net.gamma)
+        pi=policy(states)
+        log_probs=pi.log_prob(actions)
+        loss=-tf.math.reduce_mean(tf.math.reduce_sum(log_probs,axis=2)*advantages) if len(list(log_probs.shape)) > 2 else -tf.math.reduce_mean(log_probs*advantages)
+                
+    #compute adapted params (via: GD) --> perform 1 gradient step update
+    grads = tape.gradient(loss, policy.trainable_variables)
+    theta_dash=policy.update_params(grads, alpha) 
+    
+    return theta_dash 
 
 #--------
 # Models
 #--------
 
-class PolicyNetwork(nn.Module):
-    def __init__(self, in_size, n, h, out_size, device):
+class PolicyNetwork(tf.keras.Model):
+    def __init__(self, in_size, n, h, out_size):
         super().__init__()
         
-        self.device=device
-                
-        self.layer1=nn.Linear(in_size, h)
-        self.layer2=nn.Linear(h, h)
-        self.layer3=nn.Linear(h, out_size)
+        self.w1= tf.Variable(initial_value=tf.keras.initializers.glorot_uniform()(shape=(in_size, h)), dtype=tf.float32, name='layer1/weight')
+        self.b1=tf.Variable(initial_value=tf.keras.initializers.Zeros()(shape=(h,)), dtype=tf.float32, name='layer1/bias')
         
-        self.logstd = nn.Parameter(np.log(1.0)*torch.ones(1,out_size,device=device, dtype=torch.float32),requires_grad=True)
+        self.w2= tf.Variable(initial_value=tf.keras.initializers.glorot_uniform()(shape=(h, h)), dtype=tf.float32, name='layer2/weight')
+        self.b2=tf.Variable(initial_value=tf.keras.initializers.Zeros()(shape=(h,)), dtype=tf.float32, name='layer2/bias')
         
-        self.nonlinearity=nn.functional.relu #nn.ReLU()
+        self.w3= tf.Variable(initial_value=tf.keras.initializers.glorot_uniform()(shape=(h, out_size)), dtype=tf.float32, name='layer3/weight')
+        self.b3=tf.Variable(initial_value=tf.keras.initializers.Zeros()(shape=(out_size,)), dtype=tf.float32, name='layer3/bias')
         
-        self.apply(PolicyNetwork.initialize)
-    
-    @staticmethod
-    def initialize(module):
-        if isinstance(module, nn.Linear):
-            nn.init.xavier_uniform_(module.weight)
-            nn.init.zeros_(module.bias.data)
+        self.logstd = tf.Variable(initial_value=np.log(1.0)* tf.keras.initializers.Ones()(shape=[1,out_size]),dtype=tf.float32,name='logstd')
+        
+        self.nonlinearity=tf.nn.relu
             
-    def update_params(self, loss, alpha):
-        grads = torch.autograd.grad(loss, self.parameters(), create_graph=False) #!!!: create_graph  is True in case of not first order approximation #???: why?
+    def update_params(self, grads, alpha):
+        named_parameters = [(param.name, param) for param in self.trainable_variables]
         new_params = OrderedDict()
-        for (name,param), grad in zip(self.named_parameters(), grads):
+        for (name,param), grad in zip(named_parameters, grads):
             new_params[name]= param - alpha * grad
         return new_params
         
-    def forward(self, inputs, params=None):
+    def call(self, inputs, params=None):
         if params is None:
-            params=OrderedDict(self.named_parameters())
+            params=OrderedDict((param.name, param) for param in self.trainable_variables)
  
-        inputs=self.nonlinearity(nn.functional.linear(inputs,weight=params['layer1.weight'],bias= params['layer1.bias']))
-        inputs=self.nonlinearity(nn.functional.linear(inputs,weight=params['layer2.weight'],bias= params['layer2.bias']))
-        mean=nn.functional.linear(inputs,weight=params['layer3.weight'],bias= params['layer3.bias'])
+        inputs=self.nonlinearity(tf.math.add(tf.linalg.matmul(inputs,params['layer1/weight:0']),params['layer1/bias:0']))
+        inputs=self.nonlinearity(tf.math.add(tf.linalg.matmul(inputs,params['layer2/weight:0']),params['layer2/bias:0']))
+        mean=tf.math.add(tf.linalg.matmul(inputs,params['layer3/weight:0']),params['layer3/bias:0'])
         
-        std = torch.exp(torch.clamp(params['logstd'], min=np.log(1e-6))) #???: how come this [i.e logvar] is not the output of the network (even if it is still updated with GD)
-        
-        #TIP: MVN=Indep(Normal(),1) --> mainly useful (compared to Normal) for changing the shape og the result of log_prob
-        # return Normal(mean,std)
-        # return MultivariateNormal(mean,torch.diag(std[0]))
-        return Independent(Normal(mean,std),1)
+        std= tf.math.exp(tf.math.maximum(params["logstd:0"], np.log(1e-6)))
+
+        dist=tfp.distributions.Normal(mean,std)
+        #dist=tfp.distributions.MultivariateNormalDiag(mean,tf.linalg.diag(std))
+        #dist=tfp.distributions.Independent(tfp.distributions.Normal(mean,std),1)
+
+        return dist
         
 
-class ValueNetwork(nn.Module):
-    def __init__(self, in_size, T, b, gamma, device, reg_coeff=1e-5):
+class ValueNetwork(tf.keras.Model):
+    def __init__(self, in_size, T, b, gamma, reg_coeff=1e-5):
         super().__init__()
         
         self.reg_coeff=reg_coeff
-        self.device = device
         self.T = T
         self.b = b
         self.gamma=gamma
         
-        self.ones = torch.ones(self.T,self.b,1,device=self.device,dtype=torch.float32)
-        self.timestep= torch.cumsum(self.ones, dim=0) / 100. #torch.arange(self.T).view(-1, 1, 1) * self.ones / 100.0
+        self.ones = tf.ones([self.T,self.b,1],dtype=tf.float32)
+        self.timestep= tf.math.cumsum(self.ones, axis=0) / 100.
         self.feature_size=2*in_size + 4
-        self.eye=torch.eye(self.feature_size,dtype=torch.float32,device=self.device)
+        self.eye=tf.eye(self.feature_size,dtype=tf.float32)
         
-        self.w=nn.Parameter(torch.zeros((self.feature_size,1), dtype=torch.float32), requires_grad=False)
+        self.w=tf.Variable(initial_value=tf.keras.initializers.Zeros()(shape=[self.feature_size,1]),dtype=tf.float32,trainable=False)
         
     def fit_params(self, states, rewards):
         
         reg_coeff = self.reg_coeff
         
         #create features
-        features = torch.cat([states, states **2, self.timestep, self.timestep**2, self.timestep**3, self.ones],dim=2)
-        features=features.view(-1, self.feature_size)
+        features = tf.concat([states, states **2, self.timestep, self.timestep**2, self.timestep**3, self.ones],axis=2)
+        features=tf.reshape(features, (-1, self.feature_size))
 
         #compute returns        
-        G = torch.zeros(self.b,dtype=torch.float32,device=self.device)
-        returns = torch.zeros((self.T,self.b),dtype=torch.float32,device=self.device)
-        for t in range(self.T-1,-1,-1):
+        G = np.zeros(self.b,dtype=np.float32)
+        returns = np.zeros((self.T,self.b),dtype=np.float32)
+        for t in range(self.T - 1, -1, -1):
             G = rewards[t]+self.gamma*G
             returns[t] = G
-        returns = returns.view(-1, 1)
+        returns = tf.reshape(returns, (-1, 1))
         
         #solve system of equations (i.e. fit) using least squares
-        A = torch.matmul(features.t(), features).detach().cpu().numpy()
-        B = torch.matmul(features.t(), returns).detach().cpu().numpy()
+        A = tf.linalg.matmul(tf.transpose(features), features)
+        B = tf.linalg.matmul(tf.transpose(features), returns)
         for _ in range(5):
             try:
-                #TIP: which of the following versions is the correct one? --> numpy solves ax=b, torch solves bx=a (but why they give same result for bx=a and not for ax=b???)
-                # sol = torch.linalg.lstsq(B, A + reg_coeff * self.eye)[0]
-                sol = np.linalg.lstsq(A + reg_coeff * self.eye.detach().cpu().numpy(), B, rcond=-1)[0]
+                sol=np.linalg.lstsq(A.numpy()+reg_coeff * self.eye, B.numpy(),rcond=-1)[0]                
                 
                 if np.any(np.isnan(sol)):
-                # if torch.isnan(sol).any() or torch.isinf(sol).any():
                     raise RuntimeError('NANs/Infs encountered in baseline fitting')
                 
                 break
@@ -289,20 +250,22 @@ class ValueNetwork(nn.Module):
              raise RuntimeError('Unable to find a solution')
         
         #set weights vector
-        # self.w.copy_(sol.t())
-        self.w.copy_(torch.as_tensor(sol))
+        self.w.assign(sol)
+        # self.w.assign(tf.transpose(sol))
         
-    def forward(self, states):
-        features = torch.cat([states, states **2, self.timestep, self.timestep**2, self.timestep**3, self.ones],dim=2)
-        return torch.matmul(features,self.w)
-    
+    def call(self, states):
+        features = tf.concat([states, states **2, self.timestep, self.timestep**2, self.timestep**3, self.ones],axis=2)
+        return tf.linalg.matmul(features,self.w)
+
 
 def detach_dist(pi):
-    # pi_fixed=Normal(loc=pi.loc.detach(),scale=pi.scale.detach())
-    # pi_fixed=MultivariateNormal(pi.loc.detach(),pi.covariance_matrix.detach())
-    pi_fixed=Independent(Normal(loc=pi.base_dist.loc.detach(),scale=pi.base_dist.scale.detach()),pi.reinterpreted_batch_ndims)
-    return pi_fixed
-
+    mean = tf.identity(pi.loc.numpy())
+    std= tf.Variable(tf.identity(pi.scale.numpy()), name='old_pi/std', trainable=False, dtype=tf.float32)
+    
+    return tfp.distributions.Normal(mean,std)
+    #return tfp.distributions.MultivariateNormalDiag(mean,tf.linalg.diag(std))
+    #return tfp.distributions.Independent(tfp.distributions.Normal(mean,std),1)
+    
 #--------
 # TRPO
 #--------
@@ -312,24 +275,24 @@ def conjugate_gradients(Avp_f, b, rdotr_tol=1e-10, nsteps=10):
     nsteps = max_iterations
     rdotr = residual
     """
-    x = torch.zeros_like(b,dtype=torch.float32)
-    r = b.clone().detach()
-    p = b.clone().detach()
-    rdotr = torch.dot(r, r)
+    x = np.zeros_like(b) #tf.zeros_like(b,dtype=tf.float32)
+    r = b.numpy().copy() #tf.identity(b)
+    p = b.numpy().copy() #tf.identity(b)
+    rdotr = r.dot(r) #tf.tensordot(r, r,axes=1)
     
     for i in range(nsteps):
-        Avp = Avp_f(p).detach()
-        alpha = rdotr / torch.dot(p, Avp)
+        Avp = Avp_f(p).numpy()
+        alpha = rdotr / p.dot(Avp) #tf.tensordot(p, Avp,axes=1)
         x += alpha * p
         r -= alpha * Avp
-        new_rdotr = torch.dot(r, r)
+        new_rdotr = r.dot(r)
         beta = new_rdotr / rdotr
         p = r + beta * p
         rdotr = new_rdotr
-        if rdotr.item() < rdotr_tol:
+        if rdotr < rdotr_tol:
             break
         
-    return x.detach()
+    return x
 
 
 def surrogate_loss(Ds, D_dashes,policy,value_net,gamma,alpha,T,prev_pis=None):
@@ -341,32 +304,29 @@ def surrogate_loss(Ds, D_dashes,policy,value_net,gamma,alpha,T,prev_pis=None):
     for D, D_dash, prev_pi in zip(Ds,D_dashes,prev_pis):
         
         theta_dash=adapt(D,value_net,policy,alpha)
-        
-        with torch.set_grad_enabled(prev_pi is None):  
 
-            states, actions, rewards = D_dash
-            
-            pi=policy(states,params=theta_dash)
-            pis.append(detach_dist(pi))
-            
-            if prev_pi is None:
-                prev_pi = detach_dist(pi)
-            
-            advantages=compute_advantages(states,rewards,value_net,gamma)
-            
-            ratio=pi.log_prob(actions)-prev_pi.log_prob(actions)
-            # loss = - (advantages * torch.exp(ratio.sum(dim=2))).mean() if ratio.dim()>2 else - (advantages * torch.exp(ratio)).mean()
-            loss = - weighted_mean(advantages * torch.exp(ratio.sum(dim=2))) if ratio.dim()>2 else - weighted_mean(advantages * torch.exp(ratio))
-            losses.append(loss)
-            
-            #???: which version is correct?
-            # kl=weighted_mean(kl_divergence(pi,prev_pi))
-            kl=kl_divergence(prev_pi,pi).mean()
-            
-            kls.append(kl)
+        states, actions, rewards = D_dash
+        
+        pi=policy(states,params=theta_dash)
+        pis.append(detach_dist(pi))
+        
+        if prev_pi is None:
+            prev_pi = detach_dist(pi)
+        
+        advantages=compute_advantages(states,rewards,value_net,gamma)
+        
+        ratio=pi.log_prob(actions)-prev_pi.log_prob(actions)
+        loss = - tf.math.reduce_mean(advantages * tf.math.exp(tf.math.reduce_sum(ratio,axis=2))) if len(list(ratio.shape)) > 2 else - tf.math.reduce_mean(advantages * tf.math.exp(ratio))
+        losses.append(loss)
+        
+        #???: which version is correct?
+        # kl=tf.math.reduce_mean(pi.kl_divergence(prev_pi))
+        kl=tf.math.reduce_mean(prev_pi.kl_divergence(pi))
+        
+        kls.append(kl)
     
-    prev_loss=torch.mean(torch.stack(losses, dim=0))
-    kl=torch.mean(torch.stack(kls, dim=0)) #???: why is it always zero?
+    prev_loss=tf.math.reduce_mean(tf.stack(losses, axis=0))
+    kl=tf.math.reduce_mean(tf.stack(kls, axis=0)) #???: why is it always zero?
     
     return prev_loss, kl, pis
 
@@ -375,81 +335,70 @@ def line_search(policy, prev_loss, prev_pis, value_net, alpha, gamma, T, b, D_da
     """backtracking line search"""
     
     for step_frac in [zeta**x for x in range(max_backtracks)]:
-        vector_to_parameters(prev_params - step_frac * step, policy.parameters())
+        vector_to_parameters(prev_params - step_frac * step, policy.trainable_variables)
         
         loss, kl, _ = surrogate_loss(Ds, D_dashes,policy,value_net,gamma,alpha,T,prev_pis=prev_pis)
         
         #check improvement
         actual_improve = loss - prev_loss
-        if not np.isfinite(loss.item()): #torch.isnan(loss).any() or torch.isinf(loss).any():
+        if not np.isfinite(loss):
             raise RuntimeError('NANs/Infs encountered in line search')
-        if (actual_improve.item() < 0.0) and (kl.item() < max_grad_kl):
+        if (actual_improve.numpy() < 0.0) and (kl.numpy() < max_grad_kl):
             break
     else:
-        vector_to_parameters(prev_params, policy.parameters())
-        
-def HVP(Ds,D_dashes,policy,damping,value_net,alpha):
-    
-    def _HVP(v):
-        kl=kl_div(Ds,D_dashes,value_net,policy,alpha)
-        grad_kl=parameters_to_vector(torch.autograd.grad(kl, policy.parameters(),create_graph=True))
-        return parameters_to_vector(torch.autograd.grad(torch.dot(grad_kl, v),policy.parameters())) + damping * v
-    return _HVP
-
-
-def vector_to_parameters(vector, parameters):
-    param_device = None
-
-    pointer = 0
-    for param in parameters:
-        param_device = _check_param_device(param, param_device)
-
-        num_param = param.numel()
-        param.data.copy_(vector[pointer:pointer + num_param].view_as(param).data)
-
-        pointer += num_param
+        vector_to_parameters(prev_params, policy.trainable_variables)
 
 
 def kl_div(Ds,D_dashes,value_net,policy,alpha):
-    kls = []
-    for D, D_dash in zip(Ds, D_dashes):
-        theta_dash=adapt(D,value_net,policy,alpha)
+    kls=[]
+    for D, D_dash in zip(Ds,D_dashes):
         
-        states, actions, rewards = D_dash
+        theta_dash=adapt(D,value_net,policy,alpha)
+
+        states, _, _ = D_dash
+        
         pi=policy(states,params=theta_dash)
         
         prev_pi = detach_dist(pi)
         
         #???: which version is correct?
-        kl = weighted_mean(kl_divergence(prev_pi,pi))
-        # kl = weighted_mean(kl_divergence(pi,prev_pi))
+        # kl=tf.math.reduce_mean(pi.kl_divergence(prev_pi))
+        kl=tf.math.reduce_mean(prev_pi.kl_divergence(pi))
         
         kls.append(kl)
     
-    return torch.mean(torch.stack(kls, dim=0))
-
-#---
-
-# flatten_params = lambda params: torch.cat([param.view(-1) for param in params])
-
-# def get_flat_grad(inputs, params, retain_graph=False, create_graph=False):
-#     """get grad of inputs wrt params, then flatten its elements"""
-#     if create_graph:
-#         retain_graph = True
-
-#     grads = torch.autograd.grad(inputs, params, retain_graph=retain_graph, create_graph=create_graph)
-#     flat_grad = torch.cat([param_grad.view(-1) for param_grad in grads])
-#     return flat_grad
+    return tf.math.reduce_mean(tf.stack(kls, axis=0))
 
 
-# def update_policy_params(policy,flat_params): #make it update
-#     n = 0 #prev_index
-#     for p in policy.parameters(): #p=parameter
-#         numel = p.numel() #total no. of elements in p #flat_size
-#         g = flat_params[n:n + numel].view(p.shape)
-#         p.data += g
-#         n += numel
+def HVP(Ds,D_dashes,policy,value_net,alpha,damping):
+    def _HVP(v):
+        with tf.GradientTape() as outer_tape:
+             with tf.GradientTape() as inner_tape:
+                 kl = kl_div(Ds,D_dashes,value_net,policy,alpha)
+             grad_kl=parameters_to_vector(inner_tape.gradient(kl,policy.trainable_variables),policy.trainable_variables)
+             dot=tf.tensordot(grad_kl, v, axes=1)
+        return parameters_to_vector(outer_tape.gradient(dot, policy.trainable_variables),policy.trainable_variables) + damping * v            
+    return _HVP
 
+
+def parameters_to_vector(X,Y=None):
+    if Y is not None:
+        #X=grads; Y=params
+        return tf.concat([tf.reshape(x if x is not None else tf.zeros_like(y), [tf.size(y).numpy()]) for (y, x) in zip(Y, X)],axis=0)
+    else:
+        #X=params
+        return tf.concat([tf.reshape(x, [tf.size(x).numpy()]) for x in X],axis=0).numpy()
+
+def vector_to_parameters(vec,params):
+    pointer = 0
+    for param in params:
+
+        numel = tf.size(param).numpy()
+        param.assign(tf.reshape(vec[pointer:pointer + numel],list(param.shape)))
+
+        pointer += numel
+    
+    return
 
 
 #----------------
@@ -563,7 +512,7 @@ class EnvWorker(mp.Process):
 def make_env(env_name,seed=None):
     def _make_env():
         env = gym.make(env_name)
-        # env.seed(seed)
+        env.seed(seed)
         return env
     return _make_env
 
@@ -625,9 +574,8 @@ def main():
     #models
     in_size=ds
     out_size=da
-    device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-    policy = PolicyNetwork(in_size,n,h,out_size,device).to(device) #dynamics model
-    value_net=ValueNetwork(in_size,T,b,gamma,device).to(device)
+    policy = PolicyNetwork(in_size,n,h,out_size) #dynamics model
+    value_net=ValueNetwork(in_size,T,b,gamma)
     
     #results 
     plot_tr_rewards=[]
@@ -636,7 +584,7 @@ def main():
     rewards_val_ep=[]
     best_reward=-1e6
     
-    # set_seed(seed,env)
+    set_seed(seed,env)
     
     # %% Implementation
     
@@ -681,40 +629,44 @@ def main():
             reset_tasks(envs,[task] * n_workers)
             
             #sample b trajectories/rollouts using f_theta
-            D=collect_rollout_batch(envs, ds, da, policy, T, b, n_workers, queue, device)
+            D=collect_rollout_batch(envs, ds, da, policy, T, b, n_workers, queue)
             Ds.append(D)
             _, _, rewards = D
             rewards_tr_ep.append(rewards)
             
-            #compute adapted params (via: GD) --> perform 1 gradient step update
+            #compute loss (via: VPG w/ baseline)
             theta_dash=adapt(D,value_net,policy,alpha)
             # theta_dashes.append(theta_dash)
             
             #sample b trajectories/rollouts using f_theta'
-            D_dash=collect_rollout_batch(envs, ds, da, policy, T, b, n_workers, queue, device, params=theta_dash)
+            D_dash=collect_rollout_batch(envs, ds, da, policy, T, b, n_workers, queue, params=theta_dash)
             D_dashes.append(D_dash)
             _, _, rewards = D_dash
             rewards_val_ep.append(rewards)
         
         #update meta-params (via: TRPO) 
         #compute surrogate loss
-        prev_loss, _, prev_pis = surrogate_loss(Ds, D_dashes,policy,value_net,gamma,alpha,T)
-        grads = parameters_to_vector(torch.autograd.grad(prev_loss, policy.parameters()))
-        hvp=HVP(Ds,D_dashes,policy,damping,value_net,alpha)
+        with tf.GradientTape() as tape:
+            prev_loss, _, prev_pis = surrogate_loss(Ds, D_dashes,policy,value_net,gamma,alpha,T)
+        grads = parameters_to_vector(tape.gradient(prev_loss, policy.trainable_variables),policy.trainable_variables)
+        
+        prev_loss=tf.identity(prev_loss)
+        hvp=HVP(Ds,D_dashes,policy,value_net,alpha,damping)
         search_step_dir=conjugate_gradients(hvp, grads)
-        max_length=torch.sqrt(2.0 * max_grad_kl / torch.dot(search_step_dir, hvp(search_step_dir)))
+        # max_length=tf.math.sqrt(2.0 * max_grad_kl / tf.tensordot(search_step_dir, hvp(search_step_dir)))
+        max_length=np.sqrt(2.0 * max_grad_kl / np.dot(search_step_dir, hvp(search_step_dir)))
         full_step=search_step_dir*max_length        
-        prev_params = parameters_to_vector(policy.parameters())
-        line_search(policy, prev_loss.detach(), prev_pis, value_net, alpha, gamma, T, b, D_dashes, Ds, full_step, prev_params, max_grad_kl, advs, max_backtracks, zeta)
+        prev_params = parameters_to_vector(policy.trainable_variables)
+        line_search(policy, prev_loss, prev_pis, value_net, alpha, gamma, T, b, D_dashes, Ds, full_step, prev_params, max_grad_kl, advs, max_backtracks, zeta)
     
         #compute & log results
         # compute rewards
-        reward_ep = (torch.mean(torch.stack([torch.mean(torch.sum(rewards, dim=0)) for rewards in rewards_tr_ep], dim=0))).item()    #sum over T, mean over b, stack horiz one reward per task, mean of tasks
-        reward_val = (torch.mean(torch.stack([torch.mean(torch.sum(rewards, dim=0)) for rewards in rewards_val_ep], dim=0))).item()
+        reward_ep = (tf.math.reduce_mean(tf.stack([tf.math.reduce_mean(tf.math.reduce_sum(rewards, axis=0)) for rewards in rewards_tr_ep], axis=0))).numpy() #sum over T, mean over b, stack horiz one reward per task, mean of tasks
+        reward_val=(tf.math.reduce_mean(tf.stack([tf.math.reduce_mean(tf.math.reduce_sum(rewards, axis=0)) for rewards in rewards_val_ep], axis=0))).numpy()
         #save best running model [params]
         if reward_ep>best_reward: 
             best_reward=reward_ep
-            torch.save(policy.state_dict(), "saved_models/"+env_name+".pt")
+            policy.save_weights("saved_models/"+env_name)
         #log iteration results & statistics
         plot_tr_rewards.append(reward_ep)
         plot_val_rewards.append(reward_val)
@@ -740,4 +692,3 @@ def main():
 #%%
 if __name__ == '__main__':
     main()
-    
