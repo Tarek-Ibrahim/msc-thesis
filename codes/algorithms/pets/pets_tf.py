@@ -358,13 +358,13 @@ class MPC:
 p=20 #no. of particles
 B=5 #no. of bootstraps (nets in ensemble)
 K=50 #no. of trials
-tr_eps=30 #30 #200 #no. of training episodes/iterations
+tr_eps=20 #30 #200 #no. of training episodes/iterations
 te_eps=10 #testing episodes
 test=False
 log_ival=1 #logging interval
 n=3 #no. of NN layers
 h=250 #500 #250 #size of hidden layers
-H=2 #25 #planning horizon
+H=12 #25 #planning horizon
 # r=1 #no. of rollouts done in the environment for every training iteration AND no. of initial rollouts done before first train() call to controller #TODO: code is currently written for r=1; make code general to any r
 epochs=5 #5 #100 #propagation method epochs
 lr=0.001

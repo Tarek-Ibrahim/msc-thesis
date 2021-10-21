@@ -32,14 +32,15 @@ import tqdm
 #utils
 # from scipy.stats import truncnorm
 from collections import OrderedDict #, namedtuple
+import copy
 
 #ML
 import torch
 torch.cuda.empty_cache()
 from torch import nn
-from torch.optim import Adam
 from torch.distributions import Normal, Independent , MultivariateNormal
-from torch.nn.utils.convert_parameters import parameters_to_vector #,vector_to_parameters
+from torch.distributions.kl import kl_divergence
+from torch.nn.utils.convert_parameters import parameters_to_vector, _check_param_device #vector_to_parameters
 
 #multiprocessing
 import multiprocessing as mp
@@ -66,6 +67,34 @@ def set_seed(seed,env,det=True):
     
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
+        
+
+def weighted_mean(tensor, lengths=None):
+    if lengths is None:
+        return torch.mean(tensor)
+    for i, length in enumerate(lengths):
+        tensor[length:, i].fill_(0.)
+
+    extra_dims = (1,) * (tensor.dim() - 2)
+    lengths = torch.as_tensor(lengths, dtype=torch.float32)
+
+    out = torch.sum(tensor, dim=0)
+    out.div_(lengths.view(-1, *extra_dims))
+
+    return out
+
+
+def weighted_normalize(tensor, lengths=None, epsilon=1e-8):
+    mean = weighted_mean(tensor, lengths=lengths)
+    out = tensor - mean.mean()
+    if lengths is not None: 
+        for i, length in enumerate(lengths):
+            out[length:, i].fill_(0.)
+
+    std = torch.sqrt(weighted_mean(out ** 2, lengths=lengths).mean())
+    out.div_(std + epsilon)
+
+    return out
 
 #--------
 # Common
@@ -91,11 +120,10 @@ def collect_rollout_batch(envs, ds, da, policy, T, b, n_workers, queue, device, 
     dones=[False]
     
     while (not all(dones)) or (not queue.empty()):
-        # with torch.no_grad():
-        state=torch.from_numpy(s).to(device)
-        dist=policy(state,params)
-        a=dist.sample().cpu().numpy()
-            
+        with torch.no_grad():
+            state=torch.from_numpy(s).to(device)
+            dist=policy(state,params)
+            a=dist.sample().cpu().numpy()
         s_dash, r, dones, rollout_idxs_new, _ = envs.step(a)
         #append to batch
         for state, action, reward, rollout_idx in zip(s,a,r,rollout_idxs):
@@ -133,7 +161,8 @@ def compute_advantages(states,rewards,value_net,gamma):
         advantages[t] = advantage
     
     #Normalize advantages to improve: learning, numerical stability & convergence
-    advantages = (advantages - advantages.mean()) / (advantages.std()+np.finfo(np.float32).eps)
+    # advantages = (advantages - advantages.mean()) / (advantages.std()+np.finfo(np.float32).eps)
+    advantages = weighted_normalize(advantages)
     
     return advantages
 
@@ -152,46 +181,11 @@ def adapt(D,value_net,policy,alpha):
     advantages=compute_advantages(states,rewards,value_net,value_net.gamma)
     pi=policy(states)
     log_probs=pi.log_prob(actions)
-    loss=-(advantages*log_probs.sum(dim=2)).mean() if log_probs.dim()>2 else -(log_probs*advantages).mean()
+    # loss=-(advantages*log_probs.sum(dim=2)).mean() if log_probs.dim()>2 else -(log_probs*advantages).mean()
+    loss=-weighted_mean(log_probs.sum(dim=2)*advantages) if log_probs.dim()>2 else -weighted_mean(log_probs*advantages)
     theta_dash=policy.update_params(loss, alpha)
     
-    return theta_dash
-
-
-def vector_to_parameters(vector, parameters):
-    param_device = None
-
-    pointer = 0
-    for param in parameters:
-        param_device = _check_param_device(param, param_device)
-
-        num_param = param.numel()
-        param.data.copy_(vector[pointer:pointer + num_param].view_as(param).data)
-
-        pointer += num_param
-
-#---
-
-# flatten_params = lambda params: torch.cat([param.view(-1) for param in params])
-
-# def get_flat_grad(inputs, params, retain_graph=False, create_graph=False):
-#     """get grad of inputs wrt params, then flatten its elements"""
-#     if create_graph:
-#         retain_graph = True
-
-#     grads = torch.autograd.grad(inputs, params, retain_graph=retain_graph, create_graph=create_graph)
-#     flat_grad = torch.cat([param_grad.view(-1) for param_grad in grads])
-#     return flat_grad
-
-
-# def update_policy_params(policy,flat_params): #make it update
-#     n = 0 #prev_index
-#     for p in policy.parameters(): #p=parameter
-#         numel = p.numel() #total no. of elements in p #flat_size
-#         g = flat_params[n:n + numel].view(p.shape)
-#         p.data += g
-#         n += numel
-     
+    return theta_dash     
 
 #--------
 # Models
@@ -221,7 +215,7 @@ class PolicyNetwork(nn.Module):
             nn.init.zeros_(module.bias.data)
             
     def update_params(self, loss, alpha):
-        grads = torch.autograd.grad(loss, self.parameters(), create_graph=False, retain_graph=True) #!!!: create_graph  is True in case of not first order approximation #!!!: retain_graph is originally false #???: why?
+        grads = torch.autograd.grad(loss, self.parameters(), create_graph=False) #!!!: create_graph  is True in case of not first order approximation #???: why?
         new_params = OrderedDict()
         for (name,param), grad in zip(self.named_parameters(), grads):
             new_params[name]= param - alpha * grad
@@ -310,6 +304,154 @@ def detach_dist(pi):
     # pi_fixed=MultivariateNormal(pi.loc.detach(),pi.covariance_matrix.detach())
     pi_fixed=Independent(Normal(loc=pi.base_dist.loc.detach(),scale=pi.base_dist.scale.detach()),pi.reinterpreted_batch_ndims)
     return pi_fixed
+
+#--------
+# TRPO
+#--------
+
+def conjugate_gradients(Avp_f, b, rdotr_tol=1e-10, nsteps=10):
+    """
+    nsteps = max_iterations
+    rdotr = residual
+    """
+    x = torch.zeros_like(b,dtype=torch.float32)
+    r = b.clone().detach()
+    p = b.clone().detach()
+    rdotr = torch.dot(r, r)
+    
+    for i in range(nsteps):
+        Avp = Avp_f(p).detach()
+        alpha = rdotr / torch.dot(p, Avp)
+        x += alpha * p
+        r -= alpha * Avp
+        new_rdotr = torch.dot(r, r)
+        beta = new_rdotr / rdotr
+        p = r + beta * p
+        rdotr = new_rdotr
+        if rdotr.item() < rdotr_tol:
+            break
+        
+    return x.detach()
+
+
+def surrogate_loss(Ds, D_dashes,policy,value_net,gamma,alpha,T,prev_pis=None):
+    
+    kls, losses, pis =[], [], []
+    if prev_pis is None:
+        prev_pis = [None] * T
+        
+    for D, D_dash, prev_pi in zip(Ds,D_dashes,prev_pis):
+        
+        theta_dash=adapt(D,value_net,policy,alpha)
+        
+        with torch.set_grad_enabled(prev_pi is None):  
+
+            states, actions, rewards = D_dash
+            
+            pi=policy(states,params=theta_dash)
+            pis.append(detach_dist(pi))
+            
+            if prev_pi is None:
+                prev_pi = detach_dist(pi)
+            
+            advantages=compute_advantages(states,rewards,value_net,gamma)
+            
+            ratio=pi.log_prob(actions)-prev_pi.log_prob(actions)
+            # loss = - (advantages * torch.exp(ratio.sum(dim=2))).mean() if ratio.dim()>2 else - (advantages * torch.exp(ratio)).mean()
+            loss = - weighted_mean(advantages * torch.exp(ratio.sum(dim=2))) if ratio.dim()>2 else - weighted_mean(advantages * torch.exp(ratio))
+            losses.append(loss)
+            
+            #???: which version is correct?
+            # kl=weighted_mean(kl_divergence(pi,prev_pi))
+            kl=kl_divergence(prev_pi,pi).mean()
+            
+            kls.append(kl)
+    
+    prev_loss=torch.mean(torch.stack(losses, dim=0))
+    kl=torch.mean(torch.stack(kls, dim=0)) #???: why is it always zero?
+    
+    return prev_loss, kl, pis
+
+
+def line_search(policy, prev_loss, prev_pis, value_net, alpha, gamma, T, b, D_dashes, Ds, step, prev_params, max_grad_kl, max_backtracks=10, zeta=0.5):
+    """backtracking line search"""
+    
+    for step_frac in [zeta**x for x in range(max_backtracks)]:
+        vector_to_parameters(prev_params - step_frac * step, policy.parameters())
+        
+        loss, kl, _ = surrogate_loss(Ds, D_dashes,policy,value_net,gamma,alpha,T,prev_pis=prev_pis)
+        
+        #check improvement
+        actual_improve = loss - prev_loss
+        if not np.isfinite(loss.item()): #torch.isnan(loss).any() or torch.isinf(loss).any():
+            raise RuntimeError('NANs/Infs encountered in line search')
+        if (actual_improve.item() < 0.0) and (kl.item() < max_grad_kl):
+            break
+    else:
+        vector_to_parameters(prev_params, policy.parameters())
+        
+def HVP(Ds,D_dashes,policy,damping,value_net,alpha):
+    
+    def _HVP(v):
+        kl=kl_div(Ds,D_dashes,value_net,policy,alpha)
+        grad_kl=parameters_to_vector(torch.autograd.grad(kl, policy.parameters(),create_graph=True))
+        return parameters_to_vector(torch.autograd.grad(torch.dot(grad_kl, v),policy.parameters())) + damping * v
+    return _HVP
+
+
+def vector_to_parameters(vector, parameters):
+    param_device = None
+
+    pointer = 0
+    for param in parameters:
+        param_device = _check_param_device(param, param_device)
+
+        num_param = param.numel()
+        param.data.copy_(vector[pointer:pointer + num_param].view_as(param).data)
+
+        pointer += num_param
+
+
+def kl_div(Ds,D_dashes,value_net,policy,alpha):
+    kls = []
+    for D, D_dash in zip(Ds, D_dashes):
+        theta_dash=adapt(D,value_net,policy,alpha)
+        
+        states, actions, rewards = D_dash
+        pi=policy(states,params=theta_dash)
+        
+        prev_pi = detach_dist(pi)
+        
+        #???: which version is correct?
+        kl = weighted_mean(kl_divergence(prev_pi,pi))
+        # kl = weighted_mean(kl_divergence(pi,prev_pi))
+        
+        kls.append(kl)
+    
+    return torch.mean(torch.stack(kls, dim=0))
+
+#---
+
+# flatten_params = lambda params: torch.cat([param.view(-1) for param in params])
+
+# def get_flat_grad(inputs, params, retain_graph=False, create_graph=False):
+#     """get grad of inputs wrt params, then flatten its elements"""
+#     if create_graph:
+#         retain_graph = True
+
+#     grads = torch.autograd.grad(inputs, params, retain_graph=retain_graph, create_graph=create_graph)
+#     flat_grad = torch.cat([param_grad.view(-1) for param_grad in grads])
+#     return flat_grad
+
+
+# def update_policy_params(policy,flat_params): #make it update
+#     n = 0 #prev_index
+#     for p in policy.parameters(): #p=parameter
+#         numel = p.numel() #total no. of elements in p #flat_size
+#         g = flat_params[n:n + numel].view(p.shape)
+#         p.data += g
+#         n += numel
+
 
 
 #----------------
@@ -436,8 +578,7 @@ def main():
     h=64 #100 #size of hidden layers
     
     #optimizer
-    alpha=0.01 #0.1 #adaptation step size / learning rate
-    beta=0.001 #meta step size / learning rate
+    alpha=0.5 #0.1 #adaptation step size / learning rate
     
     #general
     # K=30 #no. of trials
@@ -449,11 +590,21 @@ def main():
     #VPG
     gamma = 0.95 #0.99
     
+    #TRPO
+    max_grad_kl=0.01 #considered to be beta: meta step size / learning rate #but actually its the stepfrac controlled by TRPO [to guarantee monotonic improvement, etc]
+    max_backtracks=10 #15
+    accept_ratio=0.1
+    zeta=0.8 #0.5
+    rdotr_tol=1e-10
+    nsteps=10
+    damping=0.01 
+    
     #multiprocessing
     n_workers = mp.cpu_count() - 1
     
     # %% Initializations
     #common
+    theta_dashes=[]
     D_dashes=[]
     Ds=[]
     seed=0
@@ -478,7 +629,6 @@ def main():
     device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     policy = PolicyNetwork(in_size,n,h,out_size,device).to(device) #dynamics model
     value_net=ValueNetwork(in_size,T,b,gamma,device).to(device)
-    optimizer=Adam(policy.parameters(),lr=beta)
     
     #results 
     plot_tr_rewards=[]
@@ -490,13 +640,41 @@ def main():
     # set_seed(seed,env)
     
     # %% Implementation
+    
+    """
+    - modify env to include a function to sample tasks (how to sample the tasks is designed manually)
+    - create a batch sampler (to sample the batch of tasks):
+        - init: a queue, a list of envs (len = n_workers), vectorized environment (the main process manager in charge of num_workers sub-processes interacting with the env)
+    - create an MLP policy
+    - ???: create a linear feature baseline (to be used in the VPG alg to ) --> a nn.Module comprised of one linear layer of size (n_features,1) taking manually designed features as inputs (torch.cat([obs,obs**2,al,al**2,al**3,ones], dim=2); where al=action_list)
+    - create the meta-learner
+    - for each meta-epoch do:
+        - use batch sampler to sample a batch of [meta]tasks --> resolves to sampling [a batch of] tasks from the env
+        - meta-learner sample / inner loop (for each task in the sampled batch do):
+            - reset tasks (using sampler)
+            - sample K trajectories D using policy (f_theta):
+                - create batch episodes object
+                - collect rollouts according to policy
+                - append rollouts to batch episodes object
+                - return the batch episodes object
+            - adaptation --> compute adapted parameters:
+                - fit baseline to episodes
+                - calculate loss of episodes --> VPG with GAE
+                - calculate grad of loss [grad_theta L_Ti(f_theta)]
+                - update parameters w/ GD, i.e. using the equation: theta'_i=theta-alpha*grad_L
+            - sample K trajectories D' using f_theta'_i & append to episodes
+        - meta-learner step (outer loop) --> using TRPO (but without A2C) to update meta-parameters theta:
+            - loss=surrogate_loss(episodes)
+            - compute [full] step
+            - do line search [which updates parameters within]
+        - log rewards
+    """
         
     episodes=progress(tr_eps)
     for episode in episodes:
         
         #sample batch of tasks
-        tasks = env.sample_tasks(meta_b)
-        losses=[]
+        tasks = env.sample_tasks(meta_b) 
         for task in tasks:
             
             #set env task to current task
@@ -510,25 +688,24 @@ def main():
             
             #compute adapted params (via: GD) --> perform 1 gradient step update
             theta_dash=adapt(D,value_net,policy,alpha)
+            # theta_dashes.append(theta_dash)
             
             #sample b trajectories/rollouts using f_theta'
             D_dash=collect_rollout_batch(envs, ds, da, policy, T, b, n_workers, queue, device, params=theta_dash)
             D_dashes.append(D_dash)
-            states, actions, rewards = D_dash
+            _, _, rewards = D_dash
             rewards_val_ep.append(rewards)
-            
-            #compute loss
-            pi=policy(states,params=theta_dash)
-            prev_pi = detach_dist(pi)
-            advantages=compute_advantages(states,rewards,value_net,gamma)
-            ratio=pi.log_prob(actions)-prev_pi.log_prob(actions)
-            loss = - (advantages * torch.exp(ratio.sum(dim=2))).mean() if ratio.dim()>2 else - (advantages * torch.exp(ratio)).mean()
-            losses.append(loss)
         
-        meta_loss=torch.mean(torch.stack(losses, dim=0))
-        optimizer.zero_grad()
-        meta_loss.backward(create_graph=True)
-        optimizer.step()
+        #update meta-params (via: TRPO) 
+        #compute surrogate loss
+        prev_loss, _, prev_pis = surrogate_loss(Ds, D_dashes,policy,value_net,gamma,alpha,T)
+        grads = parameters_to_vector(torch.autograd.grad(prev_loss, policy.parameters()))
+        hvp=HVP(Ds,D_dashes,policy,damping,value_net,alpha)
+        search_step_dir=conjugate_gradients(hvp, grads)
+        max_length=torch.sqrt(2.0 * max_grad_kl / torch.dot(search_step_dir, hvp(search_step_dir)))
+        full_step=search_step_dir*max_length        
+        prev_params = parameters_to_vector(policy.parameters())
+        line_search(policy, prev_loss.detach(), prev_pis, value_net, alpha, gamma, T, b, D_dashes, Ds, full_step, prev_params, max_grad_kl, max_backtracks, zeta)
     
         #compute & log results
         # compute rewards

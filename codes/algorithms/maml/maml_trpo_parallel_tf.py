@@ -31,6 +31,7 @@ import matplotlib.pyplot as plt
 import tqdm
 
 #utils
+# from scipy.stats import truncnorm
 from collections import OrderedDict #, namedtuple
 import copy
 
@@ -169,11 +170,8 @@ class PolicyNetwork(tf.keras.Model):
         self.w2= tf.Variable(initial_value=tf.keras.initializers.glorot_uniform()(shape=(h, h)), dtype=tf.float32, name='layer2/weight')
         self.b2=tf.Variable(initial_value=tf.keras.initializers.Zeros()(shape=(h,)), dtype=tf.float32, name='layer2/bias')
         
-        # self.w3= tf.Variable(initial_value=tf.keras.initializers.glorot_uniform()(shape=(h, h)), dtype=tf.float32, name='layer3/weight')
-        # self.b3=tf.Variable(initial_value=tf.keras.initializers.Zeros()(shape=(h,)), dtype=tf.float32, name='layer3/bias')
-        
-        self.w4= tf.Variable(initial_value=tf.keras.initializers.glorot_uniform()(shape=(h, out_size)), dtype=tf.float32, name='layer4/weight')
-        self.b4=tf.Variable(initial_value=tf.keras.initializers.Zeros()(shape=(out_size,)), dtype=tf.float32, name='layer4/bias')
+        self.w3= tf.Variable(initial_value=tf.keras.initializers.glorot_uniform()(shape=(h, out_size)), dtype=tf.float32, name='layer3/weight')
+        self.b3=tf.Variable(initial_value=tf.keras.initializers.Zeros()(shape=(out_size,)), dtype=tf.float32, name='layer3/bias')
         
         self.logstd = tf.Variable(initial_value=np.log(1.0)* tf.keras.initializers.Ones()(shape=[1,out_size]),dtype=tf.float32,name='logstd')
         
@@ -192,8 +190,7 @@ class PolicyNetwork(tf.keras.Model):
  
         inputs=self.nonlinearity(tf.math.add(tf.linalg.matmul(inputs,params['layer1/weight:0']),params['layer1/bias:0']))
         inputs=self.nonlinearity(tf.math.add(tf.linalg.matmul(inputs,params['layer2/weight:0']),params['layer2/bias:0']))
-        # inputs=self.nonlinearity(tf.math.add(tf.linalg.matmul(inputs,params['layer3/weight:0']),params['layer3/bias:0']))
-        mean=tf.math.add(tf.linalg.matmul(inputs,params['layer4/weight:0']),params['layer4/bias:0'])
+        mean=tf.math.add(tf.linalg.matmul(inputs,params['layer3/weight:0']),params['layer3/bias:0'])
         
         std= tf.math.exp(tf.math.maximum(params["logstd:0"], np.log(1e-6)))
 
@@ -273,29 +270,115 @@ def detach_dist(pi):
 # TRPO
 #--------
 
-
-def surrogate_loss(Ds, D_dashes,policy,value_net,gamma,alpha,T):
+def conjugate_gradients(Avp_f, b, rdotr_tol=1e-10, nsteps=10):
+    """
+    nsteps = max_iterations
+    rdotr = residual
+    """
+    x = np.zeros_like(b) #tf.zeros_like(b,dtype=tf.float32)
+    r = b.numpy().copy() #tf.identity(b)
+    p = b.numpy().copy() #tf.identity(b)
+    rdotr = r.dot(r) #tf.tensordot(r, r,axes=1)
     
-    losses=[]
+    for i in range(nsteps):
+        Avp = Avp_f(p).numpy()
+        alpha = rdotr / p.dot(Avp) #tf.tensordot(p, Avp,axes=1)
+        x += alpha * p
+        r -= alpha * Avp
+        new_rdotr = r.dot(r)
+        beta = new_rdotr / rdotr
+        p = r + beta * p
+        rdotr = new_rdotr
+        if rdotr < rdotr_tol:
+            break
         
-    for D, D_dash in zip(Ds,D_dashes):
+    return x
+
+
+def surrogate_loss(Ds, D_dashes,policy,value_net,gamma,alpha,T,prev_pis=None):
+    
+    kls, losses, pis =[], [], []
+    if prev_pis is None:
+        prev_pis = [None] * T
+        
+    for D, D_dash, prev_pi in zip(Ds,D_dashes,prev_pis):
         
         theta_dash=adapt(D,value_net,policy,alpha)
 
         states, actions, rewards = D_dash
         
         pi=policy(states,params=theta_dash)
-        prev_pi = detach_dist(pi)
+        pis.append(detach_dist(pi))
+        
+        if prev_pi is None:
+            prev_pi = detach_dist(pi)
+        
         advantages=compute_advantages(states,rewards,value_net,gamma)
         
         ratio=pi.log_prob(actions)-prev_pi.log_prob(actions)
         loss = - tf.math.reduce_mean(advantages * tf.math.exp(tf.math.reduce_sum(ratio,axis=2))) if len(list(ratio.shape)) > 2 else - tf.math.reduce_mean(advantages * tf.math.exp(ratio))
         losses.append(loss)
+        
+        #???: which version is correct?
+        # kl=tf.math.reduce_mean(pi.kl_divergence(prev_pi))
+        kl=tf.math.reduce_mean(prev_pi.kl_divergence(pi))
+        
+        kls.append(kl)
     
     prev_loss=tf.math.reduce_mean(tf.stack(losses, axis=0))
+    kl=tf.math.reduce_mean(tf.stack(kls, axis=0)) #???: why is it always zero?
     
-    return prev_loss
+    return prev_loss, kl, pis
 
+
+def line_search(policy, prev_loss, prev_pis, value_net, alpha, gamma, T, b, D_dashes, Ds, step, prev_params, max_grad_kl, advs, max_backtracks=10, zeta=0.5):
+    """backtracking line search"""
+    
+    for step_frac in [zeta**x for x in range(max_backtracks)]:
+        vector_to_parameters(prev_params - step_frac * step, policy.trainable_variables)
+        
+        loss, kl, _ = surrogate_loss(Ds, D_dashes,policy,value_net,gamma,alpha,T,prev_pis=prev_pis)
+        
+        #check improvement
+        actual_improve = loss - prev_loss
+        if not np.isfinite(loss):
+            raise RuntimeError('NANs/Infs encountered in line search')
+        if (actual_improve.numpy() < 0.0) and (kl.numpy() < max_grad_kl):
+            break
+    else:
+        vector_to_parameters(prev_params, policy.trainable_variables)
+
+
+def kl_div(Ds,D_dashes,value_net,policy,alpha):
+    kls=[]
+    for D, D_dash in zip(Ds,D_dashes):
+        
+        theta_dash=adapt(D,value_net,policy,alpha)
+
+        states, _, _ = D_dash
+        
+        pi=policy(states,params=theta_dash)
+        
+        prev_pi = detach_dist(pi)
+        
+        #???: which version is correct?
+        # kl=tf.math.reduce_mean(pi.kl_divergence(prev_pi))
+        kl=tf.math.reduce_mean(prev_pi.kl_divergence(pi))
+        
+        kls.append(kl)
+    
+    return tf.math.reduce_mean(tf.stack(kls, axis=0))
+
+
+def HVP(Ds,D_dashes,policy,value_net,alpha,damping):
+    def _HVP(v):
+        with tf.GradientTape() as outer_tape:
+             with tf.GradientTape() as inner_tape:
+                 kl = kl_div(Ds,D_dashes,value_net,policy,alpha)
+             grad_kl=parameters_to_vector(inner_tape.gradient(kl,policy.trainable_variables),policy.trainable_variables)
+             dot=tf.tensordot(grad_kl, v, axes=1)
+        return parameters_to_vector(outer_tape.gradient(dot, policy.trainable_variables),policy.trainable_variables) + damping * v            
+    return _HVP
 
 
 def parameters_to_vector(X,Y=None):
@@ -438,12 +521,12 @@ def main():
     
     # %% Inputs
     #model / policy
-    n=3 #no. of NN layers
+    n=2 #no. of NN layers
     h=64 #100 #size of hidden layers
     
     #optimizer
-    alpha=0.01 #0.5 #0.1 #adaptation step size / learning rate
-    beta=0.001 #meta step size / learning rate
+    alpha=0.5 #0.1 #adaptation step size / learning rate
+    # beta=0.001 #meta step size / learning rate #TIP: controlled and adapted by TRPO (in maml step) [to guarantee monotonic improvement, etc]
     
     #general
     # K=30 #no. of trials
@@ -455,11 +538,21 @@ def main():
     #VPG
     gamma = 0.95 #0.99
     
+    #TRPO
+    max_grad_kl=1e-2
+    max_backtracks=10 #15
+    accept_ratio=0.1
+    zeta=0.8 #0.5
+    rdotr_tol=1e-10
+    nsteps=10
+    damping=0.01 
+    
     #multiprocessing
     n_workers = mp.cpu_count() - 1
     
     # %% Initializations
     #common
+    theta_dashes=[]
     D_dashes=[]
     Ds=[]
     seed=0
@@ -483,7 +576,6 @@ def main():
     out_size=da
     policy = PolicyNetwork(in_size,n,h,out_size) #dynamics model
     value_net=ValueNetwork(in_size,T,b,gamma)
-    optimizer=tf.keras.optimizers.Adam(learning_rate=beta) 
     
     #results 
     plot_tr_rewards=[]
@@ -495,12 +587,42 @@ def main():
     set_seed(seed,env)
     
     # %% Implementation
+    
+    """
+    - modify env to include a function to sample tasks (how to sample the tasks is designed manually)
+    - create a batch sampler (to sample the batch of tasks):
+        - init: a queue, a list of envs (len = n_workers), vectorized environment (the main process manager in charge of num_workers sub-processes interacting with the env)
+    - create an MLP policy
+    - ???: create a linear feature baseline (to be used in the VPG alg to ) --> a nn.Module comprised of one linear layer of size (n_features,1) taking manually designed features as inputs (torch.cat([obs,obs**2,al,al**2,al**3,ones], dim=2); where al=action_list)
+    - create the meta-learner
+    - for each meta-epoch do:
+        - use batch sampler to sample a batch of [meta]tasks --> resolves to sampling [a batch of] tasks from the env
+        - meta-learner sample / inner loop (for each task in the sampled batch do):
+            - reset tasks (using sampler)
+            - sample K trajectories D using policy (f_theta):
+                - create batch episodes object
+                - collect rollouts according to policy
+                - append rollouts to batch episodes object
+                - return the batch episodes object
+            - adaptation --> compute adapted parameters:
+                - fit baseline to episodes
+                - calculate loss of episodes --> VPG with GAE
+                - calculate grad of loss [grad_theta L_Ti(f_theta)]
+                - update parameters w/ GD, i.e. using the equation: theta'_i=theta-alpha*grad_L
+            - sample K trajectories D' using f_theta'_i & append to episodes
+        - meta-learner step (outer loop) --> using TRPO (but without A2C) to update meta-parameters theta:
+            - loss=surrogate_loss(episodes)
+            - compute [full] step
+            - do line search [which updates parameters within]
+        - log rewards
+    """
         
     episodes=progress(tr_eps)
     for episode in episodes:
         
         #sample batch of tasks
-        tasks = env.sample_tasks(meta_b)
+        tasks = env.sample_tasks(meta_b) 
+        advs=[]
         for task in tasks:
             
             #set env task to current task
@@ -514,6 +636,7 @@ def main():
             
             #compute loss (via: VPG w/ baseline)
             theta_dash=adapt(D,value_net,policy,alpha)
+            # theta_dashes.append(theta_dash)
             
             #sample b trajectories/rollouts using f_theta'
             D_dash=collect_rollout_batch(envs, ds, da, policy, T, b, n_workers, queue, params=theta_dash)
@@ -524,10 +647,17 @@ def main():
         #update meta-params (via: TRPO) 
         #compute surrogate loss
         with tf.GradientTape() as tape:
-            prev_loss, _, _ = surrogate_loss(Ds, D_dashes,policy,value_net,gamma,alpha,T)
-                
-        grads=tape.gradient(prev_loss, policy.trainable_variables)
-        optimizer.apply_gradients(zip(grads, policy.trainable_variables))
+            prev_loss, _, prev_pis = surrogate_loss(Ds, D_dashes,policy,value_net,gamma,alpha,T)
+        grads = parameters_to_vector(tape.gradient(prev_loss, policy.trainable_variables),policy.trainable_variables)
+        
+        prev_loss=tf.identity(prev_loss)
+        hvp=HVP(Ds,D_dashes,policy,value_net,alpha,damping)
+        search_step_dir=conjugate_gradients(hvp, grads)
+        # max_length=tf.math.sqrt(2.0 * max_grad_kl / tf.tensordot(search_step_dir, hvp(search_step_dir)))
+        max_length=np.sqrt(2.0 * max_grad_kl / np.dot(search_step_dir, hvp(search_step_dir)))
+        full_step=search_step_dir*max_length        
+        prev_params = parameters_to_vector(policy.trainable_variables)
+        line_search(policy, prev_loss, prev_pis, value_net, alpha, gamma, T, b, D_dashes, Ds, full_step, prev_params, max_grad_kl, advs, max_backtracks, zeta)
     
         #compute & log results
         # compute rewards

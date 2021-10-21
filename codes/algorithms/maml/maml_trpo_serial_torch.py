@@ -316,7 +316,6 @@ h=64 #100 #size of hidden layers
 
 #optimizer
 alpha=0.5 #0.1 #adaptation step size / learning rate
-# beta=0.001 #meta step size / learning rate #TIP: controlled and adapted by TRPO (in maml step) [to guarantee monotonic improvement, etc]
 
 #general
 # K=30 #no. of trials
@@ -329,7 +328,7 @@ meta_b=15 #30 #number of tasks sampled
 gamma = 0.95
 
 #TRPO
-max_grad_kl=0.01
+max_grad_kl=0.01 #considered to be beta: meta step size / learning rate #but actually its the stepfrac controlled by TRPO [to guarantee monotonic improvement, etc]
 max_backtracks=10
 accept_ratio=0.1
 zeta=0.8 #0.5
