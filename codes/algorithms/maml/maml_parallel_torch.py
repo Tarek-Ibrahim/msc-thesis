@@ -6,10 +6,7 @@ Created on Sun Sep  5 18:56:33 2021
 """
 
 # %% TODOs
-# TODO: make sure algorithm runs learns
 # TODO: include [custom] environments in the main repo (and remove the need for the gym-custom repo) 
-# TODO: study information theory, understand TRPO better, understand MAML better (incl. higher order derivatives in pytorch), summarize meta-learning, upload summaries to repo
-# TODO: implements GrBAL/ReBAL (MAML + model-based) --> 1st major milestone
 
 # %% Imports
 #general
@@ -39,7 +36,7 @@ torch.cuda.empty_cache()
 from torch import nn
 from torch.optim import Adam
 from torch.distributions import Normal, Independent , MultivariateNormal
-from torch.nn.utils.convert_parameters import parameters_to_vector #,vector_to_parameters
+# from torch.nn.utils.convert_parameters import parameters_to_vector #,vector_to_parameters
 
 #multiprocessing
 import multiprocessing as mp
@@ -92,6 +89,7 @@ def collect_rollout_batch(envs, ds, da, policy, T, b, n_workers, queue, device, 
     
     while (not all(dones)) or (not queue.empty()):
         # with torch.no_grad():
+        s=s.astype(np.float32)
         state=torch.from_numpy(s).to(device)
         dist=policy(state,params)
         a=dist.sample().cpu().numpy()
@@ -158,17 +156,17 @@ def adapt(D,value_net,policy,alpha):
     return theta_dash
 
 
-def vector_to_parameters(vector, parameters):
-    param_device = None
+# def vector_to_parameters(vector, parameters):
+#     param_device = None
 
-    pointer = 0
-    for param in parameters:
-        param_device = _check_param_device(param, param_device)
+#     pointer = 0
+#     for param in parameters:
+#         param_device = _check_param_device(param, param_device)
 
-        num_param = param.numel()
-        param.data.copy_(vector[pointer:pointer + num_param].view_as(param).data)
+#         num_param = param.numel()
+#         param.data.copy_(vector[pointer:pointer + num_param].view_as(param).data)
 
-        pointer += num_param
+#         pointer += num_param
 
 #---
 
@@ -454,8 +452,6 @@ def main():
     
     # %% Initializations
     #common
-    D_dashes=[]
-    Ds=[]
     seed=0
     
     #multiprocessing
@@ -466,7 +462,7 @@ def main():
     env_names=['cartpole_custom-v1','halfcheetah_custom-v1']
     env_name=env_names[1]
     env=gym.make(env_name)
-    T=env._max_episode_steps #200 #task horizon
+    T=env._max_episode_steps #task horizon
     ds=env.observation_space.shape[0] #state dims
     da=env.action_space.shape[0] #action dims
     env_funcs=[make_env(env_name,seed)] * n_workers
@@ -483,11 +479,9 @@ def main():
     #results 
     plot_tr_rewards=[]
     plot_val_rewards=[]
-    rewards_tr_ep=[]
-    rewards_val_ep=[]
     best_reward=-1e6
     
-    # set_seed(seed,env)
+    # set_seed(seed,env) #reproducibility would still be affected by parallelization
     
     # %% Implementation
         
@@ -496,7 +490,11 @@ def main():
         
         #sample batch of tasks
         tasks = env.sample_tasks(meta_b)
+
         losses=[]
+        rewards_tr_ep, rewards_val_ep = [], []
+        Ds, D_dashes=[], []
+        
         for task in tasks:
             
             #set env task to current task
@@ -532,7 +530,7 @@ def main():
     
         #compute & log results
         # compute rewards
-        reward_ep = (torch.mean(torch.stack([torch.mean(torch.sum(rewards, dim=0)) for rewards in rewards_tr_ep], dim=0))).item()    #sum over T, mean over b, stack horiz one reward per task, mean of tasks
+        reward_ep = (torch.mean(torch.stack([torch.mean(torch.sum(rewards, dim=0)) for rewards in rewards_tr_ep], dim=0))).item()    #sum over T, mean over b, mean over tasks
         reward_val = (torch.mean(torch.stack([torch.mean(torch.sum(rewards, dim=0)) for rewards in rewards_val_ep], dim=0))).item()
         #save best running model [params]
         if reward_ep>best_reward: 

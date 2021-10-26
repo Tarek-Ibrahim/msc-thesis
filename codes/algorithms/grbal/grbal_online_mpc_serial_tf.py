@@ -6,12 +6,10 @@ Created on Sat Oct 16 00:59:53 2021
 
 # %% TODOs
 # TODO: upgrade to parallel data/rollout batch collection
-# TODO: upgrade to parallel cost computation
+# TODO: upgrade to parallel cost computation (create a vectorized controller abstraction like the env)
 # TODO: upgrade from MPC to PETS
 # TODO: upgrade to tasks batch
-# TODO: upgrade to learned variance
 # TODO: include noise
-# TODO: compare NLL loss to MSE loss
 # TODO: modularize
 # TODO: code clean-up
 
@@ -76,8 +74,8 @@ def collect_rollouts(env,controller,model,T,M,loss_func,b):
         for t in range(T):
             
             #adapt parameters to last M timesteps
-            if A:
-            # if len(A)>=M:
+            # if A:
+            if len(A)>=M:
                 with tf.GradientTape() as tape:
                     #construct inputs and targets from previous M timesteps
                     obs=np.array(O[-M:])
@@ -85,15 +83,12 @@ def collect_rollouts(env,controller,model,T,M,loss_func,b):
                     obs_dash=np.array(O_dash[-M:])
                     inputs=np.concatenate([obs, acs], axis=-1)
                     targets = obs_dash - obs
-                    # model.fit_input_stats(inputs)
                     inputs=tf.convert_to_tensor(inputs,dtype=tf.float32)
                     targets=tf.convert_to_tensor(targets,dtype=tf.float32)
                     
                     #calculate adapted parameters
-                    mean, dist = model(inputs)
-                    loss= - tf.math.reduce_sum(tf.math.reduce_mean(dist.log_prob(targets),-1)) / M if loss_func=="nll" else tf.math.reduce_sum(tf.math.reduce_mean(tf.math.square(mean-targets),-1)) / M
-                    # var=torch.exp(-logvar)
-                    # loss= - (dist.log_prob(targets)).mean(-1).sum() / M if loss_func=="nll" else (torch.square(mean - targets)*var+logvar).mean(-1).sum()/M
+                    mean, logvar, dist = model(inputs)
+                    loss= compute_loss(loss_func,mean,targets,logvar,dist,model.var_type,model)
                 grads = tape.gradient(loss, model.trainable_variables)
                 theta_dash=model.update_params(grads)
             else:
@@ -117,27 +112,43 @@ def collect_rollouts(env,controller,model,T,M,loss_func,b):
 
     return rollout_batch
 
+
+def compute_loss(loss_func,mean,targets,logvar,dist,var_type,model):
+    if loss_func=="nll":
+        loss= - dist.log_prob(targets)
+    else: #mse
+        if var_type=="out":
+            var=tf.math.exp(-logvar)
+            loss= tf.math.square(mean - targets)*var+logvar
+        else:
+            loss= tf.math.square(mean - targets)*dist.scale-tf.math.log(dist.scale)
+    loss=tf.math.reduce_mean(tf.math.reduce_sum(loss,-1))
+    if var_type=="out":
+        loss += 0.01 * (tf.math.reduce_sum(model.max_logvar) - tf.math.reduce_sum(model.min_logvar))
+    return loss
+
 #--------
 # Models
 #--------
 
 class MLP(tf.keras.Model):
-    def __init__(self, in_size, n, h, out_size,alpha,var,fixed_var):
+    def __init__(self, in_size, n, h, out_size,alpha,var,var_type):
         super().__init__()
         
         self.n=n
         self.in_size=in_size
         self.out_size=out_size
         self.alpha=alpha
-        self.fixed_var = fixed_var
+        self.var_type = var_type
         
-        self.logstd=var*tf.ones(self.out_size,dtype=tf.float32) if self.fixed_var else tf.Variable(initial_value=np.log(1.0)* tf.keras.initializers.Ones()(shape=[1,out_size]),dtype=tf.float32,name='logstd')
+        self.logstd= tf.Variable(initial_value=np.log(1.0)* tf.keras.initializers.Ones()(shape=[1,out_size]),dtype=tf.float32,name='logstd') if var_type=="param" else np.log(var)*tf.ones(self.out_size,dtype=tf.float32)
         
-        # self.max_logvar = tf.Variable(0.5 * tf.ones([1, out_size // 2]))
-        # self.min_logvar = tf.Variable(-10.0 * tf.ones([1, out_size // 2]))
+        if var_type=="out":
+            self.max_logvar = tf.Variable(initial_value=0.5 * tf.keras.initializers.Ones()(shape=[1,out_size//2]),dtype=tf.float32,name='max_logvar')
+            self.min_logvar = tf.Variable(initial_value=-10.0 * tf.keras.initializers.Ones()(shape=[1,out_size//2]),dtype=tf.float32,name='min_logvar')
         
-        # self.mu = tf.Variable(initial_value=tf.keras.initializers.Zeros()(shape=[1,self.in_size]), trainable=False)
-        # self.sigma = tf.Variable(initial_value=tf.keras.initializers.Ones()(shape=[1,self.in_size]), trainable=False)
+        self.mu = tf.Variable(initial_value=tf.keras.initializers.Zeros()(shape=[1,self.in_size]), trainable=False) #tf.zeros(shape=[1,self.in_size],dtype=tf.float32) #
+        self.sigma = tf.Variable(initial_value=tf.keras.initializers.Ones()(shape=[1,self.in_size]), trainable=False) #tf.ones(shape=[1,self.in_size],dtype=tf.float32) #
         
         self.w1= tf.Variable(initial_value=tf.keras.initializers.glorot_uniform()(shape=(in_size, h)), dtype=tf.float32, name='layer1/weight')
         self.b1=tf.Variable(initial_value=tf.keras.initializers.Zeros()(shape=(h,)), dtype=tf.float32, name='layer1/bias')
@@ -170,29 +181,38 @@ class MLP(tf.keras.Model):
             new_params[name]= param - self.alpha * grad
         return new_params
     
-    def call(self, inputs, params=None):
+    def call(self, inputs, params=None, normalize=False):
         if params is None:
             params=OrderedDict((param.name, param) for param in self.trainable_variables)
+            
+        #normalize inputs
+        if normalize: inputs = (inputs - self.mu) / self.sigma
  
         inputs=self.nonlinearity(tf.math.add(tf.linalg.matmul(inputs,params['layer1/weight:0']),params['layer1/bias:0']))
         inputs=self.nonlinearity(tf.math.add(tf.linalg.matmul(inputs,params['layer2/weight:0']),params['layer2/bias:0']))
         inputs=self.nonlinearity(tf.math.add(tf.linalg.matmul(inputs,params['layer3/weight:0']),params['layer3/bias:0']))
-        mean=tf.math.add(tf.linalg.matmul(inputs,params['layer4/weight:0']),params['layer4/bias:0'])
+        inputs=tf.math.add(tf.linalg.matmul(inputs,params['layer4/weight:0']),params['layer4/bias:0'])
         
-        # #extract mean and log(var) from network output
-        # mean = inputs[:, :, :self.out_size // 2]
-        # logvar = inputs[:, :, self.out_size // 2:]
+        if self.var_type == "out":
+            #extract mean and log(var) from network output
+            mean = inputs[..., :self.out_size // 2]
+            logvar = inputs[..., self.out_size // 2:]
         
-        # #bounding variance (becase network gives arbitrary variance for OOD points --> could lead to numerical problems)
-        # logvar = self.max_logvar - tf.nn.softplus(self.max_logvar - logvar)
-        # logvar = self.min_logvar + tf.nn.softplus(logvar - self.min_logvar)
-        
-        std= self.logstd if self.fixed_var else tf.math.exp(tf.math.maximum(params["logstd:0"], np.log(1e-6)))
+            #bounding variance (becase network gives arbitrary variance for OOD points --> could lead to numerical problems)
+            logvar = params['max_logvar:0'] - tf.nn.softplus(params['max_logvar:0'] - logvar) # self.max_logvar - tf.nn.softplus(self.max_logvar - logvar)
+            logvar = params['min_logvar:0'] + tf.nn.softplus(logvar - params['min_logvar:0']) #  self.min_logvar + tf.nn.softplus(logvar - self.min_logvar)
+            
+            std=tf.math.exp(-logvar)
+
+        else:
+            mean=inputs
+            std= tf.math.exp(tf.math.maximum(params["logstd:0"], np.log(1e-6))) if self.var_type=="param" else tf.math.exp(self.logstd )
+            logvar=tf.math.log(std)
 
         #dist=tfp.distributions.MultivariateNormalDiag(mean,tf.linalg.diag(std))
         #dist=tfp.distributions.Independent(tfp.distributions.Normal(mean,std),1)
 
-        return mean, tfp.distributions.Normal(mean,std)
+        return mean, logvar, tfp.distributions.Normal(mean,std)
 
     
 class MPC:
@@ -274,9 +294,12 @@ class MPC:
             
             #predict next observations
             inputs=tf.concat([obs, curr_acs], axis=-1)
-            mean, dist  = self.model(inputs,self.params)
-            # var=torch.exp(logvar)
-            delta_obs_next = dist.sample() #mean + torch.randn_like(mean, device=self.model.device) * torch.sqrt(torch.as_tensor(self.model.var)) #* dist.scale #* var.sqrt() #
+            mean, logvar, dist  = self.model(inputs,self.params)
+            if self.model.var_type=="out":
+                var=tf.math.exp(logvar)
+                delta_obs_next = mean + tf.random.normal(mean.shape) * tf.math.sqrt(var)
+            else:
+                delta_obs_next = dist.sample()
             obs_next=obs + delta_obs_next
             
             cost=self.cost_obs(obs_next)+self.cost_acs(curr_acs) #evaluate actions
@@ -295,8 +318,10 @@ def main():
     #model / policy
     n=3 #no. of NN layers
     h=100 #512 #size of hidden layers
-    var=1. #NN variance if using a fixed varaince
-    fixed_var=False #whether to use fixed var
+    var=0.5 #1. #NN variance if using a fixed varaince
+    var_types=[None,"out","param"] #out=output of the network; param=a learned parameter; None=fixed variance
+    var_type=var_types[1]
+    normalize=False #whether to normalize model inputs
     
     #optimizer
     alpha=0.01 #adaptation step size / learning rate
@@ -304,12 +329,12 @@ def main():
     
     #general
     # trials=30 #no. of trials
-    tr_eps=30 #50 #no. of training episodes/iterations
+    tr_eps=20 #50 #no. of training episodes/iterations
     # eval_eps=1
     log_ival=1 #logging interval
-    b=4 #4 #32 #batch size: Number of rollouts to sample from each task
+    b=1 #4 #32 #batch size: Number of rollouts to sample from each task
     # meta_b=16 #32 #number of tasks sampled
-    seed=0
+    seed=1
     
     #controller
     H=8 #planning horizon
@@ -321,10 +346,10 @@ def main():
     M=16 #no. of prev timesteps
     K=M #no. of future timesteps (adaptation horizon)
     N=16 #no. of sampled tasks (fluid definition)
-    ns=2 #3 #10 #task sampling frequency
+    ns=1 #3 #10 #task sampling frequency
     loss_funcs=["nll","mse"] #nll: negative log loss; mse: mean squared error
-    loss_func= loss_funcs[0]
-    traj_b=1 #4 #trajectory batch size (no. of trajectories sampled per sampled task)
+    loss_func= loss_funcs[1]
+    traj_b=b #trajectory batch size (no. of trajectories sampled per sampled task)
     # gamma= 1. #discount factor
     
     #%% Initializations
@@ -342,8 +367,8 @@ def main():
     
     #models
     in_size=ds+da
-    out_size=ds#*2
-    model = MLP(in_size,n,h,out_size,alpha,var,fixed_var) #dynamics model
+    out_size=ds*2 if var_type=="out" else ds
+    model = MLP(in_size,n,h,out_size,alpha,var,var_type) #dynamics model
     controller = MPC(env,model,H,pop_size,opt_max_iters)
     optimizer = tf.keras.optimizers.Adam(learning_rate=beta) #model optimizer
     
@@ -370,6 +395,9 @@ def main():
             reward_ep=np.mean([np.sum(rollout[2]) for rollout in rollout_batch])
             D.extend(rollout_batch)
         
+        model.fit_input_stats(np.concatenate([np.concatenate((rollout[0],rollout[1]),-1) for rollout in D]))
+        
+        # for _ in range(epochs):
         #adaptation
         with tf.GradientTape() as outer_tape:
             losses=[]
@@ -392,15 +420,12 @@ def main():
                 obs_dash=m_trajs[-1]
                 inputs=np.concatenate([obs, acs], axis=-1)
                 targets = obs_dash - obs
-                # model.fit_input_stats(inputs)
                 inputs=tf.convert_to_tensor(inputs,dtype=tf.float32)
                 targets=tf.convert_to_tensor(targets,dtype=tf.float32)
                 #compute adapted parameters
                 with tf.GradientTape() as inner_tape:
-                    mean, dist  = model(inputs)
-                    loss= - tf.math.reduce_sum(tf.math.reduce_mean(dist.log_prob(targets),-1)) / M if loss_func=="nll" else tf.math.reduce_sum(tf.math.reduce_mean(tf.math.square(mean-targets),-1)) / M
-                    # var = torch.exp(-logvar)
-                    # loss= - (dist.log_prob(targets)).mean(-1).sum() / M if loss_func=="nll" else (torch.square(mean - targets)*var+logvar).mean(-1).sum()/M
+                    mean, logvar, dist  = model(inputs,normalize=normalize)
+                    loss= compute_loss(loss_func,mean,targets,logvar,dist,model.var_type,model)
                 grads = inner_tape.gradient(loss, model.trainable_variables)
                 theta_dash = model.update_params(grads)
                 
@@ -411,14 +436,11 @@ def main():
                 obs_dash=k_trajs[-1]
                 inputs=np.concatenate([obs, acs], axis=-1)
                 targets = obs_dash - obs
-                # model.fit_input_stats(inputs)
                 inputs=tf.convert_to_tensor(inputs,dtype=tf.float32)
                 targets=tf.convert_to_tensor(targets,dtype=tf.float32)
                 #compute task loss
-                mean, dist  = model(inputs,params=theta_dash)
-                # var = torch.exp(-logvar)
-                loss= - tf.math.reduce_sum(tf.math.reduce_mean(dist.log_prob(targets),-1)) / K if loss_func=="nll" else tf.math.reduce_sum(tf.math.reduce_mean(tf.math.square(mean-targets),-1)) / K
-                # loss= - (dist.log_prob(targets)).mean(-1).sum() / K if loss_func=="nll" else (torch.square(mean - targets)*var+logvar).mean(-1).sum()/K
+                mean, logvar, dist  = model(inputs,params=theta_dash,normalize=normalize)
+                loss= compute_loss(loss_func,mean,targets,logvar,dist,model.var_type,model)
                 losses.append(loss)
             meta_loss=tf.math.reduce_mean(tf.stack(losses, axis=0))
             

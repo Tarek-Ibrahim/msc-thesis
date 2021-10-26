@@ -6,10 +6,7 @@ Created on Sun Sep  5 18:56:33 2021
 """
 
 # %% TODOs
-# TODO: make sure algorithm runs learns
 # TODO: include [custom] environments in the main repo (and remove the need for the gym-custom repo) 
-# TODO: study information theory, understand TRPO better, understand MAML better (incl. higher order derivatives in pytorch), summarize meta-learning, upload summaries to repo
-# TODO: implements GrBAL/ReBAL (MAML + model-based) --> 1st major milestone
 
 # %% Imports
 #general
@@ -121,6 +118,7 @@ def collect_rollout_batch(envs, ds, da, policy, T, b, n_workers, queue, device, 
     
     while (not all(dones)) or (not queue.empty()):
         with torch.no_grad():
+            s=s.astype(np.float32)
             state=torch.from_numpy(s).to(device)
             dist=policy(state,params)
             a=dist.sample().cpu().numpy()
@@ -605,8 +603,8 @@ def main():
     # %% Initializations
     #common
     theta_dashes=[]
-    D_dashes=[]
-    Ds=[]
+    # D_dashes=[]
+    # Ds=[]
     seed=0
     
     #multiprocessing
@@ -633,8 +631,8 @@ def main():
     #results 
     plot_tr_rewards=[]
     plot_val_rewards=[]
-    rewards_tr_ep=[]
-    rewards_val_ep=[]
+    # rewards_tr_ep=[]
+    # rewards_val_ep=[]
     best_reward=-1e6
     
     # set_seed(seed,env)
@@ -674,7 +672,11 @@ def main():
     for episode in episodes:
         
         #sample batch of tasks
-        tasks = env.sample_tasks(meta_b) 
+        tasks = env.sample_tasks(meta_b)
+        rewards_tr_ep=[]
+        rewards_val_ep=[]
+        D_dashes=[]
+        Ds=[]
         for task in tasks:
             
             #set env task to current task

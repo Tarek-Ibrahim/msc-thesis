@@ -187,8 +187,8 @@ class MPC:
         self.ds=env.observation_space.shape[0] #state/observation dims
         self.da=env.action_space.shape[0] #action dims
         self.initial=True
-        self.ac_lb= env.action_space.low #env.ac_lb
-        self.ac_ub= env.action_space.high #env.ac_ub
+        self.ac_lb= env.action_space.low 
+        self.ac_ub= env.action_space.high
         self.obs_preproc=env.obs_preproc
         self.obs_postproc=env.obs_postproc
         self.targ_proc=env.targ_proc
@@ -237,7 +237,7 @@ class MPC:
                 var = torch.exp(-logvar)
                 # Calculate grad, loss & backpropagate
                 loss = (torch.square(mean - targets) * var + logvar).mean(-1).mean(-1).sum() #train losses: MSE loss + var loss #???: why does mean over target dimension make sense?
-                loss += 0.01 * (self.model.max_logvar.sum() - self.model.min_logvar.sum()) # a constant (~= 0.42)
+                loss += 0.01 * (self.model.max_logvar.sum() - self.model.min_logvar.sum())
                 # loss += self.model.compute_decays() #L2 regularization
                 # loss_value=loss.item()
                 
@@ -367,7 +367,7 @@ class MPC:
 p=20 #no. of particles
 B=5 #no. of bootstraps (nets in ensemble)
 K=30 #no. of trials
-tr_eps=20 #50 #200 #no. of training episodes/iterations
+tr_eps=50 #200 #no. of training episodes/iterations
 te_eps=1 #testing episodes
 test=False
 log_ival=1 #logging interval

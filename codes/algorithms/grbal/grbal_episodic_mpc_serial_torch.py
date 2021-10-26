@@ -71,52 +71,42 @@ def set_seed(seed,env,det=True):
 # Common
 #--------
 
-def collect_rollouts(env,controller,model,T,M,loss_func,b):
+def collect_rollouts(env,controller,model,T,b,params=None):
     #sample a rollout batch from the agent
-    
+    Rollout = namedtuple('Rollout', ('states', 'actions', 'rewards','states_dash'))
     rollout_batch = []
 
     for _ in range(b):
         controller.reset() #amounts to resetting CEM optimizer's prev sol to its initial value (--> array of size H with all values = avg of action space value range)
         o=env.reset()
-        O, A, rewards, O_dash= [], [], [], []
+        rollout = []
         for t in range(T):
-            
-            #adapt parameters to last M timesteps
-            # if A:
-            if len(A)>=M:
-                
-                #construct inputs and targets from previous M timesteps
-                obs=np.array(O[-M:])
-                acs=np.array(A[-M:])
-                obs_dash=np.array(O_dash[-M:])
-                inputs=np.concatenate([obs, acs], axis=-1)
-                targets = obs_dash - obs
-                inputs = torch.from_numpy(inputs).to(model.device).float()
-                targets = torch.from_numpy(targets).to(model.device).float()
-                
-                #calculate adapted parameters
-                mean, logvar, dist = model(inputs)
-                loss= compute_loss(loss_func,mean,targets,logvar,dist,model.var_type,model)
-                theta_dash=model.update_params(loss)
-            else:
-                theta_dash=None
-                
-            a=controller.act(o,params=theta_dash) #use controller to plan and choose optimal action as first action in sequence
-    
+            a=controller.act(o,params=params) #use controller to plan and choose optimal action as first action in sequence
             o_dash, r, done, _ = env.step(a) #execute first action from optimal actions
-            
-            A.append(a)
-            O.append(o)
-            rewards.append(r)
-            O_dash.append(o_dash)
+            rollout.append((o,a,r,o_dash))
             
             o=o_dash
             
             if done:
                 break
         
-        rollout_batch.append([np.array(O), np.array(A), np.array(rewards), np.array(O_dash)])
+        # put rollout into batch
+        states, actions, rewards, states_dash = zip(*rollout)
+        states = torch.as_tensor(states) 
+        actions = torch.as_tensor(actions)
+        rewards = torch.as_tensor(rewards).unsqueeze(1)
+        states_dash = torch.as_tensor(states_dash)
+        
+        rollout_batch.append(Rollout(states, actions, rewards, states_dash))
+            
+    #unpack rollouts' states, actions and rewards into dataset D
+    states, actions, rewards, states_dash = zip(*rollout_batch)
+    states=torch.cat(states,dim=1).view(T,b,-1).float().to(model.device)
+    actions=torch.cat(actions,dim=1).view(T,b,-1).float().to(model.device)
+    rewards=torch.cat(rewards,dim=1).view(T,b,-1).float().to(model.device)
+    states_dash=torch.cat(states_dash,dim=1).view(T,b,-1).float().to(model.device)
+    
+    rollout_batch=[states, actions, rewards, states_dash]
 
     return rollout_batch
 
@@ -232,10 +222,13 @@ class MLP(nn.Module):
 
     
 class MPC:
-    def __init__(self,env,model,H,pop_size,opt_max_iters):
+    def __init__(self,env,model,H,pop_size,opt_max_iters,optimizer,epochs,batch_size,b):
         self.H=H
         self.pop_size=pop_size
         self.opt_max_iters=opt_max_iters
+        self.optimizer=optimizer
+        self.epochs=epochs
+        self.batch_size=batch_size
         self.model=model
         
         self.ds=env.observation_space.shape[0] #state/observation dims
@@ -245,7 +238,10 @@ class MPC:
         self.cost_obs= env.cost_o
         self.cost_acs= env.cost_a
         self.reset() #sol's initial mu/mean
+        self.initial=True
         self.init_var= np.tile(((self.ac_ub - self.ac_lb) / 4.0)**2, [self.H]) #sol's intial variance
+        self.inputs=np.empty((0,b,self.model.in_size))
+        self.targets=np.empty((0,b,self.model.out_size // 2)) if model.var_type=="out" else np.empty((0,self.model.out_size))
 
     def reset(self):
         self.prev_sol = np.tile((self.ac_lb + self.ac_ub) / 2.0, [self.H])
@@ -336,10 +332,10 @@ def main():
     #%% Inputs
     #model / policy
     n=3 #no. of NN layers
-    h=100 #512 #size of hidden layers
+    h=64 #100 #512 #size of hidden layers
     var=0.5 #1. #NN variance if using a fixed varaince
     var_types=[None,"out","param"] #out=output of the network; param=a learned parameter; None=fixed variance
-    var_type=var_types[1]
+    var_type=var_types[2]
     normalize=False #whether to normalize model inputs
     
     #optimizer
@@ -351,29 +347,23 @@ def main():
     tr_eps=20 #50 #no. of training episodes/iterations
     # eval_eps=1
     log_ival=1 #logging interval
-    b=1 #4 #32 #batch size: Number of rollouts to sample from each task
-    # meta_b=16 #32 #number of tasks sampled
+    b=4 #32 #batch size: Number of rollouts to sample from each task #=K=M
+    meta_b=16 #32 #number of tasks sampled
     seed=1
     
     #controller
     H=8 #8 #planning horizon
     epochs=5 #propagation method epochs
+    batch_size=32
     pop_size=60 #1000 #CEM population size: number of candidate solutions to be sampled every iteration 
-    opt_max_iters=5 #5 #CEM's max iterations (used as a termination condition)
+    opt_max_iters=5 #CEM's max iterations (used as a termination condition)
     
     #algorithm
-    M=16 #no. of prev timesteps
-    K=M #no. of future timesteps (adaptation horizon)
-    N=16 #no. of sampled tasks (fluid definition)
-    ns=1 #3 #10 #task sampling frequency
     loss_funcs=["nll","mse"] #nll: negative log loss; mse: mean squared error
-    loss_func= loss_funcs[1]
-    traj_b=b #trajectory batch size (no. of trajectories sampled per sampled task)
+    loss_func= loss_funcs[0]
     # gamma= 1. #discount factor
     
     #%% Initializations
-    #common
-    D=[] #dataset / experience (a list of rollouts [where each rollout is a list of arrays (s,a,r,s')])
     
     #environment
     env_names=['cartpole_custom-v1','halfcheetah_custom-v1']
@@ -389,18 +379,18 @@ def main():
     out_size=ds*2 if var_type=="out" else ds
     device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     model = MLP(in_size,n,h,out_size,alpha,var,device,var_type)#.to(device) #dynamics model
-    controller = MPC(env,model,H,pop_size,opt_max_iters)
     optimizer = Adam(model.parameters(),lr=beta) #model optimizer
+    controller = MPC(env,model,H,pop_size,opt_max_iters,optimizer,epochs,batch_size,b)
+    
     
     #results 
     plot_tr_rewards=[]
+    plot_val_rewards=[]
     best_reward=-1e6
     
     set_seed(seed,env)
     
     #%% Sanity Checks
-    assert H<K, "planning horizon H should be smaller than the adaptation horizon K, since the adapted model is only valid within the current context"
-    assert T>=M+K, "rollout length (task horizon / max no. of env timesteps) T has to at least be equal to the prev + future adaptation timesteps"
     assert H<=T, "planning horizon must be at most the total no. of environment timesteps"
     
     #%% Algorithm
@@ -408,54 +398,31 @@ def main():
     episodes=progress(tr_eps)
     for episode in episodes:
         
-        if episode==0 or episode % ns == 0:
-            task = env.sample_task()
-            env.reset_task(task,task_name)
-            rollout_batch=collect_rollouts(env, controller, model, T,M,loss_func,b)
-            reward_ep=np.mean([np.sum(rollout[2]) for rollout in rollout_batch])
-            D.extend(rollout_batch)
-        
-        model.fit_input_stats(np.concatenate([np.concatenate((rollout[0],rollout[1]),-1) for rollout in D]))
-        
-        #adaptation
-        # for _ in range(epochs):
+        tasks = [env.sample_task() for _ in range(meta_b)]
+
         losses=[]
-        for i in range(N):
+        rewards_tr_ep, rewards_val_ep = [], []
+        # Ds, D_dashes=[], []
+        
+        for task in tasks:
             
-            #sample [a batch of] trajectories randomly from the dataset
-            m_trajs, k_trajs = [], []
-            for _ in range(traj_b):
-                rollout = D[np.random.choice(len(D))] #pick a rollout at random
-                m_start_idx = np.random.choice(len(rollout[0]) + 1 - M - K)
-                m_traj=[r[m_start_idx: m_start_idx + M] for r in rollout]
-                k_traj=[r[m_start_idx + M : m_start_idx + M + K] for r in rollout]
-                m_trajs = m_traj if m_trajs==[] else [np.concatenate((m_trajs[dim], m_traj[dim])) for dim in range(len(m_traj))]
-                k_trajs = k_traj if k_trajs==[] else [np.concatenate((k_trajs[dim], k_traj[dim])) for dim in range(len(k_traj))]
+            # #set env task to current task 
+            env.reset_task(task,task_name)
             
-            #adapt params
-            #construct inputs and targets from m_trajs
-            obs=m_trajs[0]#.reshape(b,M,-1).transpose(1,0,2)
-            acs=m_trajs[1]#.reshape(b,M,-1).transpose(1,0,2)
-            obs_dash=m_trajs[-1]#.reshape(b,M,-1).transpose(1,0,2)
-            inputs=np.concatenate([obs, acs], axis=-1)
-            targets = obs_dash - obs
-            inputs = torch.from_numpy(inputs).to(model.device).float()
-            targets = torch.from_numpy(targets).to(model.device).float()
-            #compute adapted parameters
+            states,actions,rewards,states_dash=collect_rollouts(env,controller,model,T,b)
+            rewards_tr_ep.append(rewards)
+            
+            inputs=torch.cat([states,actions],-1)
+            targets=states_dash-states
             mean, logvar, dist  = model(inputs,normalize=normalize)
             loss= compute_loss(loss_func,mean,targets,logvar,dist,model.var_type,model)
             theta_dash = model.update_params(loss,retain_graph=False)
             
-            #compute loss
-            #construct inputs and targets from k_trajs
-            obs=k_trajs[0]#.reshape(b,K,-1).transpose(1,0,2)
-            acs=k_trajs[1]#.reshape(b,K,-1).transpose(1,0,2)
-            obs_dash=k_trajs[-1]#.reshape(b,K,-1).transpose(1,0,2)
-            inputs=np.concatenate([obs, acs], axis=-1)
-            targets = obs_dash - obs
-            inputs = torch.from_numpy(inputs).to(model.device).float()
-            targets = torch.from_numpy(targets).to(model.device).float()
-            #compute task loss
+            states,actions,rewards,states_dash=collect_rollouts(env,controller,model,T,b,params=theta_dash)
+            rewards_val_ep.append(rewards)
+
+            inputs=torch.cat([states,actions],-1)
+            targets=states_dash-states
             mean, logvar, dist  = model(inputs,params=theta_dash,normalize=normalize)
             loss= compute_loss(loss_func,mean,targets,logvar,dist,model.var_type,model)
             losses.append(loss)
@@ -463,8 +430,13 @@ def main():
         #meta update
         meta_loss=torch.mean(torch.stack(losses))
         optimizer.zero_grad()
-        meta_loss.backward(create_graph=False,retain_graph=False) #???: should any of them be True?
+        meta_loss.backward(create_graph=True,retain_graph=True) #???: should any of them be True?
         optimizer.step()
+        
+        #compute & log results
+        # compute rewards
+        reward_ep = (torch.mean(torch.stack([torch.mean(torch.sum(rewards, dim=0)) for rewards in rewards_tr_ep], dim=0))).item()    #sum over T, mean over b, mean over tasks
+        reward_val = (torch.mean(torch.stack([torch.mean(torch.sum(rewards, dim=0)) for rewards in rewards_val_ep], dim=0))).item()
         
         #save best running model [params]
         if reward_ep>best_reward: 
@@ -473,15 +445,23 @@ def main():
             
         #log iteration results & statistics
         plot_tr_rewards.append(reward_ep)
+        plot_val_rewards.append(reward_val)
         if episode % log_ival == 0:
-            log_msg="Rewards Tr: {:.2f}".format(reward_ep)
+            log_msg="Rewards Tr: {:.2f}, Rewards Val: {:.2f}".format(reward_ep,reward_val)
             episodes.set_description(desc=log_msg); episodes.refresh()
         
     #%% Results & Plot
-    title="Meta-Training Rewards (Learning Curve)"
+    title="Meta-Training Training Rewards (Learning Curve)"
     plt.figure(figsize=(16,8))
     plt.grid(1)
     plt.plot(plot_tr_rewards)
+    plt.title(title)
+    plt.show()
+    
+    title="Meta-Training Testing Rewards (Learning Curve)"
+    plt.figure(figsize=(16,8))
+    plt.grid(1)
+    plt.plot(plot_val_rewards)
     plt.title(title)
     plt.show()
 
