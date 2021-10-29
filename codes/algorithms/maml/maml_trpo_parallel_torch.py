@@ -197,7 +197,7 @@ class PolicyNetwork(nn.Module):
                 
         self.layer1=nn.Linear(in_size, h)
         self.layer2=nn.Linear(h, h)
-        self.layer3=nn.Linear(h, h)
+        # self.layer3=nn.Linear(h, h)
         self.layer4=nn.Linear(h, out_size)
         
         self.logstd = nn.Parameter(np.log(1.0)*torch.ones(1,out_size,device=device, dtype=torch.float32),requires_grad=True)
@@ -225,7 +225,7 @@ class PolicyNetwork(nn.Module):
  
         inputs=self.nonlinearity(nn.functional.linear(inputs,weight=params['layer1.weight'],bias= params['layer1.bias']))
         inputs=self.nonlinearity(nn.functional.linear(inputs,weight=params['layer2.weight'],bias= params['layer2.bias']))
-        inputs=self.nonlinearity(nn.functional.linear(inputs,weight=params['layer3.weight'],bias= params['layer3.bias']))
+        # inputs=self.nonlinearity(nn.functional.linear(inputs,weight=params['layer3.weight'],bias= params['layer3.bias']))
         mean=nn.functional.linear(inputs,weight=params['layer4.weight'],bias= params['layer4.bias'])
         
         std = torch.exp(torch.clamp(params['logstd'], min=np.log(1e-6))) #???: how come this [i.e logvar] is not the output of the network (even if it is still updated with GD)
@@ -572,39 +572,36 @@ def main():
     
     # %% Inputs
     #model / policy
-    n=3 #no. of NN layers
-    h=64 #100 #size of hidden layers
+    n=2 #no. of NN layers
+    h=100 #100 #size of hidden layers
     
     #optimizer
-    alpha=0.5 #0.1 #adaptation step size / learning rate
+    alpha=0.1 #0.1 #adaptation step size / learning rate
     
     #general
     # K=30 #no. of trials
-    tr_eps=20 #200 #no. of training episodes/iterations
+    tr_eps=500 #200 #no. of training episodes/iterations
     log_ival=1 #logging interval
-    b=16 #32 #batch size: Number of trajectories (rollouts) to sample from each task
-    meta_b=15 #30 #number of tasks sampled
+    b=20 #16 #32 #batch size: Number of trajectories (rollouts) to sample from each task
+    meta_b=40 #30 #number of tasks sampled
     
     #VPG
-    gamma = 0.95 #0.99
+    gamma = 0.99
     
     #TRPO
     max_grad_kl=0.01 #considered to be beta: meta step size / learning rate #but actually its the stepfrac controlled by TRPO [to guarantee monotonic improvement, etc]
-    max_backtracks=10 #15
+    max_backtracks=15
     accept_ratio=0.1
     zeta=0.8 #0.5
     rdotr_tol=1e-10
     nsteps=10
-    damping=0.01 
+    damping=1e-5
     
     #multiprocessing
     n_workers = mp.cpu_count() - 1
     
     # %% Initializations
     #common
-    theta_dashes=[]
-    # D_dashes=[]
-    # Ds=[]
     seed=0
     
     #multiprocessing
@@ -631,52 +628,21 @@ def main():
     #results 
     plot_tr_rewards=[]
     plot_val_rewards=[]
-    # rewards_tr_ep=[]
-    # rewards_val_ep=[]
     best_reward=-1e6
     
     # set_seed(seed,env)
     
     # %% Implementation
-    
-    """
-    - modify env to include a function to sample tasks (how to sample the tasks is designed manually)
-    - create a batch sampler (to sample the batch of tasks):
-        - init: a queue, a list of envs (len = n_workers), vectorized environment (the main process manager in charge of num_workers sub-processes interacting with the env)
-    - create an MLP policy
-    - ???: create a linear feature baseline (to be used in the VPG alg to ) --> a nn.Module comprised of one linear layer of size (n_features,1) taking manually designed features as inputs (torch.cat([obs,obs**2,al,al**2,al**3,ones], dim=2); where al=action_list)
-    - create the meta-learner
-    - for each meta-epoch do:
-        - use batch sampler to sample a batch of [meta]tasks --> resolves to sampling [a batch of] tasks from the env
-        - meta-learner sample / inner loop (for each task in the sampled batch do):
-            - reset tasks (using sampler)
-            - sample K trajectories D using policy (f_theta):
-                - create batch episodes object
-                - collect rollouts according to policy
-                - append rollouts to batch episodes object
-                - return the batch episodes object
-            - adaptation --> compute adapted parameters:
-                - fit baseline to episodes
-                - calculate loss of episodes --> VPG with GAE
-                - calculate grad of loss [grad_theta L_Ti(f_theta)]
-                - update parameters w/ GD, i.e. using the equation: theta'_i=theta-alpha*grad_L
-            - sample K trajectories D' using f_theta'_i & append to episodes
-        - meta-learner step (outer loop) --> using TRPO (but without A2C) to update meta-parameters theta:
-            - loss=surrogate_loss(episodes)
-            - compute [full] step
-            - do line search [which updates parameters within]
-        - log rewards
-    """
         
     episodes=progress(tr_eps)
     for episode in episodes:
         
         #sample batch of tasks
         tasks = env.sample_tasks(meta_b)
-        rewards_tr_ep=[]
-        rewards_val_ep=[]
-        D_dashes=[]
-        Ds=[]
+        
+        rewards_tr_ep, rewards_val_ep = [], []
+        Ds, D_dashes=[], []
+        
         for task in tasks:
             
             #set env task to current task
@@ -690,7 +656,6 @@ def main():
             
             #compute adapted params (via: GD) --> perform 1 gradient step update
             theta_dash=adapt(D,value_net,policy,alpha)
-            # theta_dashes.append(theta_dash)
             
             #sample b trajectories/rollouts using f_theta'
             D_dash=collect_rollout_batch(envs, ds, da, policy, T, b, n_workers, queue, device, params=theta_dash)
@@ -714,8 +679,8 @@ def main():
         reward_ep = (torch.mean(torch.stack([torch.mean(torch.sum(rewards, dim=0)) for rewards in rewards_tr_ep], dim=0))).item()    #sum over T, mean over b, stack horiz one reward per task, mean of tasks
         reward_val = (torch.mean(torch.stack([torch.mean(torch.sum(rewards, dim=0)) for rewards in rewards_val_ep], dim=0))).item()
         #save best running model [params]
-        if reward_ep>best_reward: 
-            best_reward=reward_ep
+        if reward_val>best_reward: 
+            best_reward=reward_val
             torch.save(policy.state_dict(), "saved_models/"+env_name+".pt")
         #log iteration results & statistics
         plot_tr_rewards.append(reward_ep)
@@ -730,14 +695,16 @@ def main():
     plt.grid(1)
     plt.plot(plot_tr_rewards)
     plt.title(title)
-    plt.show()
+    plt.savefig('plots/mtr_tr.png')
+    # plt.show()
     
     title="Meta-Training Testing Rewards (Learning Curve)"
     plt.figure(figsize=(16,8))
     plt.grid(1)
     plt.plot(plot_val_rewards)
     plt.title(title)
-    plt.show()
+    plt.savefig('plots/mtr_ts.png')
+    # plt.show()
 
 #%%
 if __name__ == '__main__':

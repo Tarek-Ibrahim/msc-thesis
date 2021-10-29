@@ -87,6 +87,7 @@ def collect_rollout_batch(envs, ds, da, policy, T, b, n_workers, queue, params=N
     dones=[False]
     
     while (not all(dones)) or (not queue.empty()):
+        s=s.astype(np.float32)
         state=tf.convert_to_tensor(s)
         dist=policy(state,params)
         a=dist.sample().numpy()
@@ -331,7 +332,7 @@ def surrogate_loss(Ds, D_dashes,policy,value_net,gamma,alpha,T,prev_pis=None):
     return prev_loss, kl, pis
 
 
-def line_search(policy, prev_loss, prev_pis, value_net, alpha, gamma, T, b, D_dashes, Ds, step, prev_params, max_grad_kl, advs, max_backtracks=10, zeta=0.5):
+def line_search(policy, prev_loss, prev_pis, value_net, alpha, gamma, T, b, D_dashes, Ds, step, prev_params, max_grad_kl, max_backtracks=10, zeta=0.5):
     """backtracking line search"""
     
     for step_frac in [zeta**x for x in range(max_backtracks)]:
@@ -522,39 +523,36 @@ def main():
     # %% Inputs
     #model / policy
     n=2 #no. of NN layers
-    h=64 #100 #size of hidden layers
+    h=100 #size of hidden layers
     
     #optimizer
-    alpha=0.5 #0.1 #adaptation step size / learning rate
+    alpha=0.1 #adaptation step size / learning rate
     # beta=0.001 #meta step size / learning rate #TIP: controlled and adapted by TRPO (in maml step) [to guarantee monotonic improvement, etc]
     
     #general
     # K=30 #no. of trials
-    tr_eps=20 #200 #no. of training episodes/iterations
+    tr_eps=500 #20 #200 #no. of training episodes/iterations
     log_ival=1 #logging interval
-    b=16 #32 #batch size: Number of trajectories (rollouts) to sample from each task
-    meta_b=15 #30 #number of tasks sampled
+    b=20 #16 #32 #batch size: Number of trajectories (rollouts) to sample from each task
+    meta_b=40 #15 #30 #number of tasks sampled
     
     #VPG
-    gamma = 0.95 #0.99
+    gamma = 0.99
     
     #TRPO
     max_grad_kl=1e-2
-    max_backtracks=10 #15
+    max_backtracks=15
     accept_ratio=0.1
     zeta=0.8 #0.5
     rdotr_tol=1e-10
     nsteps=10
-    damping=0.01 
+    damping=1e-5 #0.01 
     
     #multiprocessing
     n_workers = mp.cpu_count() - 1
     
     # %% Initializations
     #common
-    theta_dashes=[]
-    D_dashes=[]
-    Ds=[]
     seed=0
     
     #multiprocessing
@@ -580,49 +578,20 @@ def main():
     #results 
     plot_tr_rewards=[]
     plot_val_rewards=[]
-    rewards_tr_ep=[]
-    rewards_val_ep=[]
     best_reward=-1e6
     
     set_seed(seed,env)
     
     # %% Implementation
-    
-    """
-    - modify env to include a function to sample tasks (how to sample the tasks is designed manually)
-    - create a batch sampler (to sample the batch of tasks):
-        - init: a queue, a list of envs (len = n_workers), vectorized environment (the main process manager in charge of num_workers sub-processes interacting with the env)
-    - create an MLP policy
-    - ???: create a linear feature baseline (to be used in the VPG alg to ) --> a nn.Module comprised of one linear layer of size (n_features,1) taking manually designed features as inputs (torch.cat([obs,obs**2,al,al**2,al**3,ones], dim=2); where al=action_list)
-    - create the meta-learner
-    - for each meta-epoch do:
-        - use batch sampler to sample a batch of [meta]tasks --> resolves to sampling [a batch of] tasks from the env
-        - meta-learner sample / inner loop (for each task in the sampled batch do):
-            - reset tasks (using sampler)
-            - sample K trajectories D using policy (f_theta):
-                - create batch episodes object
-                - collect rollouts according to policy
-                - append rollouts to batch episodes object
-                - return the batch episodes object
-            - adaptation --> compute adapted parameters:
-                - fit baseline to episodes
-                - calculate loss of episodes --> VPG with GAE
-                - calculate grad of loss [grad_theta L_Ti(f_theta)]
-                - update parameters w/ GD, i.e. using the equation: theta'_i=theta-alpha*grad_L
-            - sample K trajectories D' using f_theta'_i & append to episodes
-        - meta-learner step (outer loop) --> using TRPO (but without A2C) to update meta-parameters theta:
-            - loss=surrogate_loss(episodes)
-            - compute [full] step
-            - do line search [which updates parameters within]
-        - log rewards
-    """
         
     episodes=progress(tr_eps)
     for episode in episodes:
         
         #sample batch of tasks
         tasks = env.sample_tasks(meta_b) 
-        advs=[]
+        rewards_tr_ep, rewards_val_ep = [], []
+        Ds, D_dashes=[], []
+        
         for task in tasks:
             
             #set env task to current task
@@ -636,7 +605,6 @@ def main():
             
             #compute loss (via: VPG w/ baseline)
             theta_dash=adapt(D,value_net,policy,alpha)
-            # theta_dashes.append(theta_dash)
             
             #sample b trajectories/rollouts using f_theta'
             D_dash=collect_rollout_batch(envs, ds, da, policy, T, b, n_workers, queue, params=theta_dash)
@@ -657,15 +625,15 @@ def main():
         max_length=np.sqrt(2.0 * max_grad_kl / np.dot(search_step_dir, hvp(search_step_dir)))
         full_step=search_step_dir*max_length        
         prev_params = parameters_to_vector(policy.trainable_variables)
-        line_search(policy, prev_loss, prev_pis, value_net, alpha, gamma, T, b, D_dashes, Ds, full_step, prev_params, max_grad_kl, advs, max_backtracks, zeta)
+        line_search(policy, prev_loss, prev_pis, value_net, alpha, gamma, T, b, D_dashes, Ds, full_step, prev_params, max_grad_kl, max_backtracks, zeta)
     
         #compute & log results
         # compute rewards
         reward_ep = (tf.math.reduce_mean(tf.stack([tf.math.reduce_mean(tf.math.reduce_sum(rewards, axis=0)) for rewards in rewards_tr_ep], axis=0))).numpy() #sum over T, mean over b, stack horiz one reward per task, mean of tasks
         reward_val=(tf.math.reduce_mean(tf.stack([tf.math.reduce_mean(tf.math.reduce_sum(rewards, axis=0)) for rewards in rewards_val_ep], axis=0))).numpy()
         #save best running model [params]
-        if reward_ep>best_reward: 
-            best_reward=reward_ep
+        if reward_val>best_reward: 
+            best_reward=reward_val
             policy.save_weights("saved_models/"+env_name)
         #log iteration results & statistics
         plot_tr_rewards.append(reward_ep)
@@ -680,14 +648,16 @@ def main():
     plt.grid(1)
     plt.plot(plot_tr_rewards)
     plt.title(title)
-    plt.show()
+    plt.savefig('plots/mtr_tr.png')
+    # plt.show()
     
     title="Meta-Training Testing Rewards (Learning Curve)"
     plt.figure(figsize=(16,8))
     plt.grid(1)
     plt.plot(plot_val_rewards)
     plt.title(title)
-    plt.show()
+    plt.savefig('plots/mtr_ts.png')
+    # plt.show()
 
 #%%
 if __name__ == '__main__':

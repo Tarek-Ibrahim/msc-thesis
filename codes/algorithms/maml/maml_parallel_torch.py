@@ -203,7 +203,7 @@ class PolicyNetwork(nn.Module):
                 
         self.layer1=nn.Linear(in_size, h)
         self.layer2=nn.Linear(h, h)
-        self.layer3=nn.Linear(h, h)
+        # self.layer3=nn.Linear(h, h)
         self.layer4=nn.Linear(h, out_size)
         
         self.logstd = nn.Parameter(np.log(1.0)*torch.ones(1,out_size,device=device, dtype=torch.float32),requires_grad=True)
@@ -231,7 +231,7 @@ class PolicyNetwork(nn.Module):
  
         inputs=self.nonlinearity(nn.functional.linear(inputs,weight=params['layer1.weight'],bias= params['layer1.bias']))
         inputs=self.nonlinearity(nn.functional.linear(inputs,weight=params['layer2.weight'],bias= params['layer2.bias']))
-        inputs=self.nonlinearity(nn.functional.linear(inputs,weight=params['layer3.weight'],bias= params['layer3.bias']))
+        # inputs=self.nonlinearity(nn.functional.linear(inputs,weight=params['layer3.weight'],bias= params['layer3.bias']))
         mean=nn.functional.linear(inputs,weight=params['layer4.weight'],bias= params['layer4.bias'])
         
         std = torch.exp(torch.clamp(params['logstd'], min=np.log(1e-6))) #???: how come this [i.e logvar] is not the output of the network (even if it is still updated with GD)
@@ -431,7 +431,7 @@ def main():
     # %% Inputs
     #model / policy
     n=3 #no. of NN layers
-    h=64 #100 #size of hidden layers
+    h=100 #size of hidden layers
     
     #optimizer
     alpha=0.01 #0.1 #adaptation step size / learning rate
@@ -439,13 +439,13 @@ def main():
     
     #general
     # K=30 #no. of trials
-    tr_eps=20 #200 #no. of training episodes/iterations
+    tr_eps=500 #20 #200 #no. of training episodes/iterations
     log_ival=1 #logging interval
-    b=16 #32 #batch size: Number of trajectories (rollouts) to sample from each task
-    meta_b=15 #30 #number of tasks sampled
+    b=20 #16 #32 #batch size: Number of trajectories (rollouts) to sample from each task
+    meta_b=40 #15 #30 #number of tasks sampled
     
     #VPG
-    gamma = 0.95 #0.99
+    gamma = 0.99
     
     #multiprocessing
     n_workers = mp.cpu_count() - 1
@@ -533,8 +533,8 @@ def main():
         reward_ep = (torch.mean(torch.stack([torch.mean(torch.sum(rewards, dim=0)) for rewards in rewards_tr_ep], dim=0))).item()    #sum over T, mean over b, mean over tasks
         reward_val = (torch.mean(torch.stack([torch.mean(torch.sum(rewards, dim=0)) for rewards in rewards_val_ep], dim=0))).item()
         #save best running model [params]
-        if reward_ep>best_reward: 
-            best_reward=reward_ep
+        if reward_val>best_reward: 
+            best_reward=reward_val
             torch.save(policy.state_dict(), "saved_models/"+env_name+".pt")
         #log iteration results & statistics
         plot_tr_rewards.append(reward_ep)
