@@ -223,16 +223,12 @@ class PolicyNetwork(tf.keras.Model):
         
 
 class ValueNetwork(tf.keras.Model):
-    def __init__(self, in_size, T, b, gamma, reg_coeff=1e-5):
+    def __init__(self, in_size, gamma, reg_coeff=1e-5):
         super().__init__()
         
         self.reg_coeff=reg_coeff
-        self.T = T
-        self.b = b
         self.gamma=gamma
         
-        self.ones = tf.ones([self.T,self.b,1],dtype=tf.float32)
-        self.timestep= tf.math.cumsum(self.ones, axis=0) / 100.
         self.feature_size=2*in_size + 4
         self.eye=tf.eye(self.feature_size,dtype=tf.float32)
         
@@ -240,16 +236,21 @@ class ValueNetwork(tf.keras.Model):
         
     def fit_params(self, states, rewards):
         
+        T=states.shape[0]
+        b=states.shape[1]
+        ones = tf.ones([T,b,1],dtype=tf.float32)
+        timestep= tf.math.cumsum(ones, axis=0) / 100.
+        
         reg_coeff = self.reg_coeff
         
         #create features
-        features = tf.concat([states, states **2, self.timestep, self.timestep**2, self.timestep**3, self.ones],axis=2)
+        features = tf.concat([states, states **2, timestep, timestep**2, timestep**3, ones],axis=2)
         features=tf.reshape(features, (-1, self.feature_size))
 
         #compute returns        
-        G = np.zeros(self.b,dtype=np.float32)
-        returns = np.zeros((self.T,self.b),dtype=np.float32)
-        for t in range(self.T - 1, -1, -1):
+        G = np.zeros(b,dtype=np.float32)
+        returns = np.zeros((T,b),dtype=np.float32)
+        for t in range(T - 1, -1, -1):
             G = rewards[t]+self.gamma*G
             returns[t] = G
         returns = tf.reshape(returns, (-1, 1))
@@ -275,11 +276,20 @@ class ValueNetwork(tf.keras.Model):
         # self.w.assign(tf.transpose(sol))
         
     def call(self, states):
-        features = tf.concat([states, states **2, self.timestep, self.timestep**2, self.timestep**3, self.ones],axis=2)
+        
+        T=states.shape[0]
+        b=states.shape[1]
+        ones = tf.ones([T,b,1],dtype=tf.float32)
+        timestep= tf.math.cumsum(ones, axis=0) / 100.
+        
+        features = tf.concat([states, states **2, timestep, timestep**2, timestep**3, ones],axis=2)
+        
         return tf.linalg.matmul(features,self.w)
 
 
 def compute_advantages(states,rewards,value_net,gamma):
+    
+    T=states.shape[0]
     
     values = value_net(states)
     if len(list(values.shape))>2: values = tf.squeeze(values, axis=2)
@@ -290,7 +300,7 @@ def compute_advantages(states,rewards,value_net,gamma):
     advantages = tf.TensorArray(tf.float32, *deltas.shape)
     advantage = tf.zeros_like(deltas[0], dtype=tf.float32)
     
-    for t in range(value_net.T - 1, -1, -1): #reversed(range(-1,value_net.T -1 )):
+    for t in range(T - 1, -1, -1): #reversed(range(-1,T -1 )):
         advantage = advantage * gamma + deltas[t]
         advantages = advantages.write(t, advantage)
         # advantages[t] = advantage
@@ -349,11 +359,11 @@ def conjugate_gradients(Avp_f, b, rdotr_tol=1e-10, nsteps=10):
     return x
 
 
-def surrogate_loss(Ds, D_dashes,policy,value_net,gamma,alpha,T,prev_pis=None):
+def surrogate_loss(Ds, D_dashes,policy,value_net,gamma,alpha,prev_pis=None):
     
     kls, losses, pis =[], [], []
     if prev_pis is None:
-        prev_pis = [None] * T
+        prev_pis = [None] * len(Ds)
         
     for D, D_dash, prev_pi in zip(Ds,D_dashes,prev_pis):
         
@@ -385,13 +395,13 @@ def surrogate_loss(Ds, D_dashes,policy,value_net,gamma,alpha,T,prev_pis=None):
     return prev_loss, kl, pis
 
 
-def line_search(policy, prev_loss, prev_pis, value_net, alpha, gamma, T, b, D_dashes, Ds, step, prev_params, max_grad_kl, max_backtracks=10, zeta=0.5):
+def line_search(policy, prev_loss, prev_pis, value_net, alpha, gamma, b, D_dashes, Ds, step, prev_params, max_grad_kl, max_backtracks=10, zeta=0.5):
     """backtracking line search"""
     
     for step_frac in [zeta**x for x in range(max_backtracks)]:
         vector_to_parameters(prev_params - step_frac * step, policy.trainable_variables)
         
-        loss, kl, _ = surrogate_loss(Ds, D_dashes,policy,value_net,gamma,alpha,T,prev_pis=prev_pis)
+        loss, kl, _ = surrogate_loss(Ds, D_dashes,policy,value_net,gamma,alpha,prev_pis=prev_pis)
         
         #check improvement
         actual_improve = loss - prev_loss
@@ -540,6 +550,13 @@ class SubprocVecEnv(gym.Env):
             parent_conn.send(('randomize', val))
         results = [parent_conn.recv() for parent_conn in self.parent_conns]
         self.waiting = False
+        
+    # def randomize(self, randomized_values):
+    #     for parent_conn, val in zip(self.parent_conns, randomized_values):
+    #         parent_conn.send(('randomize', val))
+    #     results = [parent_conn.recv() for parent_conn in self.parent_conns]
+    #     self.waiting = False
+    #     return results
     
     def reset_task(self, tasks):
         for parent_conn, task in zip(self.parent_conns,tasks):
@@ -606,6 +623,9 @@ def envworker(child_conn, parent_conn, env_func, queue, lock):
         elif func == 'close':
             child_conn.close()
             break
+        # elif func == 'randomize':
+        #     rand_val=env.randomize(arg)
+        #     child_conn.send(rand_val)
         elif func == 'randomize':
             env.randomize(arg)
             child_conn.send(None)
@@ -1044,8 +1064,8 @@ if __name__ == '__main__':
     lock = mp.Lock()
     
     #environment
-    env_names=['cartpole_custom-v1','halfcheetah_custom-v1','halfcheetah_custom_norm-v1','halfcheetah_custom_rand-v1','lunarlander_custom_default_rand-v0']
-    env_name=env_names[-1]
+    env_names=['cartpole_custom-v1', 'halfcheetah_custom-v1', 'halfcheetah_custom_norm-v1', 'halfcheetah_custom_rand-v1', 'halfcheetah_custom_rand-v2', 'lunarlander_custom_default_rand-v0']
+    env_name=env_names[-2]
     env=gym.make(env_name)
     T_env=env._max_episode_steps #200 #task horizon
     ds=env.observation_space.shape[0] #state dims
@@ -1062,7 +1082,7 @@ if __name__ == '__main__':
     in_size=ds
     out_size=da
     policy = PolicyNetwork(in_size,n,h,out_size) #dynamics model
-    value_net=ValueNetwork(in_size,T_env,b,gamma)
+    value_net=ValueNetwork(in_size,gamma)
     
     #results 
     plot_tr_rewards=[]
@@ -1070,6 +1090,14 @@ if __name__ == '__main__':
     best_reward=-1e6
     
     set_seed(seed,env)
+    
+    #evaluation
+    evaluate=True
+    eval_eps=3
+    eval_rewards_mean=0
+    eval_freq = n_particles
+    t_eval=0 # agent timesteps since eval
+    plot_eval_rewards=[]
     
     #%% Implementation
         
@@ -1092,6 +1120,8 @@ if __name__ == '__main__':
         for t_svpg in range(T_svpg):
             #randomize rand envs (with svpg particle [randomization parameter] values [at the current svpg timestep]) #!!!: this only works if transitions within the same rollout is collected in the same environment (i.e. by the same [env] worker) #that's why we choose: n_particles=b(rollout batch size)=n_workers/n_envs
             env_rand.randomize(simulation_instances[t_svpg])
+            # rand_vals = env_rand.randomize(simulation_instances[t_svpg])
+            # print(rand_vals)
             
             #collect pre-adaptation rollout batch in rand envs (one rollout for each svpg particle)
             D,_=collect_rollout_batch(env_rand, ds, da, policy, T_env, b, n_workers, queue)
@@ -1120,6 +1150,7 @@ if __name__ == '__main__':
             #calculate discriminator reward
             for i in range(n_particles):
                 T_disc_eps += len(rand_traj[i])
+                t_eval += len(rand_traj[i])
                 
                 r_disc, score_disc = discriminator.calculate_rewards(rand_traj[i])
                 rewards_disc[i][t]= r_disc
@@ -1140,7 +1171,7 @@ if __name__ == '__main__':
         
         #outer loop: update meta-params (via: TRPO) #!!!: since MAML uses TRPO it is on-policy, so care should be taken that order of associated transitions is preserved
         with tf.GradientTape() as tape:
-            prev_loss, _, prev_pis = surrogate_loss(Ds, D_dashes,policy,value_net,gamma,alpha,T_env)
+            prev_loss, _, prev_pis = surrogate_loss(Ds, D_dashes,policy,value_net,gamma,alpha)
         grads = parameters_to_vector(tape.gradient(prev_loss, policy.trainable_variables),policy.trainable_variables)
         prev_loss=tf.identity(prev_loss)
         hvp=HVP(Ds,D_dashes,policy,value_net,alpha,damping)
@@ -1148,7 +1179,47 @@ if __name__ == '__main__':
         max_length=np.sqrt(2.0 * max_grad_kl / np.dot(search_step_dir, hvp(search_step_dir)))
         full_step=search_step_dir*max_length        
         prev_params = parameters_to_vector(policy.trainable_variables)
-        line_search(policy, prev_loss, prev_pis, value_net, alpha, gamma, T_env, b, D_dashes, Ds, full_step, prev_params, max_grad_kl, max_backtracks, zeta)
+        line_search(policy, prev_loss, prev_pis, value_net, alpha, gamma, b, D_dashes, Ds, full_step, prev_params, max_grad_kl, max_backtracks, zeta)
+        
+        #evaluation
+        if evaluate and t_eval>eval_freq:
+            t_eval %= eval_freq
+            eval_rewards=[]
+
+            for _ in range(eval_eps):
+                env.randomize(["random"]*dr)
+                
+                s=env.reset()
+                
+                state=tf.expand_dims(tf.convert_to_tensor(s,dtype=tf.float32),0)
+                dist=policy(state,params=None)
+                a=tf.squeeze(dist.sample()).numpy()
+                s, r, done, _ = env.step(a)
+                
+                R = r
+                
+                while not done:
+                    
+                    state=tf.expand_dims(tf.convert_to_tensor(s,dtype=tf.float32),0)
+                    states=tf.expand_dims(state,0)
+                    actions=tf.expand_dims(tf.expand_dims(tf.convert_to_tensor(a),0),0)
+                    rewards=tf.expand_dims(tf.expand_dims(tf.convert_to_tensor(np.array(r),dtype=np.float32),0),0)
+                    D=[states, actions, rewards]
+                                        
+                    theta_dash=adapt(D,value_net,policy,alpha)
+                    
+                    dist=policy(state,params=theta_dash)
+                    a=tf.squeeze(dist.sample()).numpy()
+                    s, r, done, _ = env.step(a)
+                    
+                    env.render()
+                    
+                    R+=r
+                    
+                eval_rewards.append(R)
+            
+            eval_rewards_mean=np.mean(np.array(eval_rewards).flatten())
+            plot_eval_rewards.append(eval_rewards_mean)
     
         #compute & log results
         # compute rewards
@@ -1163,7 +1234,8 @@ if __name__ == '__main__':
         plot_val_rewards.append(reward_val)
         #log iteration results & statistics
         if episode % log_ival == 0:
-            log_msg="Rewards Tr: {:.2f}, Rewards Val: {:.2f}".format(reward_ep,reward_val)
+            log_msg="Rewards Tr: {:.2f}, Rewards Val: {:.2f}, Rewards Disc: {:.2f}, Rewards Eval: {:.2f}".format(reward_ep, reward_val, scores_disc.mean(), eval_rewards_mean)
+            # log_msg="Rewards Tr: {:.2f}, Rewards Val: {:.2f}".format(reward_ep,reward_val)
             episodes.set_description(desc=log_msg); episodes.refresh()
     
     #%% Results & Plot
@@ -1182,3 +1254,12 @@ if __name__ == '__main__':
     plt.title(title)
     # plt.savefig('plots/mtr_ts.png')
     plt.show()
+    
+    title="Meta-Testing Rewards"
+    plt.figure(figsize=(16,8))
+    plt.grid(1)
+    plt.plot(plot_eval_rewards)
+    plt.title(title)
+    # plt.savefig('plots/mtr_ts.png')
+    plt.show()
+    
