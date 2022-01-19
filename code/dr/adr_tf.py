@@ -894,22 +894,21 @@ if __name__ == '__main__':
                 svpg.train(rewards_disc)
             
             #evaluate
-            if evaluate:
-                if t_eval>eval_freq:
-                    t_eval %= eval_freq
-                    eval_rand_rewards = []
-                    eval_ref_rewards = []
-                    for _ in range(eval_eps):
-                        _, ep_eval_rewards_ref = rollout(n_particles, env_ref, policy_agent, None, eps_rollout_agent, T_env, T_agent_init, b_agent, gamma_agent)
-                        env_rand.randomize([["random"]*dr]*n_particles)
-                        _, ep_eval_rewards_rand = rollout(n_particles, env_rand, policy_agent, None, eps_rollout_agent, T_env, T_agent_init, b_agent, gamma_agent)
-                        eval_ref_rewards.append(ep_eval_rewards_ref)
-                        eval_rand_rewards.append(ep_eval_rewards_rand)
-                    
-                    eval_rewards_ref_mean=np.mean(np.array(eval_ref_rewards).flatten())
-                    eval_rewards_rand_mean=np.mean(np.array(eval_rand_rewards).flatten())
-                    plot_eval_rewards_ref.append(eval_rewards_ref_mean)
-                    plot_eval_rewards_rand.append(eval_rewards_rand_mean)
+            if evaluate and t_eval>eval_freq:
+                t_eval %= eval_freq
+                eval_rand_rewards = []
+                eval_ref_rewards = []
+                for _ in range(eval_eps):
+                    _, ep_eval_rewards_ref = rollout(n_particles, env_ref, policy_agent, None, eps_rollout_agent, T_env, T_agent_init, b_agent, gamma_agent)
+                    env_rand.randomize([["random"]*dr]*n_particles)
+                    _, ep_eval_rewards_rand = rollout(n_particles, env_rand, policy_agent, None, eps_rollout_agent, T_env, T_agent_init, b_agent, gamma_agent)
+                    eval_ref_rewards.append(ep_eval_rewards_ref)
+                    eval_rand_rewards.append(ep_eval_rewards_rand)
+                
+                eval_rewards_ref_mean=np.mean(np.array(eval_ref_rewards).flatten())
+                eval_rewards_rand_mean=np.mean(np.array(eval_rand_rewards).flatten())
+                plot_eval_rewards_ref.append(eval_rewards_ref_mean)
+                plot_eval_rewards_rand.append(eval_rewards_rand_mean)
             
             #log progress
             # if t_agent % 1 == 0:
