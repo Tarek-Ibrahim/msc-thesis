@@ -1,18 +1,22 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Dec 23 16:41:21 2021
+# %% TODOs
 
-@author: TIB001
-"""
 
 #%% Imports
+#General
 import numpy as np
-import matplotlib.pyplot as plt
-import multiprocessing as mp
-from baselines.common.vec_env import VecEnv, CloudpickleWrapper
-import tqdm
-from scipy.spatial.distance import squareform, pdist
 import os
+# os.environ["OMP_NUM_THREADS"] = "1"
+import pandas as pd
+
+#visualization
+import matplotlib.pyplot as plt
+import tqdm
+
+#multiprocessing
+import multiprocessing as mp
+
+#env
+from baselines.common.vec_env import VecEnv, CloudpickleWrapper
 import gym
 #------only for spyder IDE
 for env in gym.envs.registration.registry.env_specs.copy():
@@ -21,29 +25,21 @@ for env in gym.envs.registration.registry.env_specs.copy():
          del gym.envs.registration.registry.env_specs[env]
 #------
 import gym_custom
+
+#utils
+from scipy.spatial.distance import squareform, pdist
+import decimal
+
+#ML
 import tensorflow as tf
 import tensorflow_probability as tfp
-
-#%% General
-seeds=[None,1,2,3,4,5]
-seed = seeds[1]
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
-
-# os.environ["OMP_NUM_THREADS"] = "1"
-
-# epsilon = np.finfo(np.float32).eps.item()
-
-LUNAR_LANDER_SOLVED_SCORE = 200.0
-check_solved = lambda r: np.median(r) > LUNAR_LANDER_SOLVED_SCORE
-check_new_best= lambda new, current: new > current
-n_eval_points=50 #number of eval points (eval randomization discretization)
-eval_eps=3
 
 #%% Utils
 
 progress=lambda x: tqdm.trange(x, leave=True) #for visualizing/monitoring training progress
 
-def set_seed(seed):
+def set_seed(seed,env):
     import random
     
     tf.random.set_seed(seed)
@@ -132,7 +128,7 @@ def rollout(n_particles, env, policy_agent, RB, eps_rollout_agent, T_env, T_agen
         # Train agent policy
         if not freeze_agent and len(RB.storage) > T_agent_init: #if it has enough samples
             # policy_agent.train(RB=RB, eps=training_iters,batch_size=b_agent,gamma=gamma_agent)
-            policy_agent.train(RB=RB, eps=T_env,batch_size=b_agent,gamma=gamma_agent)
+            policy_agent.train(RB=RB, eps=int(T_env/10),batch_size=b_agent,gamma=gamma_agent)
 
         ep_rewards.append(rewards_sum)
 
@@ -294,7 +290,7 @@ class DDPG(object):
         return self.actor(state).numpy()
 
     def train(self, RB, eps, batch_size, gamma, tau=0.005):
-        for _ in range(eps):
+        for ep in range(eps):
             # Sample replay buffer 
             x, y, u, r, d = RB.sample(batch_size)
             state = tf.convert_to_tensor(x,dtype=tf.float32) 
@@ -335,14 +331,8 @@ class DDPG(object):
                 target_param.assign(tau * param + (1 - tau) * target_param)
 
 
-lr_agent=0.001 #0.01 #0.001 #learning rate
-h1_agent=400 #64 #400
-h2_agent=300 #64 #300
-gamma_agent=0.99 #discount factor
-T_agent_init=1000 #number of timesteps before any updates
-b_agent=1000 #100 #1000 #batch size
 
-# policy_agent=DDPG(ds, da, h1_agent, h2_agent, a_max)
+
 
 #%% Discriminator
 
@@ -402,16 +392,6 @@ class Discriminator(object): #TIP: reward of discriminator (score) is in the int
             
             gradients = tape.gradient(disc_loss, self.discriminator.trainable_variables) #calculate gradient
             self.disc_optimizer.apply_gradients(zip(gradients, self.discriminator.trainable_variables)) #backpropagate
-
-
-r_disc_scale = 1. #reward scale
-h_disc=128 #32 #128
-lr_disc=0.002 #0.02 #0.002
-b_disc=128
-train_disc=True #False
-
-# discriminator=Discriminator(ds, da, h_disc, b_disc, r_disc_scale, lr_disc)
-
 
 #%% ADR Policy (or: ensemble of policies / SVPG particles)
 
@@ -796,65 +776,114 @@ class SVPG:
                 action /= np.linalg.norm(action, ord=2)
 
         return np.array(action)
-
-
-n_particles=5 #3 #10
-temp=10. #temperature
-types_particles=["discrete","continuous"] #???: which one is better?
-type_particles=types_particles[1]
-kld_coeff=0. #kld = KL Divergence
-T_svpg_reset=25 #how often to fully reset svpg particles
-delta_max=0.05 #maximum allowable change to env randomization params caused by svpg particles (If discrete, this is fixed, If continuous, this is max)
-T_svpg_init=100 #1000 #0 #number of svpg steps to take before updates
-T_svpg=2 #5 #length of one svpg particle rollout
-lr_svpg=0.0003 #0.03 #0.0003
-gamma_svpg=0.99
-h_svpg=100 #16 #100
-
-# svpg = SVPG(n_particles, dr, h_svpg, delta_max, T_svpg, T_svpg_reset, temp, kld_coeff, lr_svpg, gamma_svpg, type_particles)
     
-#%% Implementation (ADR algorithm)
+#%% Algorithm Implementation
 if __name__ == '__main__':
     
-    env_names=['halfcheetah_custom_norm-v1','halfcheetah_custom_rand-v1','lunarlander_custom_default_rand-v0']
-    env_name=env_names[-1]
-    env=gym.make(env_name)
-    T_env=env._max_episode_steps #task horizon / max env timesteps
-    ds=env.observation_space.shape[0] #state dims
-    da=env.action_space.shape[0] #action dims
-    a_max=env.action_space.high[0]
-    dr=env.unwrapped.randomization_space.shape[0] #N_rand (no. of randomization params)
-    n_workers=n_particles
+    #%% Inputs
     
-    env_ref=make_vec_envs(env_name, seed, n_workers)
-    env_rand=make_vec_envs(env_name, seed, n_workers)
-    # env_hard=make_vec_envs('lunarlander_10_rand-v0', seed, n_workers)
-    
-    policy_agent=DDPG(ds, da, h1_agent, h2_agent, lr_agent, a_max)
-    discriminator=Discriminator(ds, da, h_disc, b_disc, r_disc_scale, lr_disc)
-    svpg = SVPG(n_particles, dr, h_svpg, delta_max, T_svpg, T_svpg_reset, temp, kld_coeff, lr_svpg, gamma_svpg, type_particles)
-    
-    set_seed(seed)
-    RB=ReplayBuffer()
-    
-    t_svpg=0 #SVPG timesteps
-    t_agent=0
-    T_agent=int(1e6) #max agent timesteps
+    #DDPG
+    lr_agent=0.001 #0.01 #0.001 #learning rate
+    h1_agent=100 #400 #64 #400
+    h2_agent=100 #300 #64 #300
+    gamma_agent=0.99 #discount factor
+    T_agent_init=1000 #number of timesteps before any updates
+    b_agent=1000 #100 #1000 #batch size
     eps_rollout_agent=1 #number of episodes to rollout the agent for per simulation instance
     
-    evaluate=False #True
-    eval_rewards_ref_mean=0
-    eval_rewards_rand_mean=0
-    eval_freq = T_env * n_particles
-    t_eval=0 # agent timesteps since eval 
-    plot_rewards=[]
-    plot_eval_rewards_ref=[]
-    plot_eval_rewards_rand=[]
+    #Discriminator
+    r_disc_scale = 1. #reward scale
+    h_disc=128 #32 #128
+    lr_disc=0.002 #0.02 #0.002
+    b_disc=128
     
-    with tqdm.tqdm(total=T_agent) as pbar:
-        while t_agent < T_agent:
+    #SVPG
+    n_particles=10
+    temp=10. #temperature
+    types_particles=["discrete","continuous"] #???: which one is better?
+    type_particles=types_particles[0]
+    kld_coeff=0. #kld = KL Divergence
+    T_svpg_reset=25 #how often to fully reset svpg particles
+    delta_max=0.05 #maximum allowable change to env randomization params caused by svpg particles (If discrete, this is fixed, If continuous, this is max)
+    T_svpg_init=100 #1000 #0 #number of svpg steps to take before updates
+    T_svpg=5 #length of one svpg particle rollout
+    lr_svpg=0.0003 #0.03 #0.0003
+    gamma_svpg=0.99
+    h_svpg=100 #16 #100
+    
+    #Env
+    env_names=['cartpole_custom-v1', 'halfcheetah_custom-v1', 'halfcheetah_custom_norm-v1', 'halfcheetah_custom_rand-v1', 'halfcheetah_custom_rand-v2', 'lunarlander_custom_default_rand-v0']
+    env_name=env_names[-2]
+    
+    #Evaluation
+    evaluate=True
+    log_ival=1
+    eval_eps=3
+    
+    #general
+    tr_eps=500
+    file_name=os.path.basename(__file__).split(".")[0]
+    common_name = "_"+file_name+"_"+env_name
+    verbose=1 #or: False/True (False/0: display progress bar; True/1: display 1 log newline per episode) 
+    
+    #Seed
+    # seeds=[None,1,2,3,4,5]
+    seeds=[1,2,3]
+    # seed = seeds[1]
+    
+    plot_disc_rewards_all=[]
+    plot_rewards_all=[]
+    plot_eval_rewards_all=[]
+    
+    for seed in seeds:
+        
+        print(f"For Seed: {seed} \n")
+        
+        #%% Initializations
+        #Env
+        env=gym.make(env_name)
+        set_seed(seed,env)
+        T_env=env._max_episode_steps #task horizon / max env timesteps
+        ds=env.observation_space.shape[0] #state dims
+        da=env.action_space.shape[0] #action dims
+        a_max=env.action_space.high[0]
+        dr=env.unwrapped.randomization_space.shape[0] #N_rand (no. of randomization params)
+        n_workers=n_particles
+        
+        env_ref=make_vec_envs(env_name, seed, n_workers)
+        env_rand=make_vec_envs(env_name, seed, n_workers)
+        
+        #models
+        policy_agent=DDPG(ds, da, h1_agent, h2_agent, lr_agent, a_max)
+        discriminator=Discriminator(ds, da, h_disc, b_disc, r_disc_scale, lr_disc)
+        svpg = SVPG(n_particles, dr, h_svpg, delta_max, T_svpg, T_svpg_reset, temp, kld_coeff, lr_svpg, gamma_svpg, type_particles)
+        
+        #memory
+        RB=ReplayBuffer()
+        
+        # t_svpg=0 #SVPG timesteps
+        # T_agent=int(1e6) #max agent timesteps
+        
+        #Results
+        plot_rewards=[]
+        plot_eval_rewards=[]
+        plot_disc_rewards=[]
+        total_timesteps=[]
+        sampled_regions = [[] for _ in range(dr)]
+        best_reward=-1e6
+        t_agent=0
+        
+        #Evaluation
+        eval_rewards_mean=0
+        eval_freq = T_env * n_particles
+        t_eval=0 # agent timesteps since eval 
+
+        episodes=progress(tr_eps) if not verbose else range(tr_eps)
+        # with tqdm.tqdm(total=T_agent) as pbar:
+        for episode in episodes:
+        # while t_agent < T_agent:
             #get sim instances from SVPG policy if current timestep is greater than the specified initial, o.w. create completely randomized env
-            simulation_instances = svpg.step() if t_svpg >= T_svpg_init else -1 * np.ones((n_particles,T_svpg,dr))
+            simulation_instances = svpg.step() if episode >= T_svpg_init else -1 * np.ones((n_particles,T_svpg,dr))
             
             # Create placeholders
             rewards_disc = np.zeros(simulation_instances.shape[:2])
@@ -864,14 +893,14 @@ if __name__ == '__main__':
             simulation_instances = np.transpose(simulation_instances, (1, 0, 2))
             
             for t in range(T_svpg):
-                t_agent_ep = 0 #agent timesteps in the current iteration/episode
+                T_disc_eps = 0 #agent timesteps in the current iteration/episode
                 # create ref and randomized instances of the env, rollout the agent in both, and train the agent
                 ref_traj, _=rollout(n_particles,env_ref,policy_agent,None,eps_rollout_agent,T_env,T_agent_init,b_agent,gamma_agent)
                 env_rand.randomize(simulation_instances[t])
                 rand_traj, rewards_agent =rollout(n_particles,env_rand,policy_agent,RB,eps_rollout_agent,T_env,T_agent_init,b_agent,gamma_agent,freeze_agent=False,add_noise=True)
                 
                 for i in range(n_particles):
-                    t_agent_ep += len(rand_traj[i])
+                    T_disc_eps += len(rand_traj[i])
                     t_agent += len(rand_traj[i])
                     t_eval += len(rand_traj[i])
                     
@@ -880,66 +909,159 @@ if __name__ == '__main__':
                     scores_disc[i][t]=score_disc
                     
                 #train discriminator (with set of all ref and rand trajs for all agents at the current svpg timestep)
-                if train_disc:
-                    flattened_rand = [rand_traj[i] for i in range(n_particles)]
-                    flattened_rand = np.concatenate(flattened_rand)
-            
-                    flattened_ref= [ref_traj[i] for i in range(n_particles)]
-                    flattened_ref = np.concatenate(flattened_ref)
-                    
-                    discriminator.train(ref_traj=flattened_ref, rand_traj=flattened_rand, eps=t_agent_ep)
+                flattened_rand = [rand_traj[i] for i in range(n_particles)]
+                flattened_rand = np.concatenate(flattened_rand)
+        
+                flattened_ref= [ref_traj[i] for i in range(n_particles)]
+                flattened_ref = np.concatenate(flattened_ref)
+                
+                discriminator.train(ref_traj=flattened_ref, rand_traj=flattened_rand, eps=T_disc_eps)
                         
+            plot_disc_rewards.append(scores_disc.mean())
+            
             #update svpg particles (ie. train their policies)
-            if t_svpg >= T_svpg_init:
+            if episode >= T_svpg_init:
                 svpg.train(rewards_disc)
+                
+                #log sampled regions only once svpg particles start training (i.e. once adr starts)
+                for dim in range(dr):
+                    low=env.unwrapped.dimensions[dim].range_min
+                    high=env.unwrapped.dimensions[dim].range_max
+                    scaled_instances=low + (high-low) * simulation_instances[:, :, dim]
+                    sampled_regions[dim]=np.concatenate([sampled_regions[dim],scaled_instances.flatten()])
             
             #evaluate
             if evaluate and t_eval>eval_freq:
                 t_eval %= eval_freq
-                eval_rand_rewards = []
-                eval_ref_rewards = []
+                eval_rewards = []
                 for _ in range(eval_eps):
-                    _, ep_eval_rewards_ref = rollout(n_particles, env_ref, policy_agent, None, eps_rollout_agent, T_env, T_agent_init, b_agent, gamma_agent)
-                    env_rand.randomize([["random"]*dr]*n_particles)
-                    _, ep_eval_rewards_rand = rollout(n_particles, env_rand, policy_agent, None, eps_rollout_agent, T_env, T_agent_init, b_agent, gamma_agent)
-                    eval_ref_rewards.append(ep_eval_rewards_ref)
-                    eval_rand_rewards.append(ep_eval_rewards_rand)
+                    env.randomize(["random"]*dr)
+                    s=env.reset()
+                    done=False
+                    R=0
+                    while not done:
+                        a = policy_agent.select_action(np.expand_dims(s,0))
+                        s, r, done, _ = env.step(a)
+                        R+=r
+                    eval_rewards.append(R)
                 
-                eval_rewards_ref_mean=np.mean(np.array(eval_ref_rewards).flatten())
-                eval_rewards_rand_mean=np.mean(np.array(eval_rand_rewards).flatten())
-                plot_eval_rewards_ref.append(eval_rewards_ref_mean)
-                plot_eval_rewards_rand.append(eval_rewards_rand_mean)
+                eval_rewards_mean=np.mean(np.array(eval_rewards).flatten())
+                plot_eval_rewards.append(eval_rewards_mean)
             
-            #log progress
-            # if t_agent % 1 == 0:
+            #compute & log results
+            #save best running model [params]
+            if eval_rewards_mean>best_reward: 
+                best_reward=eval_rewards_mean
+                policy_agent.actor.save_weights(f"saved_models/actor{common_name}")
+                policy_agent.critic.save_weights(f"saved_models/critic{common_name}")
+            #save plot data
             plot_rewards.append(np.array(rewards_agent).mean())
-            log_msg="Rewards Agent: {:.2f}, Rewards Disc: {:.2f}, Rewards Eval Ref: {:.2f}, Rewards Eval Rand: {:.2f}".format(np.array(rewards_agent).mean(), scores_disc.mean(), eval_rewards_ref_mean, eval_rewards_rand_mean)
-            pbar.update(); pbar.set_description(desc=log_msg); pbar.refresh()
-                
+            total_timesteps.append(t_agent)
+            #log iteration results & statistics
+            # if t_agent % 1== 0:
+            if t_agent % log_ival == 0:
+                log_msg="Rewards Agent: {:.2f}, Rewards Disc: {:.2f}, Rewards Eval: {:.2f}, Total Timesteps: {}".format(np.array(rewards_agent).mean(), scores_disc.mean(), eval_rewards_mean, t_agent)
+                if verbose:
+                    print(log_msg+f" episode:{episode} \n")
+                else:
+                    episodes.set_description(desc=log_msg); episodes.refresh()
+                    # pbar.update(); pbar.set_description(desc=log_msg); pbar.refresh()
+    
+            # t_svpg += 1
             
-            #TODO: save best running model(s)
-            
-            t_svpg += 1
+        plot_rewards_all.append(plot_rewards)
+        plot_eval_rewards_all.append(plot_eval_rewards)
+        plot_disc_rewards_all.append(plot_disc_rewards)
+        
+        env.close()
+        env_ref.close()
+        env_rand.close()
     
     
     #%% Results & Plots
-    title="Training Rewards (Learning Curve)"
-    plt.figure(figsize=(16,8))
-    plt.grid(1)
-    plt.plot(plot_rewards)
-    plt.title(title)
-    plt.show()
+    #process results
+    plot_rewards_mean = np.stack(plot_rewards_all).mean(0)
+    plot_eval_rewards_mean = np.stack(plot_eval_rewards_all).mean(0)
+    plot_disc_rewards_mean = np.stack(plot_disc_rewards_all).mean(0)
     
-    title="Evaluation Rewards (Ref)"
-    plt.figure(figsize=(16,8))
-    plt.grid(1)
-    plt.plot(plot_eval_rewards_ref)
-    plt.title(title)
-    plt.show()
+    plot_rewards_max= np.maximum.reduce(plot_rewards_all)
+    plot_eval_rewards_max = np.maximum.reduce(plot_eval_rewards_all)
+    plot_disc_rewards_max = np.maximum.reduce(plot_disc_rewards_all)
     
-    title="Evaluation Rewards (Rand)"
+    plot_rewards_min = np.minimum.reduce(plot_rewards_all)
+    plot_eval_rewards_min = np.minimum.reduce(plot_eval_rewards_all)
+    plot_disc_rewards_min = np.minimum.reduce(plot_disc_rewards_all)
+    
+    #save results to df
+    df = pd.DataFrame(list(zip(plot_rewards_mean,
+                               plot_rewards_max,
+                               plot_rewards_min,
+                               plot_eval_rewards_mean,
+                               plot_eval_rewards_max,
+                               plot_eval_rewards_min,
+                               plot_disc_rewards_mean,
+                               plot_disc_rewards_max,
+                               plot_disc_rewards_min,
+                               total_timesteps)),
+                      columns =['Rewards_Tr', 'Rewards_Tr_Max', 'Rewards_Tr_Min', 'Rewards_Eval', 'Rewards_Eval_Max', 'Rewards_Eval_Min', 'Rewards_Disc', 'Rewards_Disc_Max', 'Rewards_Disc_Min', 'Total_Timesteps'])
+    df.to_pickle(f"plots/results{common_name}.pkl")
+    
+    #plot results
+    title="Training Rewards"
     plt.figure(figsize=(16,8))
     plt.grid(1)
-    plt.plot(plot_eval_rewards_rand)
+    plt.plot(plot_rewards_mean)
+    plt.fill_between(range(tr_eps), plot_rewards_max, plot_rewards_min,alpha=0.2)
+    # plt.axhline(y = env.spec.reward_threshold, color = 'r', linestyle = '--',label='Solved')
     plt.title(title)
-    plt.show()
+    plt.legend(loc="upper right")
+    plt.savefig(f'plots/tr{common_name}.png')
+    
+    title="Evaluation Rewards"
+    plt.figure(figsize=(16,8))
+    plt.grid(1)
+    plt.plot(plot_eval_rewards_mean)
+    plt.fill_between(range(tr_eps), plot_eval_rewards_max, plot_eval_rewards_min,alpha=0.2)
+    # plt.axhline(y = env.spec.reward_threshold, color = 'r', linestyle = '--',label='Solved')
+    plt.title(title)
+    plt.legend(loc="upper right")
+    plt.savefig(f'plots/ts{common_name}.png')
+    
+    title="Discriminator Rewards"
+    plt.figure(figsize=(16,8))
+    plt.grid(1)
+    plt.plot(plot_disc_rewards_mean)
+    plt.fill_between(range(tr_eps), plot_disc_rewards_max, plot_disc_rewards_min,alpha=0.2)
+    plt.title(title)
+    plt.savefig(f'plots/disc{common_name}.png')
+    
+    #TODO: plot control actions (of which episode(s)?)
+    
+    eps_step=int((tr_eps-T_svpg_init)/4) #100
+    region_step=eps_step*T_svpg*n_particles
+    df2=pd.DataFrame()
+    for dim, regions in enumerate(sampled_regions):
+        
+        low=env.unwrapped.dimensions[dim].range_min
+        high=env.unwrapped.dimensions[dim].range_max
+        
+        dim_name=env.unwrapped.dimensions[dim].name
+        
+        d = decimal.Decimal(str(low))
+        step_exp=d.as_tuple().exponent-1
+        step=10**step_exp
+
+        x=np.arange(low,high+step,step)
+        
+        title=f"Sampled Regions for Randomization Dim = {dim_name} Over Time"
+        plt.figure(figsize=(16,8))
+        plt.grid(1)
+        plt.hist((regions[region_step*0:region_step*1],regions[region_step*1:region_step*2],regions[region_step*2:region_step*3], regions[region_step*3:]), np.arange(min(x),max(x)+2*step,step), histtype='barstacked', label=[f'{eps_step*1} eps',f'{eps_step*2} eps', f'{eps_step*3} eps', f'{eps_step*4} eps'],color=["lightskyblue","blueviolet","hotpink","lightsalmon"])
+        plt.xlim(min(x), max(x)+step)
+        plt.legend()
+        plt.title(title)
+        #save results
+        plt.savefig(f'plots/sampled_regions_dim_{dim_name}{common_name}.png')
+        df2[f'Sampled_Regions_{dim_name}'] = list(regions)
+    
+    df2.to_pickle(f"plots/sampled_regions{common_name}.pkl")
