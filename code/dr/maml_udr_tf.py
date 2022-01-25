@@ -133,25 +133,6 @@ def vector_to_parameters(vec,params):
     
     return
 
-def params2vec(parameters, grads):
-    vec_params, vec_grads = [], []
-    for param,grad in zip(parameters,grads):
-        vec_params.append(tf.reshape(param,-1))
-        vec_grads.append(tf.reshape(grad,-1))
-    return tf.concat(vec_params,0), tf.concat(vec_grads,0)
-    
-
-def vec2params(vec, grads):
-    grads_new=[]
-    pointer = 0
-    for grad in grads:
-        numel = tf.size(grad).numpy()
-        grads_new.append(tf.reshape(vec[pointer:pointer + numel],list(grad.shape)))
-
-        pointer += numel
-    return grads_new
-
-
 #%% MAML
 
 class PolicyNetwork(tf.keras.Model):

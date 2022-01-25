@@ -952,8 +952,7 @@ if __name__ == '__main__':
             #save best running model [params]
             if eval_rewards_mean>best_reward: 
                 best_reward=eval_rewards_mean
-                policy_agent.actor.save_weights(f"saved_models/actor{common_name}")
-                policy_agent.critic.save_weights(f"saved_models/critic{common_name}")
+                policy_agent.actor.save_weights(f"saved_models/model{common_name}")
             #save plot data
             plot_rewards.append(np.array(rewards_agent).mean())
             total_timesteps.append(t_agent)
