@@ -1052,7 +1052,7 @@ if __name__ == '__main__':
 
         x=np.arange(low,high+step,step)
         
-        title=f"Sampled Regions for Randomization Dim = {dim_name} Over Time"
+        title=f"Sampled Regions for Randomization Dim = {dim_name} {env.rand} Over Time"
         plt.figure(figsize=(16,8))
         plt.grid(1)
         plt.hist((regions[region_step*0:region_step*1],regions[region_step*1:region_step*2],regions[region_step*2:region_step*3], regions[region_step*3:]), np.arange(min(x),max(x)+2*step,step), histtype='barstacked', label=[f'{eps_step*1} eps',f'{eps_step*2} eps', f'{eps_step*3} eps', f'{eps_step*4} eps'],color=["lightskyblue","blueviolet","hotpink","lightsalmon"])
@@ -1060,7 +1060,7 @@ if __name__ == '__main__':
         plt.legend()
         plt.title(title)
         #save results
-        plt.savefig(f'plots/sampled_regions_dim_{dim_name}{common_name}.png')
-        df2[f'Sampled_Regions_{dim_name}'] = list(regions)
+        plt.savefig(f'plots/sampled_regions_dim_{dim_name}_{env.rand}{common_name}.png')
+        df2[f'Sampled_Regions_{dim_name}_{env.rand}'] = list(regions)
     
     df2.to_pickle(f"plots/sampled_regions{common_name}.pkl")
