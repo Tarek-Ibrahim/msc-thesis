@@ -55,10 +55,6 @@ def collect_rollout_batch(envs, ds, da, policy, T, b, n_workers, queue, params=N
     actions = [[] for _ in range(b)]
     next_states = [[] for _ in range(b)]
     
-    states_mat=np.zeros((T,b,ds),dtype=np.float32)
-    actions_mat=np.zeros((T,b,da),dtype=np.float32)
-    rewards_mat=np.zeros((T,b),dtype=np.float32)
-    
     
     for rollout_idx in range(b):
         queue.put(rollout_idx)
@@ -89,12 +85,20 @@ def collect_rollout_batch(envs, ds, da, policy, T, b, n_workers, queue, params=N
         #reset
         s, rollout_idxs = s_dash, rollout_idxs_new
     
-    for rollout_idx in range(b):
-        states_mat[:,rollout_idx]= np.stack(states[rollout_idx])
-        actions_mat[:,rollout_idx]= np.stack(actions[rollout_idx])
-        rewards_mat[:,rollout_idx]= np.stack(rewards[rollout_idx])
+    T_max=max(map(len,rewards))
+    states_mat=np.zeros((T_max,b,ds),dtype=np.float32)
+    actions_mat=np.zeros((T_max,b,da),dtype=np.float32)
+    rewards_mat=np.zeros((T_max,b),dtype=np.float32)
+    masks_mat=np.zeros((T_max,b),dtype=np.float32)
     
-    D=[states_mat, actions_mat, rewards_mat]
+    for rollout_idx in range(b):
+        T_rollout=len(rewards[rollout_idx])
+        states_mat[:T_rollout,rollout_idx]= np.stack(states[rollout_idx])
+        actions_mat[:T_rollout,rollout_idx]= np.stack(actions[rollout_idx])
+        rewards_mat[:T_rollout,rollout_idx]= np.stack(rewards[rollout_idx])
+        masks_mat[:T_rollout,rollout_idx]=1.0
+    
+    D=[states_mat, actions_mat, rewards_mat, masks_mat]
     
     return D
 
@@ -132,6 +136,25 @@ def vector_to_parameters(vec,params):
         pointer += numel
     
     return
+
+
+def weighted_mean(tensor, axis=None, weights=None):
+    if weights is None:
+        out = tf.reduce_mean(tensor)
+    if axis is None:
+        out = tf.reduce_sum(tensor * weights) / tf.reduce_sum(weights)
+    else:
+        mean_dim = tf.reduce_sum(tensor * weights, axis=axis) / (tf.reduce_sum(weights, axis=axis))
+        out = tf.reduce_mean(mean_dim)
+    return out
+
+
+def weighted_normalize(tensor, axis=None, weights=None, epsilon=1e-8):
+    mean = weighted_mean(tensor, axis=axis, weights=weights)
+    num = tensor * (1 if weights is None else weights) - mean
+    std = tf.math.sqrt(weighted_mean(num ** 2, axis=axis, weights=weights))
+    out = num/(std + epsilon)
+    return out
 
 #%% MAML
 
@@ -188,11 +211,12 @@ class ValueNetwork(tf.keras.Model):
         
         self.w=tf.Variable(initial_value=tf.keras.initializers.Zeros()(shape=[self.feature_size,1]),dtype=tf.float32,trainable=False)
         
-    def fit_params(self, states, rewards):
+    def fit_params(self, states, rewards, masks):
         
-        T=states.shape[0]
+        T_max=states.shape[0]
         b=states.shape[1]
-        ones = tf.ones([T,b,1],dtype=tf.float32)
+        ones = tf.expand_dims(masks,2)
+        states = states * ones
         timestep= tf.math.cumsum(ones, axis=0) / 100.
         
         reg_coeff = self.reg_coeff
@@ -203,9 +227,9 @@ class ValueNetwork(tf.keras.Model):
 
         #compute returns        
         G = np.zeros(b,dtype=np.float32)
-        returns = np.zeros((T,b),dtype=np.float32)
-        for t in range(T - 1, -1, -1):
-            G = rewards[t]+self.gamma*G
+        returns = np.zeros((T_max,b),dtype=np.float32)
+        for t in range(T_max - 1, -1, -1):
+            G = rewards[t]*masks[t]+self.gamma*G
             returns[t] = G
         returns = tf.reshape(returns, (-1, 1))
         
@@ -229,11 +253,10 @@ class ValueNetwork(tf.keras.Model):
         self.w.assign(sol)
         # self.w.assign(tf.transpose(sol))
         
-    def call(self, states):
+    def call(self, states, masks):
         
-        T=states.shape[0]
-        b=states.shape[1]
-        ones = tf.ones([T,b,1],dtype=tf.float32)
+        ones = tf.expand_dims(masks,2)
+        states = states * ones
         timestep= tf.math.cumsum(ones, axis=0) / 100.
         
         features = tf.concat([states, states **2, timestep, timestep**2, timestep**3, ones],axis=2)
@@ -241,20 +264,20 @@ class ValueNetwork(tf.keras.Model):
         return tf.linalg.matmul(features,self.w)
 
 
-def compute_advantages(states,rewards,value_net,gamma):
+def compute_advantages(states,rewards,value_net,gamma,masks):
     
-    T=states.shape[0]
+    T_max=states.shape[0]
     
-    values = value_net(states)
+    values = value_net(states,masks)
     if len(list(values.shape))>2: values = tf.squeeze(values, axis=2)
-    values = tf.pad(values,[[0, 1], [0, 0]])
+    values = tf.pad(values*masks,[[0, 1], [0, 0]])
     
     deltas = rewards + gamma * values[1:] - values[:-1] #delta = r + gamma * v - v' #TD error
     # advantages = tf.zeros_like(deltas, dtype=tf.float32)
     advantages = tf.TensorArray(tf.float32, *deltas.shape)
     advantage = tf.zeros_like(deltas[0], dtype=tf.float32)
     
-    for t in range(T - 1, -1, -1): #reversed(range(-1,T -1 )):
+    for t in range(T_max - 1, -1, -1): #reversed(range(-1,T -1 )):
         advantage = advantage * gamma + deltas[t]
         advantages = advantages.write(t, advantage)
         # advantages[t] = advantage
@@ -262,7 +285,7 @@ def compute_advantages(states,rewards,value_net,gamma):
     advantages = advantages.stack()
     
     #Normalize advantages to improve: learning, numerical stability & convergence
-    advantages = (advantages - tf.math.reduce_mean(advantages)) / (tf.math.reduce_std(advantages)+np.finfo(np.float32).eps)
+    advantages = weighted_normalize(advantages,weights=masks)
     
     return advantages
 
@@ -270,15 +293,17 @@ def compute_advantages(states,rewards,value_net,gamma):
 def adapt(D,value_net,policy,alpha):
     
     #unpack
-    states, actions, rewards = D
+    states, actions, rewards, masks = D
     
-    value_net.fit_params(states,rewards)
+    value_net.fit_params(states,rewards,masks)
     
     with tf.GradientTape() as tape:
-        advantages=compute_advantages(states,rewards,value_net,value_net.gamma)
+        advantages=compute_advantages(states,rewards,value_net,value_net.gamma,masks)
         pi=policy(states)
         log_probs=pi.log_prob(actions)
-        loss=-tf.math.reduce_mean(tf.math.reduce_sum(log_probs,axis=2)*advantages) if len(list(log_probs.shape)) > 2 else -tf.math.reduce_mean(log_probs*advantages)
+        if len(log_probs.shape) > 2:
+            log_probs = tf.reduce_sum(log_probs, axis=2)
+        loss=-weighted_mean(log_probs*advantages,axis=0,weights=masks)
                 
     #compute adapted params (via: GD) --> perform 1 gradient step update
     grads = tape.gradient(loss, policy.trainable_variables)
@@ -323,7 +348,7 @@ def surrogate_loss(Ds, D_dashes,policy,value_net,gamma,alpha,prev_pis=None):
         
         theta_dash=adapt(D,value_net,policy,alpha)
 
-        states, actions, rewards = D_dash
+        states, actions, rewards, masks = D_dash
         
         pi=policy(states,params=theta_dash)
         pis.append(detach_dist(pi))
@@ -331,15 +356,20 @@ def surrogate_loss(Ds, D_dashes,policy,value_net,gamma,alpha,prev_pis=None):
         if prev_pi is None:
             prev_pi = detach_dist(pi)
         
-        advantages=compute_advantages(states,rewards,value_net,gamma)
+        advantages=compute_advantages(states,rewards,value_net,gamma,masks)
         
         ratio=pi.log_prob(actions)-prev_pi.log_prob(actions)
-        loss = - tf.math.reduce_mean(advantages * tf.math.exp(tf.math.reduce_sum(ratio,axis=2))) if len(list(ratio.shape)) > 2 else - tf.math.reduce_mean(advantages * tf.math.exp(ratio))
+        if len(ratio.shape) > 2:
+            ratio = tf.reduce_sum(ratio, axis=2)
+        loss = - weighted_mean(ratio*advantages,axis=0,weights=masks)
         losses.append(loss)
         
+        if len(actions.shape) > 2:
+            masks = tf.expand_dims(masks, axis=2)
         #???: which version is correct?
         # kl=tf.math.reduce_mean(pi.kl_divergence(prev_pi))
-        kl=tf.math.reduce_mean(prev_pi.kl_divergence(pi))
+        # kl=tf.math.reduce_mean(prev_pi.kl_divergence(pi))
+        kl= weighted_mean(prev_pi.kl_divergence(pi),axis=0,weights=masks)
         
         kls.append(kl)
     
@@ -373,15 +403,18 @@ def kl_div(Ds,D_dashes,value_net,policy,alpha):
         
         theta_dash=adapt(D,value_net,policy,alpha)
 
-        states, _, _ = D_dash
+        states, actions, _, masks = D_dash
         
         pi=policy(states,params=theta_dash)
         
         prev_pi = detach_dist(pi)
         
+        if len(actions.shape) > 2:
+            masks = tf.expand_dims(masks, axis=2)
         #???: which version is correct?
         # kl=tf.math.reduce_mean(pi.kl_divergence(prev_pi))
-        kl=tf.math.reduce_mean(prev_pi.kl_divergence(pi))
+        # kl=tf.math.reduce_mean(prev_pi.kl_divergence(pi))
+        kl= weighted_mean(prev_pi.kl_divergence(pi),axis=0,weights=masks)
         
         kls.append(kl)
     
@@ -573,7 +606,7 @@ if __name__ == '__main__':
     #Seed
     # seeds=[None,1,2,3,4,5]
     seeds=[1,2,3]
-    seed = seeds[1]
+    # seed = seeds[1]
     
     plot_tr_rewards_all=[]
     plot_val_rewards_all=[]
@@ -640,7 +673,7 @@ if __name__ == '__main__':
                 #collect pre-adaptation rollout batch in rand envs (one rollout for each svpg particle)
                 D=collect_rollout_batch(env_rand, ds, da, policy, T_env, b, n_workers, queue)
                 Ds.append(D)
-                _, _, rewards = D
+                _, _, rewards,_ = D
                 rewards_tr_ep.append(rewards)
                 
                 #adapt agent [meta-]parameters (via VPG w/ baseline)
@@ -649,7 +682,7 @@ if __name__ == '__main__':
                 #collect post-adaptation rollout batch in rand envs
                 D_dash=collect_rollout_batch(env_rand, ds, da, policy, T_env, b, n_workers, queue, params=theta_dash)
                 D_dashes.append(D_dash)
-                _, _, rewards = D_dash
+                _, _, rewards,_ = D_dash
                 rewards_val_ep.append(rewards)
                 t_eval += rewards.size
                 t_agent += rewards.size
@@ -689,7 +722,8 @@ if __name__ == '__main__':
                         states=tf.expand_dims(state,0)
                         actions=tf.expand_dims(tf.expand_dims(tf.convert_to_tensor(a),0),0)
                         rewards=tf.expand_dims(tf.expand_dims(tf.convert_to_tensor(np.array(r),dtype=np.float32),0),0)
-                        D=[states, actions, rewards]
+                        masks=tf.expand_dims(tf.expand_dims(tf.convert_to_tensor(np.array(1.0),dtype=np.float32),0),0)
+                        D=[states, actions, rewards, masks]
                                             
                         theta_dash=adapt(D,value_net,policy,alpha)
                         
