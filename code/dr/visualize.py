@@ -28,6 +28,25 @@ import tensorflow_probability as tfp
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 #%% Models & Functions
+#Utils
+def weighted_mean(tensor, axis=None, weights=None):
+    if weights is None:
+        out = tf.reduce_mean(tensor)
+    if axis is None:
+        out = tf.reduce_sum(tensor * weights) / tf.reduce_sum(weights)
+    else:
+        mean_dim = tf.reduce_sum(tensor * weights, axis=axis) / (tf.reduce_sum(weights, axis=axis))
+        out = tf.reduce_mean(mean_dim)
+    return out
+
+
+def weighted_normalize(tensor, axis=None, weights=None, epsilon=1e-8):
+    mean = weighted_mean(tensor, axis=axis, weights=weights)
+    num = tensor * (1 if weights is None else weights) - mean
+    std = tf.math.sqrt(weighted_mean(num ** 2, axis=axis, weights=weights))
+    out = num/(std + epsilon)
+    return out
+
 #MAML
 class PolicyNetwork(tf.keras.Model):
     def __init__(self, in_size, h, out_size):
@@ -82,11 +101,12 @@ class ValueNetwork(tf.keras.Model):
         
         self.w=tf.Variable(initial_value=tf.keras.initializers.Zeros()(shape=[self.feature_size,1]),dtype=tf.float32,trainable=False)
         
-    def fit_params(self, states, rewards):
+    def fit_params(self, states, rewards, masks):
         
-        T=states.shape[0]
+        T_max=states.shape[0]
         b=states.shape[1]
-        ones = tf.ones([T,b,1],dtype=tf.float32)
+        ones = tf.expand_dims(masks,2)
+        states = states * ones
         timestep= tf.math.cumsum(ones, axis=0) / 100.
         
         reg_coeff = self.reg_coeff
@@ -97,9 +117,9 @@ class ValueNetwork(tf.keras.Model):
 
         #compute returns        
         G = np.zeros(b,dtype=np.float32)
-        returns = np.zeros((T,b),dtype=np.float32)
-        for t in range(T - 1, -1, -1):
-            G = rewards[t]+self.gamma*G
+        returns = np.zeros((T_max,b),dtype=np.float32)
+        for t in range(T_max - 1, -1, -1):
+            G = rewards[t]*masks[t]+self.gamma*G
             returns[t] = G
         returns = tf.reshape(returns, (-1, 1))
         
@@ -123,11 +143,10 @@ class ValueNetwork(tf.keras.Model):
         self.w.assign(sol)
         # self.w.assign(tf.transpose(sol))
         
-    def call(self, states):
+    def call(self, states, masks):
         
-        T=states.shape[0]
-        b=states.shape[1]
-        ones = tf.ones([T,b,1],dtype=tf.float32)
+        ones = tf.expand_dims(masks,2)
+        states = states * ones
         timestep= tf.math.cumsum(ones, axis=0) / 100.
         
         features = tf.concat([states, states **2, timestep, timestep**2, timestep**3, ones],axis=2)
@@ -135,20 +154,20 @@ class ValueNetwork(tf.keras.Model):
         return tf.linalg.matmul(features,self.w)
 
 
-def compute_advantages(states,rewards,value_net,gamma):
+def compute_advantages(states,rewards,value_net,gamma,masks):
     
-    T=states.shape[0]
+    T_max=states.shape[0]
     
-    values = value_net(states)
+    values = value_net(states,masks)
     if len(list(values.shape))>2: values = tf.squeeze(values, axis=2)
-    values = tf.pad(values,[[0, 1], [0, 0]])
+    values = tf.pad(values*masks,[[0, 1], [0, 0]])
     
     deltas = rewards + gamma * values[1:] - values[:-1] #delta = r + gamma * v - v' #TD error
     # advantages = tf.zeros_like(deltas, dtype=tf.float32)
     advantages = tf.TensorArray(tf.float32, *deltas.shape)
     advantage = tf.zeros_like(deltas[0], dtype=tf.float32)
     
-    for t in range(T - 1, -1, -1): #reversed(range(-1,T -1 )):
+    for t in range(T_max - 1, -1, -1): #reversed(range(-1,T -1 )):
         advantage = advantage * gamma + deltas[t]
         advantages = advantages.write(t, advantage)
         # advantages[t] = advantage
@@ -156,7 +175,7 @@ def compute_advantages(states,rewards,value_net,gamma):
     advantages = advantages.stack()
     
     #Normalize advantages to improve: learning, numerical stability & convergence
-    advantages = (advantages - tf.math.reduce_mean(advantages)) / (tf.math.reduce_std(advantages)+np.finfo(np.float32).eps)
+    advantages = weighted_normalize(advantages,weights=masks)
     
     return advantages
 
@@ -164,15 +183,17 @@ def compute_advantages(states,rewards,value_net,gamma):
 def adapt(D,value_net,policy,alpha):
     
     #unpack
-    states, actions, rewards = D
+    states, actions, rewards, masks = D
     
-    value_net.fit_params(states,rewards)
+    value_net.fit_params(states,rewards,masks)
     
     with tf.GradientTape() as tape:
-        advantages=compute_advantages(states,rewards,value_net,value_net.gamma)
+        advantages=compute_advantages(states,rewards,value_net,value_net.gamma,masks)
         pi=policy(states)
         log_probs=pi.log_prob(actions)
-        loss=-tf.math.reduce_mean(tf.math.reduce_sum(log_probs,axis=2)*advantages) if len(list(log_probs.shape)) > 2 else -tf.math.reduce_mean(log_probs*advantages)
+        if len(log_probs.shape) > 2:
+            log_probs = tf.reduce_sum(log_probs, axis=2)
+        loss=-weighted_mean(log_probs*advantages,axis=0,weights=masks)
                 
     #compute adapted params (via: GD) --> perform 1 gradient step update
     grads = tape.gradient(loss, policy.trainable_variables)
@@ -205,7 +226,7 @@ T_svpg_init=1
 T_svpg=2
 n_particles=3
 
-h=100
+h=64 #100
 gamma=0.99
 alpha=0.1
 h1_agent=64 #100 #400 #64 #400
@@ -323,7 +344,8 @@ for i, policy in enumerate(policies):
                 states=tf.expand_dims(state,0)
                 actions=tf.expand_dims(tf.expand_dims(tf.convert_to_tensor(a),0),0)
                 rewards=tf.expand_dims(tf.expand_dims(tf.convert_to_tensor(np.array(r),dtype=np.float32),0),0)
-                D=[states, actions, rewards]
+                masks=tf.expand_dims(tf.expand_dims(tf.convert_to_tensor(np.array(1.0),dtype=np.float32),0),0)
+                D=[states, actions, rewards, masks]
                                     
                 theta_dash=adapt(D,value_net,policy,alpha)
                 

@@ -220,7 +220,7 @@ class PolicyNetwork(tf.keras.Model):
         
 
 class ValueNetwork(tf.keras.Model):
-    def __init__(self, in_size, T, b, gamma, reg_coeff=1e-5):
+    def __init__(self, in_size, gamma, reg_coeff=1e-5):
         super().__init__()
         
         self.reg_coeff=reg_coeff
@@ -603,7 +603,7 @@ if __name__ == '__main__':
     in_size=ds
     out_size=da
     policy = PolicyNetwork(in_size,n,h,out_size) #dynamics model
-    value_net=ValueNetwork(in_size,T,b,gamma)
+    value_net=ValueNetwork(in_size,gamma)
     
     #results 
     plot_tr_rewards=[]
