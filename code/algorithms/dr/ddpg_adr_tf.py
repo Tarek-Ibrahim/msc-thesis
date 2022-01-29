@@ -78,59 +78,55 @@ class ReplayBuffer(object):
         return np.array(x), np.array(y), np.array(u), np.array(r).reshape(-1, 1), np.array(d).reshape(-1, 1)
 
 
-def rollout(n_particles, env, policy_agent, RB, eps_rollout_agent, T_env, T_agent_init, b_agent, gamma_agent, freeze_agent=True, add_noise=False, noise_scale=0.1): 
+def rollout(n_particles, env, policy_agent, RB, T_env, T_agent_init, b_agent, gamma_agent, freeze_agent=True, add_noise=False, noise_scale=0.1): 
     
     states = [[] for _ in range(n_particles)]
     actions = [[] for _ in range(n_particles)]
     next_states = [[] for _ in range(n_particles)]
     rewards = [[] for _ in range(n_particles)]
-    ep_rewards = []
 
-    for ep in range(eps_rollout_agent):
-        rewards_sum = np.zeros(n_particles)
-        state = env.reset()
+    rewards_sum = np.zeros(n_particles)
+    state = env.reset()
 
-        done = [False] * n_particles
-        add_to_buffer = [True] * n_particles
-        t_env = 0 #env timestep
-        training_iters = 0
+    done = [False] * n_particles
+    add_to_buffer = [True] * n_particles
+    t_env = 0 #env timestep
+    training_iters = 0
 
-        while not all(done) and t_env <= T_env:
-            action = policy_agent.select_action(np.array(state))
+    while not all(done) and t_env <= T_env:
+        action = policy_agent.select_action(np.array(state))
 
-            if add_noise:
-                action = action + np.random.normal(0, noise_scale, size=action.shape)
-                action = action.clip(-1, 1)
+        if add_noise:
+            action = action + np.random.normal(0, noise_scale, size=action.shape)
+            action = action.clip(-1, 1)
 
-            next_state, reward, done, info = env.step(action)
+        next_state, reward, done, info = env.step(action)
 
-            #Add samples to replay buffer
-            for i, st in enumerate(state):
-                if add_to_buffer[i]:
-                    states[i].append(st)
-                    actions[i].append(action[i])
-                    next_states[i].append(next_state[i])
-                    rewards[i].append(reward[i])
-                    rewards_sum[i] += reward[i]
-                    training_iters += 1
+        #Add samples to replay buffer
+        for i, st in enumerate(state):
+            if add_to_buffer[i]:
+                states[i].append(st)
+                actions[i].append(action[i])
+                next_states[i].append(next_state[i])
+                rewards[i].append(reward[i])
+                rewards_sum[i] += reward[i]
+                training_iters += 1
 
-                    if RB is not None:
-                        done_bool = 0 if t_env + 1 == T_env else float(done[i])
-                        RB.add((state[i], next_state[i], action[i], reward[i], done_bool))
+                if RB is not None:
+                    done_bool = 0 if t_env + 1 == T_env else float(done[i])
+                    RB.add((state[i], next_state[i], action[i], reward[i], done_bool))
 
-                if done[i]:
-                    # Avoid duplicates
-                    add_to_buffer[i] = False
+            if done[i]:
+                # Avoid duplicates
+                add_to_buffer[i] = False
 
-            state = next_state
-            t_env += 1
+        state = next_state
+        t_env += 1
 
-        # Train agent policy
-        if not freeze_agent and len(RB.storage) > T_agent_init: #if it has enough samples
-            # policy_agent.train(RB=RB, eps=training_iters,batch_size=b_agent,gamma=gamma_agent)
-            policy_agent.train(RB=RB, eps=int(T_env/10),batch_size=b_agent,gamma=gamma_agent)
-
-        ep_rewards.append(rewards_sum)
+    # Train agent policy
+    if not freeze_agent and len(RB.storage) > T_agent_init: #if it has enough samples
+        # policy_agent.train(RB=RB, eps=training_iters,batch_size=b_agent,gamma=gamma_agent)
+        policy_agent.train(RB=RB, eps=int(T_env/10),batch_size=b_agent,gamma=gamma_agent)
 
     #concatenate rollouts
     trajs = []
@@ -142,7 +138,7 @@ def rollout(n_particles, env, policy_agent, RB, eps_rollout_agent, T_env, T_agen
                 np.array(next_states[i])
             ], axis=-1))
 
-    return trajs, ep_rewards
+    return trajs, rewards_sum.mean()
 
 #%% Environments
 
@@ -789,7 +785,6 @@ if __name__ == '__main__':
     gamma_agent=0.99 #discount factor
     T_agent_init=1000 #number of timesteps before any updates
     b_agent=1000 #100 #1000 #batch size
-    eps_rollout_agent=1 #number of episodes to rollout the agent for per simulation instance
     
     #Discriminator
     r_disc_scale = 1. #reward scale
@@ -834,6 +829,7 @@ if __name__ == '__main__':
     plot_disc_rewards_all=[]
     plot_rewards_all=[]
     plot_eval_rewards_all=[]
+    total_timesteps_all=[]
     
     for seed in seeds:
         
@@ -888,6 +884,7 @@ if __name__ == '__main__':
             # Create placeholders
             rewards_disc = np.zeros(simulation_instances.shape[:2])
             scores_disc=np.zeros(simulation_instances.shape[:2])
+            rewards_agent = np.zeros(T_svpg)
         
             # Reshape to work with vectorized environments
             simulation_instances = np.transpose(simulation_instances, (1, 0, 2))
@@ -895,9 +892,10 @@ if __name__ == '__main__':
             for t in range(T_svpg):
                 T_disc_eps = 0 #agent timesteps in the current iteration/episode
                 # create ref and randomized instances of the env, rollout the agent in both, and train the agent
-                ref_traj, _=rollout(n_particles,env_ref,policy_agent,None,eps_rollout_agent,T_env,T_agent_init,b_agent,gamma_agent)
+                ref_traj, _=rollout(n_particles,env_ref,policy_agent,None,T_env,T_agent_init,b_agent,gamma_agent)
                 env_rand.randomize(simulation_instances[t])
-                rand_traj, rewards_agent =rollout(n_particles,env_rand,policy_agent,RB,eps_rollout_agent,T_env,T_agent_init,b_agent,gamma_agent,freeze_agent=False,add_noise=True)
+                rand_traj, reward_agent =rollout(n_particles,env_rand,policy_agent,RB,T_env,T_agent_init,b_agent,gamma_agent,freeze_agent=False,add_noise=True)
+                rewards_agent[t]=reward_agent
                 
                 for i in range(n_particles):
                     T_disc_eps += len(rand_traj[i])
@@ -954,12 +952,12 @@ if __name__ == '__main__':
                 best_reward=eval_rewards_mean
                 policy_agent.actor.save_weights(f"saved_models/model{common_name}")
             #save plot data
-            plot_rewards.append(np.array(rewards_agent).mean())
+            plot_rewards.append(rewards_agent.mean())
             total_timesteps.append(t_agent)
             #log iteration results & statistics
             # if t_agent % 1== 0:
             if t_agent % log_ival == 0:
-                log_msg="Rewards Agent: {:.2f}, Rewards Disc: {:.2f}, Rewards Eval: {:.2f}, Total Timesteps: {}".format(np.array(rewards_agent).mean(), scores_disc.mean(), eval_rewards_mean, t_agent)
+                log_msg="Rewards Agent: {:.2f}, Rewards Disc: {:.2f}, Rewards Eval: {:.2f}, Total Timesteps: {}".format(rewards_agent.mean(), scores_disc.mean(), eval_rewards_mean, t_agent)
                 if verbose:
                     print(log_msg+f" episode:{episode} \n")
                 else:
@@ -971,6 +969,7 @@ if __name__ == '__main__':
         plot_rewards_all.append(plot_rewards)
         plot_eval_rewards_all.append(plot_eval_rewards)
         plot_disc_rewards_all.append(plot_disc_rewards)
+        total_timesteps_all.append(total_timesteps)
         
         env.close()
         env_ref.close()
@@ -982,6 +981,7 @@ if __name__ == '__main__':
     plot_rewards_mean = np.stack(plot_rewards_all).mean(0)
     plot_eval_rewards_mean = np.stack(plot_eval_rewards_all).mean(0)
     plot_disc_rewards_mean = np.stack(plot_disc_rewards_all).mean(0)
+    total_timesteps_mean = np.stack(total_timesteps).mean(0)
     
     plot_rewards_max= np.maximum.reduce(plot_rewards_all)
     plot_eval_rewards_max = np.maximum.reduce(plot_eval_rewards_all)
@@ -1001,7 +1001,7 @@ if __name__ == '__main__':
                                plot_disc_rewards_mean,
                                plot_disc_rewards_max,
                                plot_disc_rewards_min,
-                               total_timesteps)),
+                               total_timesteps_mean)),
                       columns =['Rewards_Tr', 'Rewards_Tr_Max', 'Rewards_Tr_Min', 'Rewards_Eval', 'Rewards_Eval_Max', 'Rewards_Eval_Min', 'Rewards_Disc', 'Rewards_Disc_Max', 'Rewards_Disc_Min', 'Total_Timesteps'])
     df.to_pickle(f"plots/results{common_name}.pkl")
     
@@ -1013,17 +1013,15 @@ if __name__ == '__main__':
     plt.fill_between(range(tr_eps), plot_rewards_max, plot_rewards_min,alpha=0.2)
     # plt.axhline(y = env.spec.reward_threshold, color = 'r', linestyle = '--',label='Solved')
     plt.title(title)
-    plt.legend(loc="upper right")
     plt.savefig(f'plots/tr{common_name}.png')
     
     title="Evaluation Rewards"
     plt.figure(figsize=(16,8))
     plt.grid(1)
     plt.plot(plot_eval_rewards_mean)
-    plt.fill_between(range(tr_eps), plot_eval_rewards_max, plot_eval_rewards_min,alpha=0.2)
+    plt.fill_between(range(len(plot_eval_rewards_max)), plot_eval_rewards_max, plot_eval_rewards_min,alpha=0.2)
     # plt.axhline(y = env.spec.reward_threshold, color = 'r', linestyle = '--',label='Solved')
     plt.title(title)
-    plt.legend(loc="upper right")
     plt.savefig(f'plots/ts{common_name}.png')
     
     title="Discriminator Rewards"
@@ -1033,9 +1031,7 @@ if __name__ == '__main__':
     plt.fill_between(range(tr_eps), plot_disc_rewards_max, plot_disc_rewards_min,alpha=0.2)
     plt.title(title)
     plt.savefig(f'plots/disc{common_name}.png')
-    
-    #TODO: plot control actions (of which episode(s)?)
-    
+        
     eps_step=int((tr_eps-T_svpg_init)/4) #100
     region_step=eps_step*T_svpg*n_particles
     df2=pd.DataFrame()

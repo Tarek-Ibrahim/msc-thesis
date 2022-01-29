@@ -226,13 +226,14 @@ T_svpg_init=1
 T_svpg=2
 n_particles=3
 
-h=64 #100
+h=100
 gamma=0.99
 alpha=0.1
 h1_agent=64 #100 #400 #64 #400
 h2_agent=64 #100 #300 #64 #300
 visualize=False
-eval_eps=7
+test_eps=7
+test_random=True
 
 env_names=['cartpole_custom-v1', 'halfcheetah_custom-v1', 'halfcheetah_custom_norm-v1', 'halfcheetah_custom_rand-v1', 'halfcheetah_custom_rand-v2', 'lunarlander_custom_default_rand-v0']
 env_name=env_names[-2]
@@ -247,19 +248,26 @@ out_size=da
 
 setting=env_name.split("_")[0]+f" {env.rand}"
 
-policy_maml_adr = PolicyNetwork(in_size,h,out_size) 
-policy_maml_udr = PolicyNetwork(in_size,h,out_size) 
 value_net = ValueNetwork(in_size,gamma)
-policy_ddpg=DDPG(ds, h1_agent, h2_agent, da, a_max)
-policies=[policy_maml_adr,policy_maml_udr,policy_ddpg]
 
-eval_rewards=[[] for _ in range(len(policies))]
+policy_maml_adr = PolicyNetwork(in_size,h,out_size) 
+policy_maml_udr = PolicyNetwork(in_size,h,out_size)
+policy_maml = PolicyNetwork(in_size,h,out_size)  
+
+policy_ddpg_adr=DDPG(ds, h1_agent, h2_agent, da, a_max)
+policy_ddpg_udr=DDPG(ds, h1_agent, h2_agent, da, a_max)
+policy_ddpg=DDPG(ds, h1_agent, h2_agent, da, a_max)
+
+policies=[policy_maml_adr,policy_maml_udr,policy_ddpg_adr,policy_ddpg_udr,policy_maml,policy_ddpg]
+
+test_rewards=[[] for _ in range(len(policies))]
+control_actions=[[] for _ in range(len(policies))]
 
 #%% Plots
 dfs=[]
 dfs_sr=[]
-filenames=["maml_adr_tf","maml_udr_tf","ddpg_adr_tf"]
-labels=["MAML + ADR", "MAML + UDR", "DDPG + ADR"]
+filenames=["maml_adr_tf","maml_udr_tf","ddpg_adr_tf","ddpg_udr_tf","maml_tf","ddpg_tf"]
+labels=["MAML + ADR", "MAML + UDR", "DDPG + ADR","DDPG + UDR","MAML","DDPG"]
 keys=['Rewards_Tr','Rewards_Val','Rewards_Eval','Rewards_Disc']
 
 for i, file_name in enumerate(filenames):
@@ -278,7 +286,7 @@ for key in keys:
     for i, df in enumerate(dfs):
         if key in list(df.keys()):
             plt.plot(df[key],label=labels[i])
-            plt.fill_between(range(tr_eps), df[key+"_Max"], df[key+"_Min"],alpha=0.2)
+            plt.fill_between(range(df[key+"_Max"].size), df[key+"_Max"], df[key+"_Min"],alpha=0.2)
     
     # plt.axhline(y = env.spec.reward_threshold, color = 'r', linestyle = '--',label='Solved')
     plt.legend()
@@ -286,6 +294,19 @@ for key in keys:
     plt.legend(loc="upper right")
     plt.show()
 
+
+#sampling efficiency
+title=f"Sampling Efficiency ({setting})"
+plt.figure(figsize=(16,8))
+plt.grid(1)
+for i, df in enumerate(dfs):
+    plt.plot(df["Total_Timesteps"],df["Rewards_Eval"],label=labels[i])
+    plt.fill_between(df["Total_Timesteps"], df["Rewards_Eval_Max"], df["Rewards_Eval_Min"],alpha=0.2)
+# plt.axhline(y = env.spec.reward_threshold, color = 'r', linestyle = '--',label='Solved')
+plt.legend()
+plt.title(title)
+plt.legend(loc="upper right")
+plt.show()
 
 #plot sampled regions
 eps_step=int((tr_eps-T_svpg_init)/4)
@@ -318,11 +339,11 @@ for j, df_sr in enumerate(dfs_sr):
 
 
 #%% Behaviour
-#Evaluate
+#Test
 for i, policy in enumerate(policies):
     if visualize: print(f"For {labels[i]}: \n")
-    for _ in range(eval_eps):
-        env.randomize(["random"]*dr)
+    for test_ep in range(test_eps):
+        if test_random: env.randomize(["random"]*dr)
         
         s=env.reset()
         
@@ -332,6 +353,7 @@ for i, policy in enumerate(policies):
             a=tf.squeeze(dist.sample()).numpy()
             s, r, done, _ = env.step(a)
             R = r
+            if test_ep == 0: control_actions[i].append(a[0] if a.ndim >1 else a)
         else:
             done=False
             R=0
@@ -350,26 +372,39 @@ for i, policy in enumerate(policies):
                 theta_dash=adapt(D,value_net,policy,alpha)
                 
                 dist=policy(state,params=theta_dash)
-                a=tf.squeeze(dist.sample())
+                a=tf.squeeze(dist.sample()).numpy()
             else:
-                a=policy(state)
-                
-            s, r, done, _ = env.step(a.numpy())
+                a=policy(state).numpy()
+            
+            if test_ep == 0: control_actions[i].append(a[0] if a.ndim >1 else a)
+            s, r, done, _ = env.step(a)
             
             if visualize: env.render()
             
             R+=r
-        eval_rewards[i].append(R)
+        test_rewards[i].append(R)
             
     env.close()
 
 #Plot
+#rewards
 title=f"Testing Rewards ({setting})"
 plt.figure(figsize=(16,8))
 plt.grid(1)
-for i, eval_reward in enumerate(eval_rewards):
-    plt.plot(eval_reward,label=labels[i])
+for i, test_reward in enumerate(test_rewards):
+    plt.plot(test_reward,label=labels[i])
 # plt.axhline(y = env.spec.reward_threshold, color = 'r', linestyle = '--',label='Solved')
 plt.title(title)
 plt.legend(loc="upper right")
 plt.show()
+
+
+#control actions
+for i, policy in enumerate(policies):
+    title=f"Control Actions for {labels[i]} ({setting})"
+    plt.figure(figsize=(16,8))
+    plt.grid(1)
+    plt.plot(control_actions[i],label=range(da))
+    plt.title(title)
+    plt.legend(loc="upper right")
+    plt.show()
