@@ -231,7 +231,6 @@ if __name__ == '__main__':
     #TRPO
     max_grad_kl=config["max_grad_kl"]
     max_backtracks=config["max_backtracks"]
-    accept_ratio=config["accept_ratio"]
     zeta=config["zeta"]
     rdotr_tol=config["rdotr_tol"]
     nsteps=config["nsteps"]
@@ -343,7 +342,7 @@ if __name__ == '__main__':
             grads = parameters_to_vector(tape.gradient(prev_loss, policy.trainable_variables),policy.trainable_variables)
             prev_loss=tf.identity(prev_loss)
             hvp=HVP(Ds,D_dashes,policy,value_net,alpha,damping)
-            search_step_dir=conjugate_gradients(hvp, grads)
+            search_step_dir=conjugate_gradients(hvp, grads, rdotr_tol=rdotr_tol,nsteps=nsteps)
             max_length=np.sqrt(2.0 * max_grad_kl / np.dot(search_step_dir, hvp(search_step_dir)))
             full_step=search_step_dir*max_length        
             prev_params = parameters_to_vector(policy.trainable_variables)

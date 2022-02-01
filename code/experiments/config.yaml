@@ -23,7 +23,7 @@ debug_mode:
     #MAML
     # n: 2 #no. of NN layers
     h_maml: 64 #size of hidden layers
-    lr_maml: 0.1 #adaptation step size / inner learning rate
+    lr_maml: 0.5 #adaptation step size / inner learning rate
     # beta:0.001 #meta step size / outer learning rate #TIP: controlled and adapted by TRPO (in maml step) [to guarantee monotonic improvement, etc]
     gamma_maml: 0.99
     b_maml: *n_workers_debug #batch size: Number of trajectories (rollouts) to sample from each task
@@ -89,12 +89,11 @@ run_mode:
     #MAML
     # n: 2 #no. of NN layers
     h_maml: 100 #size of hidden layers
-    lr_maml: 0.1 #adaptation step size / inner learning rate
-    # beta:0.001 #meta step size / outer learning rate #TIP: controlled and adapted by TRPO (in maml step) [to guarantee monotonic improvement, etc]
+    lr_maml: &lr_agent 0.001 #adaptation step size / inner learning rate
     gamma_maml: 0.99
     b_maml: *n_workers_run #batch size: Number of trajectories (rollouts) to sample from each task
     #TRPO
-    max_grad_kl: 1.0e-2
+    max_grad_kl: 1.0e-2 #*lr_agent / 10. #beta=0.001 (meta step size / outer learning rate)
     max_backtracks: 15
     accept_ratio: 0.1
     zeta: 0.8 #0.5
@@ -103,7 +102,7 @@ run_mode:
     damping: 1.0e-5 #0.01
     
     #DDPG
-    lr_ddpg: 0.001 #learning rate
+    lr_ddpg: *lr_agent #learning rate
     h1_ddpg: 100 #400
     h2_ddpg: 100 #300
     gamma_ddpg: 0.99 #discount factor
