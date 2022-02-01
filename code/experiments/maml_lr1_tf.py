@@ -33,8 +33,8 @@ import multiprocessing as mp
 import queue as Q
 
 #%% Utils
-
-def collect_rollout_batch(envs, ds, da, policy, T, b, n_workers, queue, params=None,add_noise=False,noise_scale=0.1): # a batch of rollouts
+        
+def collect_rollout_batch(envs, ds, da, policy, T, b, n_workers, queue, params=None): # a batch of rollouts
     states=[[] for _ in range(b)]
     rewards = [[] for _ in range(b)]
     actions = [[] for _ in range(b)]
@@ -55,9 +55,6 @@ def collect_rollout_batch(envs, ds, da, policy, T, b, n_workers, queue, params=N
         state=tf.convert_to_tensor(s)
         dist=policy(state,params)
         a=dist.sample().numpy()
-        if add_noise:
-            a = a + np.random.normal(0, noise_scale, size=a.shape)
-            # a = a.clip(-1, 1)
         s_dash, r, dones, rollout_idxs_new, _ = envs.step(a)
         #append to batch
         for state, next_state, action, reward, rollout_idx in zip(s,s_dash,a,r,rollout_idxs):
@@ -225,7 +222,7 @@ if __name__ == '__main__':
     
     #MAML
     h=config["h_maml"]
-    alpha=config["lr_maml"]
+    alpha=0.01 #config["lr_maml"]
     b = config["b_maml"]
     gamma = config["gamma_maml"]
     #TRPO
@@ -276,9 +273,8 @@ if __name__ == '__main__':
         T_env=env._max_episode_steps #task horizon
         ds=env.observation_space.shape[0] #state dims
         da=env.action_space.shape[0] #action dims
-        dr=env.unwrapped.randomization_space.shape[0] #N_rand (no. of randomization params)
         
-        env_rand=make_vec_envs(env_name, seed, n_workers, ds, da, queue, lock)
+        envs=make_vec_envs(env_name, seed, n_workers, ds, da, queue, lock)
         
         #models
         in_size=ds
@@ -304,23 +300,14 @@ if __name__ == '__main__':
         episodes=progress(tr_eps) if not verbose else range(tr_eps)
         for episode in episodes:
             
-            #rollout svpg particles (each particle represents a different rand env and each timestep in that rollout represents different values for its randomization params)
-            simulation_instances = -1 * np.ones((n_workers,T_rand_rollout,dr))
-            
             #create empty storages
             rewards_tr_ep, rewards_val_ep = [], []
             Ds, D_dashes=[], []
             
-            # Reshape to work with vectorized environments
-            simulation_instances = np.transpose(simulation_instances, (1, 0, 2))
-            
             #inner/adaptation loop
             for t_rand_rollout in range(T_rand_rollout):
-                #randomize rand envs (with svpg particle [randomization parameter] values [at the current svpg timestep]) #!!!: this only works if transitions within the same rollout is collected in the same environment (i.e. by the same [env] worker) #that's why we choose: n_particles=b(rollout batch size)=n_workers/n_envs
-                env_rand.randomize(simulation_instances[t_rand_rollout])
-                
                 #collect pre-adaptation rollout batch in rand envs (one rollout for each svpg particle)
-                D=collect_rollout_batch(env_rand, ds, da, policy, T_env, b, n_workers, queue,add_noise=True)
+                D=collect_rollout_batch(envs, ds, da, policy, T_env, b, n_workers, queue)
                 Ds.append(D)
                 _, _, rewards,_ = D
                 rewards_tr_ep.append(rewards)
@@ -330,7 +317,7 @@ if __name__ == '__main__':
                 theta_dash=adapt(D,value_net,policy,alpha)
                 
                 #collect post-adaptation rollout batch in rand envs
-                D_dash=collect_rollout_batch(env_rand, ds, da, policy, T_env, b, n_workers, queue, params=theta_dash,add_noise=True)
+                D_dash=collect_rollout_batch(envs, ds, da, policy, T_env, b, n_workers, queue, params=theta_dash)
                 D_dashes.append(D_dash)
                 _, _, rewards,_ = D_dash
                 rewards_val_ep.append(rewards)
@@ -354,9 +341,7 @@ if __name__ == '__main__':
                 t_eval %= eval_freq
                 eval_rewards=[]
     
-                for _ in range(eval_eps):
-                    env.randomize(["random"]*dr)
-                    
+                for _ in range(eval_eps):                    
                     s=env.reset()
                     
                     state=tf.expand_dims(tf.convert_to_tensor(s,dtype=tf.float32),0)
@@ -413,7 +398,7 @@ if __name__ == '__main__':
         total_timesteps_all.append(total_timesteps)
         
         env.close()
-        env_rand.close()
+        envs.close()
     
     #%% Results & Plot
     #process results
@@ -470,4 +455,5 @@ if __name__ == '__main__':
     plt.fill_between(range(len(plot_eval_rewards_max)), plot_eval_rewards_max, plot_eval_rewards_min,alpha=0.2)
     # plt.axhline(y = env.spec.reward_threshold, color = 'r', linestyle = '--',label='Solved')
     plt.title(title)
-    plt.savefig(f'plots/mts{common_name}.png')        
+    plt.savefig(f'plots/mts{common_name}.png')
+            

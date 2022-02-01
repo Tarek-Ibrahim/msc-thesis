@@ -33,7 +33,7 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 #%% Utils
 
-def rollout(n_envs, env, policy_agent, RB, T_env, T_agent_init, b_agent, gamma_agent, noise_scale=0.1): 
+def rollout(n_envs, env, policy_agent, RB, T_env, T_agent_init, b_agent, gamma_agent): 
 
     rewards_sum = np.zeros(n_envs)
     state = env.reset()
@@ -45,9 +45,6 @@ def rollout(n_envs, env, policy_agent, RB, T_env, T_agent_init, b_agent, gamma_a
 
     while not all(done) and t_env <= T_env:
         action = policy_agent.select_action(np.array(state))
-        
-        action = action + np.random.normal(0, noise_scale, size=action.shape)
-        # action = action.clip(-1, 1)
 
         next_state, reward, done, info = env.step(action)
 
@@ -166,6 +163,7 @@ def make_vec_envs(env_name, seed, n_workers, ds, da):
     envs=[make_env(env_name,seed,rank) for rank in range(n_workers)]
     envs=SubprocVecEnv(envs, ds, da)
     return envs
+
     
 #%% Algorithm Implementation
 if __name__ == '__main__':
@@ -182,8 +180,8 @@ if __name__ == '__main__':
     
     #DDPG
     lr_agent=config["lr_ddpg"]
-    h1_agent=config["h1_ddpg"] 
-    h2_agent=config["h2_ddpg"]
+    h1_agent=400 #config["h1_ddpg"] 
+    h2_agent=300 #config["h2_ddpg"]
     gamma_agent=config["gamma_ddpg"]
     T_agent_init=config["T_ddpg_init"]
     b_agent=config["b_ddpg"]
@@ -223,9 +221,8 @@ if __name__ == '__main__':
         ds=env.observation_space.shape[0] #state dims
         da=env.action_space.shape[0] #action dims
         a_max=env.action_space.high[0]
-        dr=env.unwrapped.randomization_space.shape[0] #N_rand (no. of randomization params)
         
-        env_rand=make_vec_envs(env_name, seed, n_workers, ds, da)
+        envs=make_vec_envs(env_name, seed, n_workers, ds, da)
         
         #models
         policy_agent=DDPG(ds, da, h1_agent, h2_agent, lr_agent, a_max)
@@ -246,32 +243,20 @@ if __name__ == '__main__':
         t_eval=0 # agent timesteps since eval 
 
         episodes=progress(tr_eps) if not verbose else range(tr_eps)
-        # with tqdm.tqdm(total=T_agent) as pbar:
         for episode in episodes:
-        # while t_agent < T_agent:
-            #get sim instances from SVPG policy if current timestep is greater than the specified initial, o.w. create completely randomized env
-            simulation_instances = -1 * np.ones((n_workers,T_rand_rollout,dr))
-        
             rewards_agent=np.zeros(T_rand_rollout)
-        
-            # Reshape to work with vectorized environments
-            simulation_instances = np.transpose(simulation_instances, (1, 0, 2))
-            
+            #rollout the agent in env, and train the agent
             for t_rand_rollout in range(T_rand_rollout):
-                # create ref and randomized instances of the env, rollout the agent in both, and train the agent
-                env_rand.randomize(simulation_instances[t_rand_rollout])
-                reward_agent, rollouts_len =rollout(n_workers,env_rand,policy_agent,RB,T_env,T_agent_init,b_agent,gamma_agent)
-                
+                reward_agent, rollouts_len =rollout(n_workers,envs,policy_agent,RB,T_env,T_agent_init,b_agent,gamma_agent)
                 rewards_agent[t_rand_rollout]=reward_agent
                 t_agent += rollouts_len
                 t_eval += rollouts_len
-            
+        
             #evaluate
             if evaluate and t_eval>eval_freq:
                 t_eval %= eval_freq
                 eval_rewards = []
                 for _ in range(eval_eps):
-                    env.randomize(["random"]*dr)
                     s=env.reset()
                     done=False
                     R=0
@@ -293,7 +278,6 @@ if __name__ == '__main__':
             plot_rewards.append(rewards_agent.mean())
             total_timesteps.append(t_agent)
             #log iteration results & statistics
-            # if t_agent % 1== 0:
             if t_agent % log_ival == 0:
                 log_msg="Rewards Agent: {:.2f}, Rewards Eval: {:.2f}, Total Timesteps: {}".format(rewards_agent.mean(), eval_rewards_mean, t_agent)
                 if verbose:
@@ -307,7 +291,7 @@ if __name__ == '__main__':
         total_timesteps_all.append(total_timesteps)
         
         env.close()
-        env_rand.close()
+        envs.close()
     
     #%% Results & Plots
     #process results

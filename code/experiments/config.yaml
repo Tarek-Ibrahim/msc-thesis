@@ -10,7 +10,7 @@ debug_mode:
 
     #General
     tr_eps: 7
-    verbose: 0 #or: False/True (False/0: display progress bar; True/1: display 1 log newline per episode) 
+    verbose: 1 #or: False/True (False/0: display progress bar; True/1: display 1 log newline per episode) 
     
     #Seed
     seeds: [1,2]

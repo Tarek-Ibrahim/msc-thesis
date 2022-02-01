@@ -1,0 +1,3009 @@
+For Seed: 1 
+
+2022-01-31 16:41:37.252663: I tensorflow/core/platform/cpu_feature_guard.cc:142] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  SSE4.1 SSE4.2 AVX AVX2 AVX512F FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2022-01-31 16:41:41.128447: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1510] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 30115 MB memory:  -> device: 0, name: Tesla V100-PCIE-32GB, pci bus id: 0000:18:00.0, compute capability: 7.0
+Rewards Agent: -50.82, Rewards Eval: -60.17, Total Timesteps: 10000 episode:0 
+
+Rewards Agent: -60.69, Rewards Eval: -51.01, Total Timesteps: 20000 episode:1 
+
+Rewards Agent: -51.15, Rewards Eval: -12.62, Total Timesteps: 30000 episode:2 
+
+Rewards Agent: -46.60, Rewards Eval: -54.48, Total Timesteps: 40000 episode:3 
+
+Rewards Agent: -54.65, Rewards Eval: -54.75, Total Timesteps: 50000 episode:4 
+
+Rewards Agent: -54.49, Rewards Eval: -52.87, Total Timesteps: 60000 episode:5 
+
+Rewards Agent: -54.78, Rewards Eval: -53.91, Total Timesteps: 70000 episode:6 
+
+Rewards Agent: -54.72, Rewards Eval: -54.66, Total Timesteps: 80000 episode:7 
+
+Rewards Agent: -54.69, Rewards Eval: -54.09, Total Timesteps: 90000 episode:8 
+
+Rewards Agent: -53.13, Rewards Eval: -51.45, Total Timesteps: 100000 episode:9 
+
+Rewards Agent: -52.13, Rewards Eval: -52.21, Total Timesteps: 110000 episode:10 
+
+Rewards Agent: -52.16, Rewards Eval: -52.55, Total Timesteps: 120000 episode:11 
+
+Rewards Agent: -52.24, Rewards Eval: -51.87, Total Timesteps: 130000 episode:12 
+
+Rewards Agent: -51.97, Rewards Eval: -50.68, Total Timesteps: 140000 episode:13 
+
+Rewards Agent: -52.10, Rewards Eval: -52.59, Total Timesteps: 150000 episode:14 
+
+Rewards Agent: -52.22, Rewards Eval: -52.26, Total Timesteps: 160000 episode:15 
+
+Rewards Agent: -52.25, Rewards Eval: -51.36, Total Timesteps: 170000 episode:16 
+
+Rewards Agent: -52.05, Rewards Eval: -51.86, Total Timesteps: 180000 episode:17 
+
+Rewards Agent: -51.90, Rewards Eval: -50.80, Total Timesteps: 190000 episode:18 
+
+Rewards Agent: -52.21, Rewards Eval: -52.02, Total Timesteps: 200000 episode:19 
+
+Rewards Agent: -51.92, Rewards Eval: -51.75, Total Timesteps: 210000 episode:20 
+
+Rewards Agent: -52.52, Rewards Eval: -51.91, Total Timesteps: 220000 episode:21 
+
+Rewards Agent: -52.04, Rewards Eval: -52.73, Total Timesteps: 230000 episode:22 
+
+Rewards Agent: -52.53, Rewards Eval: -53.62, Total Timesteps: 240000 episode:23 
+
+Rewards Agent: -51.97, Rewards Eval: -52.14, Total Timesteps: 250000 episode:24 
+
+Rewards Agent: -51.99, Rewards Eval: -52.12, Total Timesteps: 260000 episode:25 
+
+Rewards Agent: -52.10, Rewards Eval: -52.60, Total Timesteps: 270000 episode:26 
+
+Rewards Agent: -52.05, Rewards Eval: -51.74, Total Timesteps: 280000 episode:27 
+
+Rewards Agent: -52.14, Rewards Eval: -52.39, Total Timesteps: 290000 episode:28 
+
+Rewards Agent: -51.93, Rewards Eval: -49.70, Total Timesteps: 300000 episode:29 
+
+Rewards Agent: -50.95, Rewards Eval: -52.78, Total Timesteps: 310000 episode:30 
+
+Rewards Agent: -53.60, Rewards Eval: -53.42, Total Timesteps: 320000 episode:31 
+
+Rewards Agent: -53.55, Rewards Eval: -53.03, Total Timesteps: 330000 episode:32 
+
+Rewards Agent: -53.91, Rewards Eval: -31.86, Total Timesteps: 340000 episode:33 
+
+Rewards Agent: -52.14, Rewards Eval: -54.36, Total Timesteps: 350000 episode:34 
+
+Rewards Agent: -63.13, Rewards Eval: -90.02, Total Timesteps: 360000 episode:35 
+
+Rewards Agent: -26.68, Rewards Eval: -28.72, Total Timesteps: 370000 episode:36 
+
+Rewards Agent: 21.03, Rewards Eval: 70.27, Total Timesteps: 380000 episode:37 
+
+Rewards Agent: 0.25, Rewards Eval: 71.35, Total Timesteps: 390000 episode:38 
+
+Rewards Agent: 17.95, Rewards Eval: 14.76, Total Timesteps: 400000 episode:39 
+
+Rewards Agent: 12.23, Rewards Eval: 16.15, Total Timesteps: 410000 episode:40 
+
+Rewards Agent: 19.26, Rewards Eval: -0.65, Total Timesteps: 420000 episode:41 
+
+Rewards Agent: 10.77, Rewards Eval: 14.87, Total Timesteps: 430000 episode:42 
+
+Rewards Agent: 37.52, Rewards Eval: 3.96, Total Timesteps: 440000 episode:43 
+
+Rewards Agent: 39.01, Rewards Eval: -9.87, Total Timesteps: 450000 episode:44 
+
+Rewards Agent: 63.05, Rewards Eval: 77.79, Total Timesteps: 460000 episode:45 
+
+Rewards Agent: 75.34, Rewards Eval: 130.69, Total Timesteps: 470000 episode:46 
+
+Rewards Agent: 117.61, Rewards Eval: 203.31, Total Timesteps: 480000 episode:47 
+
+Rewards Agent: 183.01, Rewards Eval: 122.00, Total Timesteps: 490000 episode:48 
+
+Rewards Agent: 167.39, Rewards Eval: 239.91, Total Timesteps: 500000 episode:49 
+
+Rewards Agent: 175.33, Rewards Eval: 182.99, Total Timesteps: 510000 episode:50 
+
+Rewards Agent: 180.45, Rewards Eval: 164.86, Total Timesteps: 520000 episode:51 
+
+Rewards Agent: 197.47, Rewards Eval: 165.21, Total Timesteps: 530000 episode:52 
+
+Rewards Agent: 253.43, Rewards Eval: 265.81, Total Timesteps: 540000 episode:53 
+
+Rewards Agent: 284.11, Rewards Eval: 310.05, Total Timesteps: 550000 episode:54 
+
+Rewards Agent: 295.61, Rewards Eval: 298.64, Total Timesteps: 560000 episode:55 
+
+Rewards Agent: 309.36, Rewards Eval: 265.49, Total Timesteps: 570000 episode:56 
+
+Rewards Agent: 300.87, Rewards Eval: 312.51, Total Timesteps: 580000 episode:57 
+
+Rewards Agent: 304.89, Rewards Eval: 335.10, Total Timesteps: 590000 episode:58 
+
+Rewards Agent: 314.51, Rewards Eval: 279.96, Total Timesteps: 600000 episode:59 
+
+Rewards Agent: 308.80, Rewards Eval: 283.39, Total Timesteps: 610000 episode:60 
+
+Rewards Agent: 322.47, Rewards Eval: 332.14, Total Timesteps: 620000 episode:61 
+
+Rewards Agent: 308.01, Rewards Eval: 311.75, Total Timesteps: 630000 episode:62 
+
+Rewards Agent: 321.04, Rewards Eval: 292.58, Total Timesteps: 640000 episode:63 
+
+Rewards Agent: 299.46, Rewards Eval: 307.49, Total Timesteps: 650000 episode:64 
+
+Rewards Agent: 323.91, Rewards Eval: 307.09, Total Timesteps: 660000 episode:65 
+
+Rewards Agent: 342.74, Rewards Eval: 291.64, Total Timesteps: 670000 episode:66 
+
+Rewards Agent: 333.62, Rewards Eval: 352.96, Total Timesteps: 680000 episode:67 
+
+Rewards Agent: 338.77, Rewards Eval: 324.02, Total Timesteps: 690000 episode:68 
+
+Rewards Agent: 340.08, Rewards Eval: 377.33, Total Timesteps: 700000 episode:69 
+
+Rewards Agent: 337.01, Rewards Eval: 342.66, Total Timesteps: 710000 episode:70 
+
+Rewards Agent: 334.85, Rewards Eval: 373.67, Total Timesteps: 720000 episode:71 
+
+Rewards Agent: 338.96, Rewards Eval: 390.52, Total Timesteps: 730000 episode:72 
+
+Rewards Agent: 354.40, Rewards Eval: 369.88, Total Timesteps: 740000 episode:73 
+
+Rewards Agent: 366.69, Rewards Eval: 384.22, Total Timesteps: 750000 episode:74 
+
+Rewards Agent: 361.17, Rewards Eval: 383.06, Total Timesteps: 760000 episode:75 
+
+Rewards Agent: 337.76, Rewards Eval: 327.68, Total Timesteps: 770000 episode:76 
+
+Rewards Agent: 346.48, Rewards Eval: 353.66, Total Timesteps: 780000 episode:77 
+
+Rewards Agent: 332.37, Rewards Eval: 332.80, Total Timesteps: 790000 episode:78 
+
+Rewards Agent: 373.67, Rewards Eval: 362.33, Total Timesteps: 800000 episode:79 
+
+Rewards Agent: 378.20, Rewards Eval: 341.29, Total Timesteps: 810000 episode:80 
+
+Rewards Agent: 371.88, Rewards Eval: 351.33, Total Timesteps: 820000 episode:81 
+
+Rewards Agent: 346.20, Rewards Eval: 327.98, Total Timesteps: 830000 episode:82 
+
+Rewards Agent: 322.79, Rewards Eval: 386.65, Total Timesteps: 840000 episode:83 
+
+Rewards Agent: 389.93, Rewards Eval: 365.80, Total Timesteps: 850000 episode:84 
+
+Rewards Agent: 400.13, Rewards Eval: 441.82, Total Timesteps: 860000 episode:85 
+
+Rewards Agent: 407.64, Rewards Eval: 414.11, Total Timesteps: 870000 episode:86 
+
+Rewards Agent: 423.00, Rewards Eval: 426.29, Total Timesteps: 880000 episode:87 
+
+Rewards Agent: 399.63, Rewards Eval: 393.37, Total Timesteps: 890000 episode:88 
+
+Rewards Agent: 377.68, Rewards Eval: 398.97, Total Timesteps: 900000 episode:89 
+
+Rewards Agent: 392.35, Rewards Eval: 428.33, Total Timesteps: 910000 episode:90 
+
+Rewards Agent: 381.56, Rewards Eval: 358.51, Total Timesteps: 920000 episode:91 
+
+Rewards Agent: 410.72, Rewards Eval: 430.37, Total Timesteps: 930000 episode:92 
+
+Rewards Agent: 404.29, Rewards Eval: 335.44, Total Timesteps: 940000 episode:93 
+
+Rewards Agent: 414.10, Rewards Eval: 392.78, Total Timesteps: 950000 episode:94 
+
+Rewards Agent: 406.45, Rewards Eval: 296.41, Total Timesteps: 960000 episode:95 
+
+Rewards Agent: 444.37, Rewards Eval: 488.84, Total Timesteps: 970000 episode:96 
+
+Rewards Agent: 436.80, Rewards Eval: 481.39, Total Timesteps: 980000 episode:97 
+
+Rewards Agent: 425.97, Rewards Eval: 421.23, Total Timesteps: 990000 episode:98 
+
+Rewards Agent: 455.69, Rewards Eval: 522.11, Total Timesteps: 1000000 episode:99 
+
+Rewards Agent: 472.04, Rewards Eval: 471.04, Total Timesteps: 1010000 episode:100 
+
+Rewards Agent: 454.63, Rewards Eval: 499.66, Total Timesteps: 1020000 episode:101 
+
+Rewards Agent: 489.11, Rewards Eval: 458.62, Total Timesteps: 1030000 episode:102 
+
+Rewards Agent: 485.43, Rewards Eval: 465.88, Total Timesteps: 1040000 episode:103 
+
+Rewards Agent: 472.80, Rewards Eval: 449.46, Total Timesteps: 1050000 episode:104 
+
+Rewards Agent: 480.38, Rewards Eval: 501.87, Total Timesteps: 1060000 episode:105 
+
+Rewards Agent: 487.34, Rewards Eval: 303.77, Total Timesteps: 1070000 episode:106 
+
+Rewards Agent: 473.14, Rewards Eval: 506.04, Total Timesteps: 1080000 episode:107 
+
+Rewards Agent: 506.92, Rewards Eval: 485.44, Total Timesteps: 1090000 episode:108 
+
+Rewards Agent: 479.26, Rewards Eval: 435.99, Total Timesteps: 1100000 episode:109 
+
+Rewards Agent: 493.35, Rewards Eval: 487.10, Total Timesteps: 1110000 episode:110 
+
+Rewards Agent: 510.65, Rewards Eval: 554.46, Total Timesteps: 1120000 episode:111 
+
+Rewards Agent: 528.45, Rewards Eval: 503.87, Total Timesteps: 1130000 episode:112 
+
+Rewards Agent: 512.53, Rewards Eval: 433.54, Total Timesteps: 1140000 episode:113 
+
+Rewards Agent: 499.39, Rewards Eval: 480.89, Total Timesteps: 1150000 episode:114 
+
+Rewards Agent: 517.11, Rewards Eval: 450.25, Total Timesteps: 1160000 episode:115 
+
+Rewards Agent: 501.34, Rewards Eval: 583.99, Total Timesteps: 1170000 episode:116 
+
+Rewards Agent: 506.00, Rewards Eval: 483.60, Total Timesteps: 1180000 episode:117 
+
+Rewards Agent: 506.61, Rewards Eval: 566.86, Total Timesteps: 1190000 episode:118 
+
+Rewards Agent: 521.28, Rewards Eval: 558.77, Total Timesteps: 1200000 episode:119 
+
+Rewards Agent: 528.95, Rewards Eval: 477.16, Total Timesteps: 1210000 episode:120 
+
+Rewards Agent: 490.81, Rewards Eval: 421.93, Total Timesteps: 1220000 episode:121 
+
+Rewards Agent: 525.54, Rewards Eval: 394.75, Total Timesteps: 1230000 episode:122 
+
+Rewards Agent: 538.99, Rewards Eval: 514.89, Total Timesteps: 1240000 episode:123 
+
+Rewards Agent: 531.94, Rewards Eval: 518.60, Total Timesteps: 1250000 episode:124 
+
+Rewards Agent: 506.58, Rewards Eval: 514.39, Total Timesteps: 1260000 episode:125 
+
+Rewards Agent: 530.05, Rewards Eval: 581.24, Total Timesteps: 1270000 episode:126 
+
+Rewards Agent: 557.46, Rewards Eval: 594.07, Total Timesteps: 1280000 episode:127 
+
+Rewards Agent: 548.63, Rewards Eval: 549.63, Total Timesteps: 1290000 episode:128 
+
+Rewards Agent: 553.28, Rewards Eval: 573.15, Total Timesteps: 1300000 episode:129 
+
+Rewards Agent: 564.66, Rewards Eval: 554.17, Total Timesteps: 1310000 episode:130 
+
+Rewards Agent: 531.68, Rewards Eval: 547.65, Total Timesteps: 1320000 episode:131 
+
+Rewards Agent: 537.03, Rewards Eval: 591.43, Total Timesteps: 1330000 episode:132 
+
+Rewards Agent: 573.00, Rewards Eval: 527.90, Total Timesteps: 1340000 episode:133 
+
+Rewards Agent: 541.67, Rewards Eval: 603.60, Total Timesteps: 1350000 episode:134 
+
+Rewards Agent: 566.35, Rewards Eval: 552.94, Total Timesteps: 1360000 episode:135 
+
+Rewards Agent: 573.20, Rewards Eval: 545.90, Total Timesteps: 1370000 episode:136 
+
+Rewards Agent: 593.70, Rewards Eval: 516.94, Total Timesteps: 1380000 episode:137 
+
+Rewards Agent: 570.35, Rewards Eval: 425.64, Total Timesteps: 1390000 episode:138 
+
+Rewards Agent: 591.64, Rewards Eval: 603.66, Total Timesteps: 1400000 episode:139 
+
+Rewards Agent: 604.24, Rewards Eval: 633.21, Total Timesteps: 1410000 episode:140 
+
+Rewards Agent: 587.81, Rewards Eval: 592.40, Total Timesteps: 1420000 episode:141 
+
+Rewards Agent: 591.29, Rewards Eval: 625.16, Total Timesteps: 1430000 episode:142 
+
+Rewards Agent: 594.81, Rewards Eval: 669.16, Total Timesteps: 1440000 episode:143 
+
+Rewards Agent: 629.21, Rewards Eval: 595.66, Total Timesteps: 1450000 episode:144 
+
+Rewards Agent: 605.87, Rewards Eval: 636.99, Total Timesteps: 1460000 episode:145 
+
+Rewards Agent: 628.74, Rewards Eval: 598.48, Total Timesteps: 1470000 episode:146 
+
+Rewards Agent: 613.24, Rewards Eval: 605.11, Total Timesteps: 1480000 episode:147 
+
+Rewards Agent: 633.64, Rewards Eval: 570.05, Total Timesteps: 1490000 episode:148 
+
+Rewards Agent: 628.83, Rewards Eval: 610.54, Total Timesteps: 1500000 episode:149 
+
+Rewards Agent: 646.20, Rewards Eval: 668.09, Total Timesteps: 1510000 episode:150 
+
+Rewards Agent: 622.83, Rewards Eval: 585.23, Total Timesteps: 1520000 episode:151 
+
+Rewards Agent: 637.90, Rewards Eval: 701.35, Total Timesteps: 1530000 episode:152 
+
+Rewards Agent: 619.79, Rewards Eval: 663.76, Total Timesteps: 1540000 episode:153 
+
+Rewards Agent: 659.99, Rewards Eval: 630.25, Total Timesteps: 1550000 episode:154 
+
+Rewards Agent: 623.38, Rewards Eval: 673.37, Total Timesteps: 1560000 episode:155 
+
+Rewards Agent: 645.97, Rewards Eval: 615.22, Total Timesteps: 1570000 episode:156 
+
+Rewards Agent: 650.36, Rewards Eval: 585.42, Total Timesteps: 1580000 episode:157 
+
+Rewards Agent: 653.51, Rewards Eval: 653.16, Total Timesteps: 1590000 episode:158 
+
+Rewards Agent: 650.21, Rewards Eval: 650.71, Total Timesteps: 1600000 episode:159 
+
+Rewards Agent: 656.55, Rewards Eval: 645.58, Total Timesteps: 1610000 episode:160 
+
+Rewards Agent: 638.55, Rewards Eval: 594.22, Total Timesteps: 1620000 episode:161 
+
+Rewards Agent: 690.73, Rewards Eval: 632.91, Total Timesteps: 1630000 episode:162 
+
+Rewards Agent: 668.27, Rewards Eval: 746.31, Total Timesteps: 1640000 episode:163 
+
+Rewards Agent: 697.95, Rewards Eval: 739.89, Total Timesteps: 1650000 episode:164 
+
+Rewards Agent: 714.97, Rewards Eval: 453.86, Total Timesteps: 1660000 episode:165 
+
+Rewards Agent: 679.51, Rewards Eval: 684.37, Total Timesteps: 1670000 episode:166 
+
+Rewards Agent: 705.56, Rewards Eval: 612.53, Total Timesteps: 1680000 episode:167 
+
+Rewards Agent: 712.87, Rewards Eval: 680.14, Total Timesteps: 1690000 episode:168 
+
+Rewards Agent: 734.53, Rewards Eval: 777.53, Total Timesteps: 1700000 episode:169 
+
+Rewards Agent: 759.94, Rewards Eval: 746.82, Total Timesteps: 1710000 episode:170 
+
+Rewards Agent: 763.87, Rewards Eval: 811.29, Total Timesteps: 1720000 episode:171 
+
+Rewards Agent: 754.07, Rewards Eval: 749.81, Total Timesteps: 1730000 episode:172 
+
+Rewards Agent: 774.02, Rewards Eval: 772.81, Total Timesteps: 1740000 episode:173 
+
+Rewards Agent: 764.19, Rewards Eval: 770.69, Total Timesteps: 1750000 episode:174 
+
+Rewards Agent: 784.50, Rewards Eval: 792.67, Total Timesteps: 1760000 episode:175 
+
+Rewards Agent: 772.79, Rewards Eval: 891.63, Total Timesteps: 1770000 episode:176 
+
+Rewards Agent: 818.11, Rewards Eval: 826.84, Total Timesteps: 1780000 episode:177 
+
+Rewards Agent: 800.79, Rewards Eval: 862.95, Total Timesteps: 1790000 episode:178 
+
+Rewards Agent: 813.00, Rewards Eval: 809.36, Total Timesteps: 1800000 episode:179 
+
+Rewards Agent: 820.81, Rewards Eval: 789.46, Total Timesteps: 1810000 episode:180 
+
+Rewards Agent: 816.27, Rewards Eval: 734.52, Total Timesteps: 1820000 episode:181 
+
+Rewards Agent: 820.59, Rewards Eval: 818.94, Total Timesteps: 1830000 episode:182 
+
+Rewards Agent: 816.59, Rewards Eval: 809.24, Total Timesteps: 1840000 episode:183 
+
+Rewards Agent: 794.21, Rewards Eval: 747.56, Total Timesteps: 1850000 episode:184 
+
+Rewards Agent: 814.02, Rewards Eval: 768.45, Total Timesteps: 1860000 episode:185 
+
+Rewards Agent: 830.00, Rewards Eval: 803.84, Total Timesteps: 1870000 episode:186 
+
+Rewards Agent: 794.49, Rewards Eval: 823.76, Total Timesteps: 1880000 episode:187 
+
+Rewards Agent: 838.20, Rewards Eval: 832.94, Total Timesteps: 1890000 episode:188 
+
+Rewards Agent: 853.20, Rewards Eval: 822.83, Total Timesteps: 1900000 episode:189 
+
+Rewards Agent: 827.56, Rewards Eval: 859.31, Total Timesteps: 1910000 episode:190 
+
+Rewards Agent: 837.56, Rewards Eval: 707.80, Total Timesteps: 1920000 episode:191 
+
+Rewards Agent: 828.10, Rewards Eval: 823.79, Total Timesteps: 1930000 episode:192 
+
+Rewards Agent: 830.04, Rewards Eval: 792.06, Total Timesteps: 1940000 episode:193 
+
+Rewards Agent: 800.82, Rewards Eval: 864.66, Total Timesteps: 1950000 episode:194 
+
+Rewards Agent: 861.17, Rewards Eval: 830.64, Total Timesteps: 1960000 episode:195 
+
+Rewards Agent: 851.12, Rewards Eval: 864.76, Total Timesteps: 1970000 episode:196 
+
+Rewards Agent: 873.40, Rewards Eval: 813.91, Total Timesteps: 1980000 episode:197 
+
+Rewards Agent: 880.35, Rewards Eval: 887.11, Total Timesteps: 1990000 episode:198 
+
+Rewards Agent: 854.83, Rewards Eval: 978.04, Total Timesteps: 2000000 episode:199 
+
+Rewards Agent: 904.37, Rewards Eval: 863.23, Total Timesteps: 2010000 episode:200 
+
+Rewards Agent: 908.14, Rewards Eval: 905.43, Total Timesteps: 2020000 episode:201 
+
+Rewards Agent: 910.14, Rewards Eval: 930.81, Total Timesteps: 2030000 episode:202 
+
+Rewards Agent: 916.71, Rewards Eval: 934.97, Total Timesteps: 2040000 episode:203 
+
+Rewards Agent: 918.02, Rewards Eval: 886.45, Total Timesteps: 2050000 episode:204 
+
+Rewards Agent: 915.27, Rewards Eval: 872.46, Total Timesteps: 2060000 episode:205 
+
+Rewards Agent: 898.37, Rewards Eval: 1004.37, Total Timesteps: 2070000 episode:206 
+
+Rewards Agent: 919.36, Rewards Eval: 911.33, Total Timesteps: 2080000 episode:207 
+
+Rewards Agent: 951.60, Rewards Eval: 942.08, Total Timesteps: 2090000 episode:208 
+
+Rewards Agent: 913.42, Rewards Eval: 968.16, Total Timesteps: 2100000 episode:209 
+
+Rewards Agent: 960.21, Rewards Eval: 949.60, Total Timesteps: 2110000 episode:210 
+
+Rewards Agent: 913.40, Rewards Eval: 957.41, Total Timesteps: 2120000 episode:211 
+
+Rewards Agent: 954.22, Rewards Eval: 962.27, Total Timesteps: 2130000 episode:212 
+
+Rewards Agent: 952.95, Rewards Eval: 959.91, Total Timesteps: 2140000 episode:213 
+
+Rewards Agent: 949.44, Rewards Eval: 996.63, Total Timesteps: 2150000 episode:214 
+
+Rewards Agent: 945.04, Rewards Eval: 949.59, Total Timesteps: 2160000 episode:215 
+
+Rewards Agent: 959.14, Rewards Eval: 847.38, Total Timesteps: 2170000 episode:216 
+
+Rewards Agent: 968.07, Rewards Eval: 955.56, Total Timesteps: 2180000 episode:217 
+
+Rewards Agent: 937.68, Rewards Eval: 1059.78, Total Timesteps: 2190000 episode:218 
+
+Rewards Agent: 975.98, Rewards Eval: 969.51, Total Timesteps: 2200000 episode:219 
+
+Rewards Agent: 966.59, Rewards Eval: 997.76, Total Timesteps: 2210000 episode:220 
+
+Rewards Agent: 1001.93, Rewards Eval: 899.96, Total Timesteps: 2220000 episode:221 
+
+Rewards Agent: 990.20, Rewards Eval: 983.82, Total Timesteps: 2230000 episode:222 
+
+Rewards Agent: 1000.98, Rewards Eval: 1009.40, Total Timesteps: 2240000 episode:223 
+
+Rewards Agent: 998.61, Rewards Eval: 1026.96, Total Timesteps: 2250000 episode:224 
+
+Rewards Agent: 970.78, Rewards Eval: 1013.57, Total Timesteps: 2260000 episode:225 
+
+Rewards Agent: 945.12, Rewards Eval: 1004.03, Total Timesteps: 2270000 episode:226 
+
+Rewards Agent: 1013.59, Rewards Eval: 1042.67, Total Timesteps: 2280000 episode:227 
+
+Rewards Agent: 1042.88, Rewards Eval: 1058.65, Total Timesteps: 2290000 episode:228 
+
+Rewards Agent: 1009.20, Rewards Eval: 1027.75, Total Timesteps: 2300000 episode:229 
+
+Rewards Agent: 1015.03, Rewards Eval: 1064.25, Total Timesteps: 2310000 episode:230 
+
+Rewards Agent: 1004.82, Rewards Eval: 1062.38, Total Timesteps: 2320000 episode:231 
+
+Rewards Agent: 1035.46, Rewards Eval: 1071.82, Total Timesteps: 2330000 episode:232 
+
+Rewards Agent: 1016.26, Rewards Eval: 962.40, Total Timesteps: 2340000 episode:233 
+
+Rewards Agent: 1006.78, Rewards Eval: 1008.88, Total Timesteps: 2350000 episode:234 
+
+Rewards Agent: 1047.58, Rewards Eval: 999.22, Total Timesteps: 2360000 episode:235 
+
+Rewards Agent: 1037.69, Rewards Eval: 1002.79, Total Timesteps: 2370000 episode:236 
+
+Rewards Agent: 1019.27, Rewards Eval: 1051.60, Total Timesteps: 2380000 episode:237 
+
+Rewards Agent: 1022.76, Rewards Eval: 1061.13, Total Timesteps: 2390000 episode:238 
+
+Rewards Agent: 1029.13, Rewards Eval: 917.21, Total Timesteps: 2400000 episode:239 
+
+Rewards Agent: 1027.37, Rewards Eval: 1079.49, Total Timesteps: 2410000 episode:240 
+
+Rewards Agent: 1037.27, Rewards Eval: 1021.27, Total Timesteps: 2420000 episode:241 
+
+Rewards Agent: 1027.35, Rewards Eval: 976.51, Total Timesteps: 2430000 episode:242 
+
+Rewards Agent: 1026.12, Rewards Eval: 1057.50, Total Timesteps: 2440000 episode:243 
+
+Rewards Agent: 999.03, Rewards Eval: 1034.34, Total Timesteps: 2450000 episode:244 
+
+Rewards Agent: 1041.04, Rewards Eval: 1068.60, Total Timesteps: 2460000 episode:245 
+
+Rewards Agent: 1055.93, Rewards Eval: 1043.67, Total Timesteps: 2470000 episode:246 
+
+Rewards Agent: 1057.24, Rewards Eval: 1058.99, Total Timesteps: 2480000 episode:247 
+
+Rewards Agent: 1040.27, Rewards Eval: 1032.58, Total Timesteps: 2490000 episode:248 
+
+Rewards Agent: 1062.78, Rewards Eval: 1079.10, Total Timesteps: 2500000 episode:249 
+
+Rewards Agent: 1043.63, Rewards Eval: 1062.42, Total Timesteps: 2510000 episode:250 
+
+Rewards Agent: 1064.80, Rewards Eval: 1080.70, Total Timesteps: 2520000 episode:251 
+
+Rewards Agent: 1061.50, Rewards Eval: 1077.05, Total Timesteps: 2530000 episode:252 
+
+Rewards Agent: 1078.13, Rewards Eval: 1044.98, Total Timesteps: 2540000 episode:253 
+
+Rewards Agent: 1064.54, Rewards Eval: 898.67, Total Timesteps: 2550000 episode:254 
+
+Rewards Agent: 1059.60, Rewards Eval: 1080.35, Total Timesteps: 2560000 episode:255 
+
+Rewards Agent: 1060.10, Rewards Eval: 1017.82, Total Timesteps: 2570000 episode:256 
+
+Rewards Agent: 1070.68, Rewards Eval: 1020.36, Total Timesteps: 2580000 episode:257 
+
+Rewards Agent: 1076.54, Rewards Eval: 1081.39, Total Timesteps: 2590000 episode:258 
+
+Rewards Agent: 1066.34, Rewards Eval: 1137.33, Total Timesteps: 2600000 episode:259 
+
+Rewards Agent: 1069.90, Rewards Eval: 1075.64, Total Timesteps: 2610000 episode:260 
+
+Rewards Agent: 1105.32, Rewards Eval: 1131.71, Total Timesteps: 2620000 episode:261 
+
+Rewards Agent: 1107.80, Rewards Eval: 1055.92, Total Timesteps: 2630000 episode:262 
+
+Rewards Agent: 1078.14, Rewards Eval: 1067.00, Total Timesteps: 2640000 episode:263 
+
+Rewards Agent: 1098.01, Rewards Eval: 1105.00, Total Timesteps: 2650000 episode:264 
+
+Rewards Agent: 1084.83, Rewards Eval: 1068.74, Total Timesteps: 2660000 episode:265 
+
+Rewards Agent: 1091.03, Rewards Eval: 1088.40, Total Timesteps: 2670000 episode:266 
+
+Rewards Agent: 1115.04, Rewards Eval: 1113.24, Total Timesteps: 2680000 episode:267 
+
+Rewards Agent: 1097.51, Rewards Eval: 1075.18, Total Timesteps: 2690000 episode:268 
+
+Rewards Agent: 1093.44, Rewards Eval: 1029.68, Total Timesteps: 2700000 episode:269 
+
+Rewards Agent: 1064.77, Rewards Eval: 1174.64, Total Timesteps: 2710000 episode:270 
+
+Rewards Agent: 1103.65, Rewards Eval: 1101.87, Total Timesteps: 2720000 episode:271 
+
+Rewards Agent: 1130.27, Rewards Eval: 1118.99, Total Timesteps: 2730000 episode:272 
+
+Rewards Agent: 1106.50, Rewards Eval: 1105.67, Total Timesteps: 2740000 episode:273 
+
+Rewards Agent: 1094.79, Rewards Eval: 1114.60, Total Timesteps: 2750000 episode:274 
+
+Rewards Agent: 1127.91, Rewards Eval: 1050.79, Total Timesteps: 2760000 episode:275 
+
+Rewards Agent: 1084.93, Rewards Eval: 1141.67, Total Timesteps: 2770000 episode:276 
+
+Rewards Agent: 1092.10, Rewards Eval: 1056.32, Total Timesteps: 2780000 episode:277 
+
+Rewards Agent: 1106.53, Rewards Eval: 1129.99, Total Timesteps: 2790000 episode:278 
+
+Rewards Agent: 1113.55, Rewards Eval: 1155.82, Total Timesteps: 2800000 episode:279 
+
+Rewards Agent: 1106.39, Rewards Eval: 1155.88, Total Timesteps: 2810000 episode:280 
+
+Rewards Agent: 1121.27, Rewards Eval: 1139.17, Total Timesteps: 2820000 episode:281 
+
+Rewards Agent: 1108.16, Rewards Eval: 1065.81, Total Timesteps: 2830000 episode:282 
+
+Rewards Agent: 1117.11, Rewards Eval: 1147.38, Total Timesteps: 2840000 episode:283 
+
+Rewards Agent: 1124.30, Rewards Eval: 1197.37, Total Timesteps: 2850000 episode:284 
+
+Rewards Agent: 1127.24, Rewards Eval: 1145.78, Total Timesteps: 2860000 episode:285 
+
+Rewards Agent: 1145.07, Rewards Eval: 1121.50, Total Timesteps: 2870000 episode:286 
+
+Rewards Agent: 1123.45, Rewards Eval: 1206.72, Total Timesteps: 2880000 episode:287 
+
+Rewards Agent: 1116.47, Rewards Eval: 1102.09, Total Timesteps: 2890000 episode:288 
+
+Rewards Agent: 1124.90, Rewards Eval: 1149.14, Total Timesteps: 2900000 episode:289 
+
+Rewards Agent: 1132.80, Rewards Eval: 1170.35, Total Timesteps: 2910000 episode:290 
+
+Rewards Agent: 1156.15, Rewards Eval: 1149.71, Total Timesteps: 2920000 episode:291 
+
+Rewards Agent: 1133.91, Rewards Eval: 1094.53, Total Timesteps: 2930000 episode:292 
+
+Rewards Agent: 1108.66, Rewards Eval: 1153.96, Total Timesteps: 2940000 episode:293 
+
+Rewards Agent: 1136.33, Rewards Eval: 1172.26, Total Timesteps: 2950000 episode:294 
+
+Rewards Agent: 1151.74, Rewards Eval: 991.77, Total Timesteps: 2960000 episode:295 
+
+Rewards Agent: 1120.97, Rewards Eval: 1142.02, Total Timesteps: 2970000 episode:296 
+
+Rewards Agent: 1149.05, Rewards Eval: 1140.30, Total Timesteps: 2980000 episode:297 
+
+Rewards Agent: 1156.27, Rewards Eval: 1103.59, Total Timesteps: 2990000 episode:298 
+
+Rewards Agent: 1126.13, Rewards Eval: 1149.61, Total Timesteps: 3000000 episode:299 
+
+Rewards Agent: 1139.89, Rewards Eval: 1185.88, Total Timesteps: 3010000 episode:300 
+
+Rewards Agent: 1153.04, Rewards Eval: 1153.66, Total Timesteps: 3020000 episode:301 
+
+Rewards Agent: 1136.50, Rewards Eval: 1126.06, Total Timesteps: 3030000 episode:302 
+
+Rewards Agent: 1137.35, Rewards Eval: 1211.05, Total Timesteps: 3040000 episode:303 
+
+Rewards Agent: 1165.51, Rewards Eval: 1145.77, Total Timesteps: 3050000 episode:304 
+
+Rewards Agent: 1146.61, Rewards Eval: 1116.57, Total Timesteps: 3060000 episode:305 
+
+Rewards Agent: 1077.93, Rewards Eval: 1181.11, Total Timesteps: 3070000 episode:306 
+
+Rewards Agent: 1129.64, Rewards Eval: 1178.59, Total Timesteps: 3080000 episode:307 
+
+Rewards Agent: 1106.18, Rewards Eval: 1203.22, Total Timesteps: 3090000 episode:308 
+
+Rewards Agent: 1143.50, Rewards Eval: 1155.50, Total Timesteps: 3100000 episode:309 
+
+Rewards Agent: 1155.50, Rewards Eval: 1204.49, Total Timesteps: 3110000 episode:310 
+
+Rewards Agent: 1144.83, Rewards Eval: 1181.29, Total Timesteps: 3120000 episode:311 
+
+Rewards Agent: 1167.98, Rewards Eval: 1123.45, Total Timesteps: 3130000 episode:312 
+
+Rewards Agent: 1171.91, Rewards Eval: 1164.13, Total Timesteps: 3140000 episode:313 
+
+Rewards Agent: 1165.77, Rewards Eval: 1172.19, Total Timesteps: 3150000 episode:314 
+
+Rewards Agent: 1178.87, Rewards Eval: 1138.10, Total Timesteps: 3160000 episode:315 
+
+Rewards Agent: 1186.95, Rewards Eval: 1115.86, Total Timesteps: 3170000 episode:316 
+
+Rewards Agent: 1145.58, Rewards Eval: 1198.97, Total Timesteps: 3180000 episode:317 
+
+Rewards Agent: 1162.23, Rewards Eval: 1199.12, Total Timesteps: 3190000 episode:318 
+
+Rewards Agent: 1182.63, Rewards Eval: 1217.85, Total Timesteps: 3200000 episode:319 
+
+Rewards Agent: 1179.19, Rewards Eval: 1207.12, Total Timesteps: 3210000 episode:320 
+
+Rewards Agent: 1197.62, Rewards Eval: 1175.79, Total Timesteps: 3220000 episode:321 
+
+Rewards Agent: 1168.39, Rewards Eval: 1066.62, Total Timesteps: 3230000 episode:322 
+
+Rewards Agent: 1173.77, Rewards Eval: 1196.50, Total Timesteps: 3240000 episode:323 
+
+Rewards Agent: 1209.98, Rewards Eval: 1150.61, Total Timesteps: 3250000 episode:324 
+
+Rewards Agent: 1169.36, Rewards Eval: 1135.80, Total Timesteps: 3260000 episode:325 
+
+Rewards Agent: 1177.31, Rewards Eval: 1135.40, Total Timesteps: 3270000 episode:326 
+
+Rewards Agent: 1168.51, Rewards Eval: 1182.72, Total Timesteps: 3280000 episode:327 
+
+Rewards Agent: 1176.11, Rewards Eval: 1167.60, Total Timesteps: 3290000 episode:328 
+
+Rewards Agent: 1200.19, Rewards Eval: 1212.63, Total Timesteps: 3300000 episode:329 
+
+Rewards Agent: 1176.23, Rewards Eval: 1242.28, Total Timesteps: 3310000 episode:330 
+
+Rewards Agent: 1190.33, Rewards Eval: 1220.78, Total Timesteps: 3320000 episode:331 
+
+Rewards Agent: 1195.77, Rewards Eval: 1264.40, Total Timesteps: 3330000 episode:332 
+
+Rewards Agent: 1196.47, Rewards Eval: 1193.13, Total Timesteps: 3340000 episode:333 
+
+Rewards Agent: 1192.00, Rewards Eval: 1204.79, Total Timesteps: 3350000 episode:334 
+
+Rewards Agent: 1215.28, Rewards Eval: 1210.77, Total Timesteps: 3360000 episode:335 
+
+Rewards Agent: 1208.36, Rewards Eval: 1189.87, Total Timesteps: 3370000 episode:336 
+
+Rewards Agent: 1172.57, Rewards Eval: 1184.77, Total Timesteps: 3380000 episode:337 
+
+Rewards Agent: 1210.65, Rewards Eval: 1256.01, Total Timesteps: 3390000 episode:338 
+
+Rewards Agent: 1207.94, Rewards Eval: 1250.27, Total Timesteps: 3400000 episode:339 
+
+Rewards Agent: 1208.85, Rewards Eval: 1275.43, Total Timesteps: 3410000 episode:340 
+
+Rewards Agent: 1225.06, Rewards Eval: 1201.39, Total Timesteps: 3420000 episode:341 
+
+Rewards Agent: 1220.44, Rewards Eval: 1185.71, Total Timesteps: 3430000 episode:342 
+
+Rewards Agent: 1188.17, Rewards Eval: 1188.86, Total Timesteps: 3440000 episode:343 
+
+Rewards Agent: 1214.10, Rewards Eval: 1250.40, Total Timesteps: 3450000 episode:344 
+
+Rewards Agent: 1218.44, Rewards Eval: 1194.57, Total Timesteps: 3460000 episode:345 
+
+Rewards Agent: 1204.90, Rewards Eval: 1256.19, Total Timesteps: 3470000 episode:346 
+
+Rewards Agent: 1245.27, Rewards Eval: 1317.90, Total Timesteps: 3480000 episode:347 
+
+Rewards Agent: 1227.02, Rewards Eval: 1207.47, Total Timesteps: 3490000 episode:348 
+
+Rewards Agent: 1212.42, Rewards Eval: 1189.67, Total Timesteps: 3500000 episode:349 
+
+Rewards Agent: 1204.66, Rewards Eval: 1252.02, Total Timesteps: 3510000 episode:350 
+
+Rewards Agent: 1240.19, Rewards Eval: 1236.35, Total Timesteps: 3520000 episode:351 
+
+Rewards Agent: 1263.43, Rewards Eval: 1276.24, Total Timesteps: 3530000 episode:352 
+
+Rewards Agent: 1208.48, Rewards Eval: 1274.74, Total Timesteps: 3540000 episode:353 
+
+Rewards Agent: 1219.10, Rewards Eval: 1296.53, Total Timesteps: 3550000 episode:354 
+
+Rewards Agent: 1224.59, Rewards Eval: 1301.08, Total Timesteps: 3560000 episode:355 
+
+Rewards Agent: 1259.01, Rewards Eval: 1260.67, Total Timesteps: 3570000 episode:356 
+
+Rewards Agent: 1260.55, Rewards Eval: 1164.38, Total Timesteps: 3580000 episode:357 
+
+Rewards Agent: 1242.56, Rewards Eval: 1211.32, Total Timesteps: 3590000 episode:358 
+
+Rewards Agent: 1223.43, Rewards Eval: 1286.87, Total Timesteps: 3600000 episode:359 
+
+Rewards Agent: 1234.46, Rewards Eval: 1319.75, Total Timesteps: 3610000 episode:360 
+
+Rewards Agent: 1259.90, Rewards Eval: 1162.70, Total Timesteps: 3620000 episode:361 
+
+Rewards Agent: 1198.09, Rewards Eval: 1295.88, Total Timesteps: 3630000 episode:362 
+
+Rewards Agent: 1261.46, Rewards Eval: 1292.88, Total Timesteps: 3640000 episode:363 
+
+Rewards Agent: 1257.84, Rewards Eval: 1279.07, Total Timesteps: 3650000 episode:364 
+
+Rewards Agent: 1232.32, Rewards Eval: 1246.88, Total Timesteps: 3660000 episode:365 
+
+Rewards Agent: 1249.23, Rewards Eval: 1344.10, Total Timesteps: 3670000 episode:366 
+
+Rewards Agent: 1280.50, Rewards Eval: 1301.63, Total Timesteps: 3680000 episode:367 
+
+Rewards Agent: 1273.95, Rewards Eval: 1303.40, Total Timesteps: 3690000 episode:368 
+
+Rewards Agent: 1243.57, Rewards Eval: 1226.29, Total Timesteps: 3700000 episode:369 
+
+Rewards Agent: 1279.83, Rewards Eval: 1348.07, Total Timesteps: 3710000 episode:370 
+
+Rewards Agent: 1290.15, Rewards Eval: 1303.44, Total Timesteps: 3720000 episode:371 
+
+Rewards Agent: 1249.37, Rewards Eval: 1222.38, Total Timesteps: 3730000 episode:372 
+
+Rewards Agent: 1277.52, Rewards Eval: 1295.89, Total Timesteps: 3740000 episode:373 
+
+Rewards Agent: 1286.36, Rewards Eval: 1239.87, Total Timesteps: 3750000 episode:374 
+
+Rewards Agent: 1304.39, Rewards Eval: 1252.78, Total Timesteps: 3760000 episode:375 
+
+Rewards Agent: 1254.68, Rewards Eval: 1323.99, Total Timesteps: 3770000 episode:376 
+
+Rewards Agent: 1251.18, Rewards Eval: 1275.55, Total Timesteps: 3780000 episode:377 
+
+Rewards Agent: 1279.08, Rewards Eval: 1262.74, Total Timesteps: 3790000 episode:378 
+
+Rewards Agent: 1291.30, Rewards Eval: 1251.50, Total Timesteps: 3800000 episode:379 
+
+Rewards Agent: 1288.30, Rewards Eval: 1286.67, Total Timesteps: 3810000 episode:380 
+
+Rewards Agent: 1297.18, Rewards Eval: 1241.96, Total Timesteps: 3820000 episode:381 
+
+Rewards Agent: 1303.16, Rewards Eval: 1325.29, Total Timesteps: 3830000 episode:382 
+
+Rewards Agent: 1308.81, Rewards Eval: 1327.00, Total Timesteps: 3840000 episode:383 
+
+Rewards Agent: 1298.20, Rewards Eval: 1298.99, Total Timesteps: 3850000 episode:384 
+
+Rewards Agent: 1307.19, Rewards Eval: 1340.70, Total Timesteps: 3860000 episode:385 
+
+Rewards Agent: 1268.33, Rewards Eval: 1328.41, Total Timesteps: 3870000 episode:386 
+
+Rewards Agent: 1314.54, Rewards Eval: 1345.59, Total Timesteps: 3880000 episode:387 
+
+Rewards Agent: 1271.70, Rewards Eval: 1338.15, Total Timesteps: 3890000 episode:388 
+
+Rewards Agent: 1324.55, Rewards Eval: 1337.03, Total Timesteps: 3900000 episode:389 
+
+Rewards Agent: 1339.65, Rewards Eval: 1260.24, Total Timesteps: 3910000 episode:390 
+
+Rewards Agent: 1289.45, Rewards Eval: 1323.07, Total Timesteps: 3920000 episode:391 
+
+Rewards Agent: 1324.09, Rewards Eval: 1113.34, Total Timesteps: 3930000 episode:392 
+
+Rewards Agent: 1308.65, Rewards Eval: 1317.08, Total Timesteps: 3940000 episode:393 
+
+Rewards Agent: 1321.58, Rewards Eval: 1354.79, Total Timesteps: 3950000 episode:394 
+
+Rewards Agent: 1318.98, Rewards Eval: 1345.31, Total Timesteps: 3960000 episode:395 
+
+Rewards Agent: 1310.79, Rewards Eval: 1265.31, Total Timesteps: 3970000 episode:396 
+
+Rewards Agent: 1283.23, Rewards Eval: 1296.62, Total Timesteps: 3980000 episode:397 
+
+Rewards Agent: 1313.03, Rewards Eval: 1251.06, Total Timesteps: 3990000 episode:398 
+
+Rewards Agent: 1305.85, Rewards Eval: 1340.56, Total Timesteps: 4000000 episode:399 
+
+Rewards Agent: 1297.20, Rewards Eval: 1306.60, Total Timesteps: 4010000 episode:400 
+
+Rewards Agent: 1335.70, Rewards Eval: 1234.65, Total Timesteps: 4020000 episode:401 
+
+Rewards Agent: 1313.40, Rewards Eval: 1404.80, Total Timesteps: 4030000 episode:402 
+
+Rewards Agent: 1318.59, Rewards Eval: 1228.82, Total Timesteps: 4040000 episode:403 
+
+Rewards Agent: 1306.95, Rewards Eval: 1414.65, Total Timesteps: 4050000 episode:404 
+
+Rewards Agent: 1350.23, Rewards Eval: 1253.86, Total Timesteps: 4060000 episode:405 
+
+Rewards Agent: 1300.42, Rewards Eval: 1228.03, Total Timesteps: 4070000 episode:406 
+
+Rewards Agent: 1331.80, Rewards Eval: 1419.10, Total Timesteps: 4080000 episode:407 
+
+Rewards Agent: 1303.99, Rewards Eval: 1364.73, Total Timesteps: 4090000 episode:408 
+
+Rewards Agent: 1317.81, Rewards Eval: 1353.63, Total Timesteps: 4100000 episode:409 
+
+Rewards Agent: 1355.62, Rewards Eval: 1284.09, Total Timesteps: 4110000 episode:410 
+
+Rewards Agent: 1318.84, Rewards Eval: 1311.24, Total Timesteps: 4120000 episode:411 
+
+Rewards Agent: 1311.38, Rewards Eval: 1361.99, Total Timesteps: 4130000 episode:412 
+
+Rewards Agent: 1319.11, Rewards Eval: 1276.76, Total Timesteps: 4140000 episode:413 
+
+Rewards Agent: 1337.30, Rewards Eval: 1365.88, Total Timesteps: 4150000 episode:414 
+
+Rewards Agent: 1336.15, Rewards Eval: 1231.59, Total Timesteps: 4160000 episode:415 
+
+Rewards Agent: 1299.87, Rewards Eval: 1400.73, Total Timesteps: 4170000 episode:416 
+
+Rewards Agent: 1339.54, Rewards Eval: 1319.03, Total Timesteps: 4180000 episode:417 
+
+Rewards Agent: 1361.68, Rewards Eval: 1471.20, Total Timesteps: 4190000 episode:418 
+
+Rewards Agent: 1333.53, Rewards Eval: 1347.18, Total Timesteps: 4200000 episode:419 
+
+Rewards Agent: 1354.29, Rewards Eval: 1402.91, Total Timesteps: 4210000 episode:420 
+
+Rewards Agent: 1348.99, Rewards Eval: 1368.39, Total Timesteps: 4220000 episode:421 
+
+Rewards Agent: 1365.77, Rewards Eval: 1305.36, Total Timesteps: 4230000 episode:422 
+
+Rewards Agent: 1367.82, Rewards Eval: 1309.20, Total Timesteps: 4240000 episode:423 
+
+Rewards Agent: 1365.44, Rewards Eval: 1308.91, Total Timesteps: 4250000 episode:424 
+
+Rewards Agent: 1354.56, Rewards Eval: 1427.74, Total Timesteps: 4260000 episode:425 
+
+Rewards Agent: 1372.71, Rewards Eval: 1315.23, Total Timesteps: 4270000 episode:426 
+
+Rewards Agent: 1358.66, Rewards Eval: 1344.65, Total Timesteps: 4280000 episode:427 
+
+Rewards Agent: 1345.32, Rewards Eval: 1408.47, Total Timesteps: 4290000 episode:428 
+
+Rewards Agent: 1364.52, Rewards Eval: 1390.21, Total Timesteps: 4300000 episode:429 
+
+Rewards Agent: 1385.63, Rewards Eval: 1293.94, Total Timesteps: 4310000 episode:430 
+
+Rewards Agent: 1353.45, Rewards Eval: 1440.30, Total Timesteps: 4320000 episode:431 
+
+Rewards Agent: 1357.47, Rewards Eval: 1445.22, Total Timesteps: 4330000 episode:432 
+
+Rewards Agent: 1365.87, Rewards Eval: 1314.38, Total Timesteps: 4340000 episode:433 
+
+Rewards Agent: 1363.50, Rewards Eval: 1409.10, Total Timesteps: 4350000 episode:434 
+
+Rewards Agent: 1371.26, Rewards Eval: 1395.51, Total Timesteps: 4360000 episode:435 
+
+Rewards Agent: 1381.44, Rewards Eval: 1323.66, Total Timesteps: 4370000 episode:436 
+
+Rewards Agent: 1369.04, Rewards Eval: 1269.49, Total Timesteps: 4380000 episode:437 
+
+Rewards Agent: 1372.02, Rewards Eval: 1376.33, Total Timesteps: 4390000 episode:438 
+
+Rewards Agent: 1383.57, Rewards Eval: 1414.77, Total Timesteps: 4400000 episode:439 
+
+Rewards Agent: 1372.50, Rewards Eval: 1281.62, Total Timesteps: 4410000 episode:440 
+
+Rewards Agent: 1348.02, Rewards Eval: 1390.56, Total Timesteps: 4420000 episode:441 
+
+Rewards Agent: 1387.14, Rewards Eval: 1379.13, Total Timesteps: 4430000 episode:442 
+
+Rewards Agent: 1385.31, Rewards Eval: 1422.04, Total Timesteps: 4440000 episode:443 
+
+Rewards Agent: 1396.17, Rewards Eval: 1377.15, Total Timesteps: 4450000 episode:444 
+
+Rewards Agent: 1358.47, Rewards Eval: 1388.18, Total Timesteps: 4460000 episode:445 
+
+Rewards Agent: 1383.35, Rewards Eval: 1385.52, Total Timesteps: 4470000 episode:446 
+
+Rewards Agent: 1365.73, Rewards Eval: 1377.26, Total Timesteps: 4480000 episode:447 
+
+Rewards Agent: 1389.64, Rewards Eval: 1423.78, Total Timesteps: 4490000 episode:448 
+
+Rewards Agent: 1385.10, Rewards Eval: 1381.85, Total Timesteps: 4500000 episode:449 
+
+Rewards Agent: 1418.53, Rewards Eval: 1457.07, Total Timesteps: 4510000 episode:450 
+
+Rewards Agent: 1429.17, Rewards Eval: 1427.95, Total Timesteps: 4520000 episode:451 
+
+Rewards Agent: 1349.32, Rewards Eval: 1429.75, Total Timesteps: 4530000 episode:452 
+
+Rewards Agent: 1385.17, Rewards Eval: 1369.35, Total Timesteps: 4540000 episode:453 
+
+Rewards Agent: 1376.97, Rewards Eval: 1394.96, Total Timesteps: 4550000 episode:454 
+
+Rewards Agent: 1384.28, Rewards Eval: 1490.73, Total Timesteps: 4560000 episode:455 
+
+Rewards Agent: 1436.37, Rewards Eval: 1389.55, Total Timesteps: 4570000 episode:456 
+
+Rewards Agent: 1423.56, Rewards Eval: 1452.43, Total Timesteps: 4580000 episode:457 
+
+Rewards Agent: 1407.96, Rewards Eval: 1466.97, Total Timesteps: 4590000 episode:458 
+
+Rewards Agent: 1413.66, Rewards Eval: 1450.07, Total Timesteps: 4600000 episode:459 
+
+Rewards Agent: 1396.44, Rewards Eval: 1477.95, Total Timesteps: 4610000 episode:460 
+
+Rewards Agent: 1403.79, Rewards Eval: 1445.40, Total Timesteps: 4620000 episode:461 
+
+Rewards Agent: 1379.14, Rewards Eval: 1291.09, Total Timesteps: 4630000 episode:462 
+
+Rewards Agent: 1362.87, Rewards Eval: 1454.85, Total Timesteps: 4640000 episode:463 
+
+Rewards Agent: 1430.00, Rewards Eval: 1427.59, Total Timesteps: 4650000 episode:464 
+
+Rewards Agent: 1430.27, Rewards Eval: 1413.57, Total Timesteps: 4660000 episode:465 
+
+Rewards Agent: 1433.79, Rewards Eval: 1468.37, Total Timesteps: 4670000 episode:466 
+
+Rewards Agent: 1425.89, Rewards Eval: 1520.87, Total Timesteps: 4680000 episode:467 
+
+Rewards Agent: 1422.67, Rewards Eval: 1283.67, Total Timesteps: 4690000 episode:468 
+
+Rewards Agent: 1406.79, Rewards Eval: 1432.61, Total Timesteps: 4700000 episode:469 
+
+Rewards Agent: 1405.96, Rewards Eval: 1509.48, Total Timesteps: 4710000 episode:470 
+
+Rewards Agent: 1429.16, Rewards Eval: 1428.89, Total Timesteps: 4720000 episode:471 
+
+Rewards Agent: 1438.09, Rewards Eval: 1402.20, Total Timesteps: 4730000 episode:472 
+
+Rewards Agent: 1391.92, Rewards Eval: 1462.58, Total Timesteps: 4740000 episode:473 
+
+Rewards Agent: 1431.37, Rewards Eval: 1424.98, Total Timesteps: 4750000 episode:474 
+
+Rewards Agent: 1390.58, Rewards Eval: 1412.23, Total Timesteps: 4760000 episode:475 
+
+Rewards Agent: 1454.82, Rewards Eval: 1428.08, Total Timesteps: 4770000 episode:476 
+
+Rewards Agent: 1432.20, Rewards Eval: 1504.35, Total Timesteps: 4780000 episode:477 
+
+Rewards Agent: 1430.21, Rewards Eval: 1463.33, Total Timesteps: 4790000 episode:478 
+
+Rewards Agent: 1446.94, Rewards Eval: 1492.05, Total Timesteps: 4800000 episode:479 
+
+Rewards Agent: 1418.09, Rewards Eval: 1397.19, Total Timesteps: 4810000 episode:480 
+
+Rewards Agent: 1419.16, Rewards Eval: 1398.06, Total Timesteps: 4820000 episode:481 
+
+Rewards Agent: 1437.51, Rewards Eval: 1477.43, Total Timesteps: 4830000 episode:482 
+
+Rewards Agent: 1465.65, Rewards Eval: 1499.53, Total Timesteps: 4840000 episode:483 
+
+Rewards Agent: 1458.75, Rewards Eval: 1415.25, Total Timesteps: 4850000 episode:484 
+
+Rewards Agent: 1468.79, Rewards Eval: 1428.08, Total Timesteps: 4860000 episode:485 
+
+Rewards Agent: 1400.92, Rewards Eval: 1316.28, Total Timesteps: 4870000 episode:486 
+
+Rewards Agent: 1445.02, Rewards Eval: 1435.37, Total Timesteps: 4880000 episode:487 
+
+Rewards Agent: 1474.15, Rewards Eval: 1495.70, Total Timesteps: 4890000 episode:488 
+
+Rewards Agent: 1458.43, Rewards Eval: 1379.40, Total Timesteps: 4900000 episode:489 
+
+Rewards Agent: 1472.46, Rewards Eval: 1448.42, Total Timesteps: 4910000 episode:490 
+
+Rewards Agent: 1418.79, Rewards Eval: 1298.78, Total Timesteps: 4920000 episode:491 
+
+Rewards Agent: 1404.79, Rewards Eval: 1483.38, Total Timesteps: 4930000 episode:492 
+
+Rewards Agent: 1419.57, Rewards Eval: 1420.44, Total Timesteps: 4940000 episode:493 
+
+Rewards Agent: 1399.22, Rewards Eval: 1464.60, Total Timesteps: 4950000 episode:494 
+
+Rewards Agent: 1455.06, Rewards Eval: 1494.11, Total Timesteps: 4960000 episode:495 
+
+Rewards Agent: 1436.44, Rewards Eval: 1362.51, Total Timesteps: 4970000 episode:496 
+
+Rewards Agent: 1388.49, Rewards Eval: 1392.66, Total Timesteps: 4980000 episode:497 
+
+Rewards Agent: 1463.54, Rewards Eval: 1393.73, Total Timesteps: 4990000 episode:498 
+
+Rewards Agent: 1416.09, Rewards Eval: 1432.60, Total Timesteps: 5000000 episode:499 
+
+For Seed: 2 
+
+Rewards Agent: -18.81, Rewards Eval: -41.69, Total Timesteps: 10000 episode:0 
+
+Rewards Agent: -46.06, Rewards Eval: -30.23, Total Timesteps: 20000 episode:1 
+
+Rewards Agent: -51.41, Rewards Eval: -58.54, Total Timesteps: 30000 episode:2 
+
+Rewards Agent: -58.28, Rewards Eval: -58.33, Total Timesteps: 40000 episode:3 
+
+Rewards Agent: -44.78, Rewards Eval: 14.96, Total Timesteps: 50000 episode:4 
+
+Rewards Agent: -29.59, Rewards Eval: -47.10, Total Timesteps: 60000 episode:5 
+
+Rewards Agent: -49.75, Rewards Eval: -51.90, Total Timesteps: 70000 episode:6 
+
+Rewards Agent: -52.61, Rewards Eval: -53.93, Total Timesteps: 80000 episode:7 
+
+Rewards Agent: -52.91, Rewards Eval: -53.81, Total Timesteps: 90000 episode:8 
+
+Rewards Agent: -54.84, Rewards Eval: -55.87, Total Timesteps: 100000 episode:9 
+
+Rewards Agent: -55.55, Rewards Eval: -54.66, Total Timesteps: 110000 episode:10 
+
+Rewards Agent: -50.36, Rewards Eval: -46.74, Total Timesteps: 120000 episode:11 
+
+Rewards Agent: -47.16, Rewards Eval: -51.34, Total Timesteps: 130000 episode:12 
+
+Rewards Agent: -47.95, Rewards Eval: -46.46, Total Timesteps: 140000 episode:13 
+
+Rewards Agent: -47.62, Rewards Eval: -45.39, Total Timesteps: 150000 episode:14 
+
+Rewards Agent: -46.87, Rewards Eval: -48.40, Total Timesteps: 160000 episode:15 
+
+Rewards Agent: -46.71, Rewards Eval: -45.82, Total Timesteps: 170000 episode:16 
+
+Rewards Agent: -47.21, Rewards Eval: -44.13, Total Timesteps: 180000 episode:17 
+
+Rewards Agent: -47.48, Rewards Eval: -47.17, Total Timesteps: 190000 episode:18 
+
+Rewards Agent: -47.47, Rewards Eval: -47.10, Total Timesteps: 200000 episode:19 
+
+Rewards Agent: -50.37, Rewards Eval: -46.05, Total Timesteps: 210000 episode:20 
+
+Rewards Agent: -47.86, Rewards Eval: -48.08, Total Timesteps: 220000 episode:21 
+
+Rewards Agent: -50.25, Rewards Eval: -46.60, Total Timesteps: 230000 episode:22 
+
+Rewards Agent: -49.85, Rewards Eval: -49.48, Total Timesteps: 240000 episode:23 
+
+Rewards Agent: -36.17, Rewards Eval: 4.00, Total Timesteps: 250000 episode:24 
+
+Rewards Agent: -3.82, Rewards Eval: -22.77, Total Timesteps: 260000 episode:25 
+
+Rewards Agent: -20.91, Rewards Eval: -0.23, Total Timesteps: 270000 episode:26 
+
+Rewards Agent: -22.02, Rewards Eval: -40.22, Total Timesteps: 280000 episode:27 
+
+Rewards Agent: -32.62, Rewards Eval: -27.84, Total Timesteps: 290000 episode:28 
+
+Rewards Agent: -36.80, Rewards Eval: -28.61, Total Timesteps: 300000 episode:29 
+
+Rewards Agent: -25.56, Rewards Eval: -16.97, Total Timesteps: 310000 episode:30 
+
+Rewards Agent: -18.70, Rewards Eval: -15.83, Total Timesteps: 320000 episode:31 
+
+Rewards Agent: -2.71, Rewards Eval: 2.51, Total Timesteps: 330000 episode:32 
+
+Rewards Agent: -0.56, Rewards Eval: -34.60, Total Timesteps: 340000 episode:33 
+
+Rewards Agent: -17.74, Rewards Eval: -22.27, Total Timesteps: 350000 episode:34 
+
+Rewards Agent: -11.51, Rewards Eval: -21.45, Total Timesteps: 360000 episode:35 
+
+Rewards Agent: 7.83, Rewards Eval: 23.12, Total Timesteps: 370000 episode:36 
+
+Rewards Agent: 30.33, Rewards Eval: 173.28, Total Timesteps: 380000 episode:37 
+
+Rewards Agent: 62.68, Rewards Eval: 91.44, Total Timesteps: 390000 episode:38 
+
+Rewards Agent: 107.72, Rewards Eval: 141.15, Total Timesteps: 400000 episode:39 
+
+Rewards Agent: 91.40, Rewards Eval: 170.59, Total Timesteps: 410000 episode:40 
+
+Rewards Agent: 165.44, Rewards Eval: 147.42, Total Timesteps: 420000 episode:41 
+
+Rewards Agent: 135.48, Rewards Eval: 123.99, Total Timesteps: 430000 episode:42 
+
+Rewards Agent: 164.12, Rewards Eval: 165.28, Total Timesteps: 440000 episode:43 
+
+Rewards Agent: 259.57, Rewards Eval: 339.54, Total Timesteps: 450000 episode:44 
+
+Rewards Agent: 315.44, Rewards Eval: 255.58, Total Timesteps: 460000 episode:45 
+
+Rewards Agent: 326.86, Rewards Eval: 445.53, Total Timesteps: 470000 episode:46 
+
+Rewards Agent: 377.97, Rewards Eval: 247.89, Total Timesteps: 480000 episode:47 
+
+Rewards Agent: 374.81, Rewards Eval: 362.85, Total Timesteps: 490000 episode:48 
+
+Rewards Agent: 338.94, Rewards Eval: 324.05, Total Timesteps: 500000 episode:49 
+
+Rewards Agent: 309.51, Rewards Eval: 299.21, Total Timesteps: 510000 episode:50 
+
+Rewards Agent: 387.19, Rewards Eval: 307.71, Total Timesteps: 520000 episode:51 
+
+Rewards Agent: 378.97, Rewards Eval: 409.43, Total Timesteps: 530000 episode:52 
+
+Rewards Agent: 384.63, Rewards Eval: 390.40, Total Timesteps: 540000 episode:53 
+
+Rewards Agent: 396.39, Rewards Eval: 266.93, Total Timesteps: 550000 episode:54 
+
+Rewards Agent: 379.22, Rewards Eval: 340.91, Total Timesteps: 560000 episode:55 
+
+Rewards Agent: 382.78, Rewards Eval: 231.80, Total Timesteps: 570000 episode:56 
+
+Rewards Agent: 381.62, Rewards Eval: 402.50, Total Timesteps: 580000 episode:57 
+
+Rewards Agent: 407.58, Rewards Eval: 343.22, Total Timesteps: 590000 episode:58 
+
+Rewards Agent: 428.25, Rewards Eval: 441.42, Total Timesteps: 600000 episode:59 
+
+Rewards Agent: 432.87, Rewards Eval: 397.87, Total Timesteps: 610000 episode:60 
+
+Rewards Agent: 435.72, Rewards Eval: 256.16, Total Timesteps: 620000 episode:61 
+
+Rewards Agent: 438.02, Rewards Eval: 497.83, Total Timesteps: 630000 episode:62 
+
+Rewards Agent: 446.62, Rewards Eval: 395.88, Total Timesteps: 640000 episode:63 
+
+Rewards Agent: 466.60, Rewards Eval: 437.34, Total Timesteps: 650000 episode:64 
+
+Rewards Agent: 445.92, Rewards Eval: 468.67, Total Timesteps: 660000 episode:65 
+
+Rewards Agent: 480.80, Rewards Eval: 447.94, Total Timesteps: 670000 episode:66 
+
+Rewards Agent: 462.96, Rewards Eval: 470.08, Total Timesteps: 680000 episode:67 
+
+Rewards Agent: 469.69, Rewards Eval: 363.87, Total Timesteps: 690000 episode:68 
+
+Rewards Agent: 475.04, Rewards Eval: 495.46, Total Timesteps: 700000 episode:69 
+
+Rewards Agent: 476.54, Rewards Eval: 502.81, Total Timesteps: 710000 episode:70 
+
+Rewards Agent: 490.45, Rewards Eval: 507.87, Total Timesteps: 720000 episode:71 
+
+Rewards Agent: 467.12, Rewards Eval: 544.34, Total Timesteps: 730000 episode:72 
+
+Rewards Agent: 492.52, Rewards Eval: 517.41, Total Timesteps: 740000 episode:73 
+
+Rewards Agent: 493.23, Rewards Eval: 507.87, Total Timesteps: 750000 episode:74 
+
+Rewards Agent: 498.16, Rewards Eval: 470.81, Total Timesteps: 760000 episode:75 
+
+Rewards Agent: 488.65, Rewards Eval: 463.07, Total Timesteps: 770000 episode:76 
+
+Rewards Agent: 495.27, Rewards Eval: 539.75, Total Timesteps: 780000 episode:77 
+
+Rewards Agent: 486.59, Rewards Eval: 514.34, Total Timesteps: 790000 episode:78 
+
+Rewards Agent: 512.92, Rewards Eval: 490.01, Total Timesteps: 800000 episode:79 
+
+Rewards Agent: 512.39, Rewards Eval: 512.14, Total Timesteps: 810000 episode:80 
+
+Rewards Agent: 480.34, Rewards Eval: 485.79, Total Timesteps: 820000 episode:81 
+
+Rewards Agent: 505.80, Rewards Eval: 580.33, Total Timesteps: 830000 episode:82 
+
+Rewards Agent: 507.08, Rewards Eval: 522.15, Total Timesteps: 840000 episode:83 
+
+Rewards Agent: 506.26, Rewards Eval: 530.40, Total Timesteps: 850000 episode:84 
+
+Rewards Agent: 508.20, Rewards Eval: 523.98, Total Timesteps: 860000 episode:85 
+
+Rewards Agent: 522.90, Rewards Eval: 517.19, Total Timesteps: 870000 episode:86 
+
+Rewards Agent: 508.01, Rewards Eval: 449.55, Total Timesteps: 880000 episode:87 
+
+Rewards Agent: 499.40, Rewards Eval: 529.62, Total Timesteps: 890000 episode:88 
+
+Rewards Agent: 520.44, Rewards Eval: 529.82, Total Timesteps: 900000 episode:89 
+
+Rewards Agent: 491.32, Rewards Eval: 514.97, Total Timesteps: 910000 episode:90 
+
+Rewards Agent: 518.80, Rewards Eval: 509.95, Total Timesteps: 920000 episode:91 
+
+Rewards Agent: 514.60, Rewards Eval: 519.16, Total Timesteps: 930000 episode:92 
+
+Rewards Agent: 526.72, Rewards Eval: 544.64, Total Timesteps: 940000 episode:93 
+
+Rewards Agent: 518.47, Rewards Eval: 530.71, Total Timesteps: 950000 episode:94 
+
+Rewards Agent: 532.87, Rewards Eval: 490.49, Total Timesteps: 960000 episode:95 
+
+Rewards Agent: 540.44, Rewards Eval: 515.96, Total Timesteps: 970000 episode:96 
+
+Rewards Agent: 533.41, Rewards Eval: 574.90, Total Timesteps: 980000 episode:97 
+
+Rewards Agent: 550.74, Rewards Eval: 511.34, Total Timesteps: 990000 episode:98 
+
+Rewards Agent: 545.35, Rewards Eval: 545.81, Total Timesteps: 1000000 episode:99 
+
+Rewards Agent: 522.92, Rewards Eval: 547.70, Total Timesteps: 1010000 episode:100 
+
+Rewards Agent: 561.68, Rewards Eval: 564.49, Total Timesteps: 1020000 episode:101 
+
+Rewards Agent: 547.63, Rewards Eval: 567.31, Total Timesteps: 1030000 episode:102 
+
+Rewards Agent: 555.29, Rewards Eval: 553.67, Total Timesteps: 1040000 episode:103 
+
+Rewards Agent: 564.97, Rewards Eval: 528.67, Total Timesteps: 1050000 episode:104 
+
+Rewards Agent: 558.48, Rewards Eval: 559.63, Total Timesteps: 1060000 episode:105 
+
+Rewards Agent: 550.11, Rewards Eval: 564.50, Total Timesteps: 1070000 episode:106 
+
+Rewards Agent: 579.02, Rewards Eval: 558.51, Total Timesteps: 1080000 episode:107 
+
+Rewards Agent: 572.59, Rewards Eval: 582.73, Total Timesteps: 1090000 episode:108 
+
+Rewards Agent: 576.88, Rewards Eval: 585.37, Total Timesteps: 1100000 episode:109 
+
+Rewards Agent: 586.26, Rewards Eval: 582.38, Total Timesteps: 1110000 episode:110 
+
+Rewards Agent: 603.33, Rewards Eval: 585.75, Total Timesteps: 1120000 episode:111 
+
+Rewards Agent: 581.41, Rewards Eval: 574.73, Total Timesteps: 1130000 episode:112 
+
+Rewards Agent: 593.98, Rewards Eval: 623.18, Total Timesteps: 1140000 episode:113 
+
+Rewards Agent: 586.01, Rewards Eval: 551.47, Total Timesteps: 1150000 episode:114 
+
+Rewards Agent: 586.35, Rewards Eval: 613.88, Total Timesteps: 1160000 episode:115 
+
+Rewards Agent: 598.48, Rewards Eval: 621.45, Total Timesteps: 1170000 episode:116 
+
+Rewards Agent: 591.99, Rewards Eval: 592.31, Total Timesteps: 1180000 episode:117 
+
+Rewards Agent: 589.85, Rewards Eval: 604.51, Total Timesteps: 1190000 episode:118 
+
+Rewards Agent: 608.86, Rewards Eval: 619.88, Total Timesteps: 1200000 episode:119 
+
+Rewards Agent: 606.28, Rewards Eval: 601.73, Total Timesteps: 1210000 episode:120 
+
+Rewards Agent: 614.61, Rewards Eval: 605.84, Total Timesteps: 1220000 episode:121 
+
+Rewards Agent: 599.56, Rewards Eval: 588.09, Total Timesteps: 1230000 episode:122 
+
+Rewards Agent: 627.39, Rewards Eval: 592.74, Total Timesteps: 1240000 episode:123 
+
+Rewards Agent: 613.29, Rewards Eval: 559.09, Total Timesteps: 1250000 episode:124 
+
+Rewards Agent: 618.24, Rewards Eval: 665.82, Total Timesteps: 1260000 episode:125 
+
+Rewards Agent: 620.38, Rewards Eval: 567.89, Total Timesteps: 1270000 episode:126 
+
+Rewards Agent: 619.96, Rewards Eval: 641.01, Total Timesteps: 1280000 episode:127 
+
+Rewards Agent: 608.23, Rewards Eval: 592.68, Total Timesteps: 1290000 episode:128 
+
+Rewards Agent: 601.39, Rewards Eval: 613.71, Total Timesteps: 1300000 episode:129 
+
+Rewards Agent: 634.68, Rewards Eval: 586.82, Total Timesteps: 1310000 episode:130 
+
+Rewards Agent: 606.79, Rewards Eval: 619.06, Total Timesteps: 1320000 episode:131 
+
+Rewards Agent: 622.34, Rewards Eval: 630.14, Total Timesteps: 1330000 episode:132 
+
+Rewards Agent: 624.26, Rewards Eval: 640.53, Total Timesteps: 1340000 episode:133 
+
+Rewards Agent: 626.97, Rewards Eval: 663.98, Total Timesteps: 1350000 episode:134 
+
+Rewards Agent: 634.20, Rewards Eval: 648.36, Total Timesteps: 1360000 episode:135 
+
+Rewards Agent: 637.45, Rewards Eval: 617.38, Total Timesteps: 1370000 episode:136 
+
+Rewards Agent: 640.63, Rewards Eval: 654.34, Total Timesteps: 1380000 episode:137 
+
+Rewards Agent: 640.65, Rewards Eval: 661.01, Total Timesteps: 1390000 episode:138 
+
+Rewards Agent: 641.88, Rewards Eval: 684.49, Total Timesteps: 1400000 episode:139 
+
+Rewards Agent: 655.35, Rewards Eval: 657.34, Total Timesteps: 1410000 episode:140 
+
+Rewards Agent: 650.01, Rewards Eval: 655.42, Total Timesteps: 1420000 episode:141 
+
+Rewards Agent: 649.48, Rewards Eval: 648.75, Total Timesteps: 1430000 episode:142 
+
+Rewards Agent: 623.33, Rewards Eval: 704.18, Total Timesteps: 1440000 episode:143 
+
+Rewards Agent: 661.32, Rewards Eval: 675.22, Total Timesteps: 1450000 episode:144 
+
+Rewards Agent: 671.03, Rewards Eval: 669.50, Total Timesteps: 1460000 episode:145 
+
+Rewards Agent: 661.42, Rewards Eval: 651.15, Total Timesteps: 1470000 episode:146 
+
+Rewards Agent: 655.27, Rewards Eval: 668.08, Total Timesteps: 1480000 episode:147 
+
+Rewards Agent: 659.31, Rewards Eval: 647.04, Total Timesteps: 1490000 episode:148 
+
+Rewards Agent: 673.35, Rewards Eval: 638.94, Total Timesteps: 1500000 episode:149 
+
+Rewards Agent: 678.60, Rewards Eval: 604.62, Total Timesteps: 1510000 episode:150 
+
+Rewards Agent: 658.55, Rewards Eval: 624.03, Total Timesteps: 1520000 episode:151 
+
+Rewards Agent: 674.08, Rewards Eval: 684.20, Total Timesteps: 1530000 episode:152 
+
+Rewards Agent: 673.75, Rewards Eval: 656.28, Total Timesteps: 1540000 episode:153 
+
+Rewards Agent: 677.34, Rewards Eval: 645.36, Total Timesteps: 1550000 episode:154 
+
+Rewards Agent: 662.41, Rewards Eval: 723.09, Total Timesteps: 1560000 episode:155 
+
+Rewards Agent: 665.83, Rewards Eval: 668.78, Total Timesteps: 1570000 episode:156 
+
+Rewards Agent: 674.48, Rewards Eval: 670.91, Total Timesteps: 1580000 episode:157 
+
+Rewards Agent: 675.08, Rewards Eval: 704.68, Total Timesteps: 1590000 episode:158 
+
+Rewards Agent: 685.63, Rewards Eval: 678.71, Total Timesteps: 1600000 episode:159 
+
+Rewards Agent: 681.15, Rewards Eval: 692.85, Total Timesteps: 1610000 episode:160 
+
+Rewards Agent: 679.19, Rewards Eval: 706.00, Total Timesteps: 1620000 episode:161 
+
+Rewards Agent: 695.03, Rewards Eval: 634.27, Total Timesteps: 1630000 episode:162 
+
+Rewards Agent: 688.77, Rewards Eval: 692.26, Total Timesteps: 1640000 episode:163 
+
+Rewards Agent: 695.56, Rewards Eval: 712.75, Total Timesteps: 1650000 episode:164 
+
+Rewards Agent: 706.31, Rewards Eval: 708.31, Total Timesteps: 1660000 episode:165 
+
+Rewards Agent: 702.41, Rewards Eval: 694.92, Total Timesteps: 1670000 episode:166 
+
+Rewards Agent: 678.84, Rewards Eval: 635.96, Total Timesteps: 1680000 episode:167 
+
+Rewards Agent: 687.06, Rewards Eval: 727.98, Total Timesteps: 1690000 episode:168 
+
+Rewards Agent: 709.22, Rewards Eval: 673.65, Total Timesteps: 1700000 episode:169 
+
+Rewards Agent: 695.56, Rewards Eval: 729.24, Total Timesteps: 1710000 episode:170 
+
+Rewards Agent: 702.49, Rewards Eval: 713.71, Total Timesteps: 1720000 episode:171 
+
+Rewards Agent: 701.82, Rewards Eval: 659.33, Total Timesteps: 1730000 episode:172 
+
+Rewards Agent: 711.98, Rewards Eval: 679.55, Total Timesteps: 1740000 episode:173 
+
+Rewards Agent: 697.99, Rewards Eval: 696.90, Total Timesteps: 1750000 episode:174 
+
+Rewards Agent: 705.45, Rewards Eval: 781.32, Total Timesteps: 1760000 episode:175 
+
+Rewards Agent: 702.81, Rewards Eval: 746.68, Total Timesteps: 1770000 episode:176 
+
+Rewards Agent: 696.25, Rewards Eval: 673.33, Total Timesteps: 1780000 episode:177 
+
+Rewards Agent: 712.57, Rewards Eval: 713.38, Total Timesteps: 1790000 episode:178 
+
+Rewards Agent: 711.68, Rewards Eval: 694.81, Total Timesteps: 1800000 episode:179 
+
+Rewards Agent: 696.67, Rewards Eval: 728.47, Total Timesteps: 1810000 episode:180 
+
+Rewards Agent: 717.17, Rewards Eval: 705.49, Total Timesteps: 1820000 episode:181 
+
+Rewards Agent: 706.59, Rewards Eval: 723.19, Total Timesteps: 1830000 episode:182 
+
+Rewards Agent: 706.12, Rewards Eval: 701.21, Total Timesteps: 1840000 episode:183 
+
+Rewards Agent: 724.44, Rewards Eval: 726.03, Total Timesteps: 1850000 episode:184 
+
+Rewards Agent: 716.49, Rewards Eval: 742.14, Total Timesteps: 1860000 episode:185 
+
+Rewards Agent: 731.02, Rewards Eval: 689.15, Total Timesteps: 1870000 episode:186 
+
+Rewards Agent: 709.06, Rewards Eval: 709.07, Total Timesteps: 1880000 episode:187 
+
+Rewards Agent: 710.80, Rewards Eval: 741.61, Total Timesteps: 1890000 episode:188 
+
+Rewards Agent: 730.75, Rewards Eval: 714.43, Total Timesteps: 1900000 episode:189 
+
+Rewards Agent: 717.89, Rewards Eval: 716.74, Total Timesteps: 1910000 episode:190 
+
+Rewards Agent: 736.52, Rewards Eval: 716.07, Total Timesteps: 1920000 episode:191 
+
+Rewards Agent: 730.01, Rewards Eval: 704.42, Total Timesteps: 1930000 episode:192 
+
+Rewards Agent: 725.71, Rewards Eval: 754.87, Total Timesteps: 1940000 episode:193 
+
+Rewards Agent: 723.69, Rewards Eval: 757.40, Total Timesteps: 1950000 episode:194 
+
+Rewards Agent: 725.12, Rewards Eval: 693.81, Total Timesteps: 1960000 episode:195 
+
+Rewards Agent: 732.41, Rewards Eval: 733.89, Total Timesteps: 1970000 episode:196 
+
+Rewards Agent: 729.66, Rewards Eval: 730.04, Total Timesteps: 1980000 episode:197 
+
+Rewards Agent: 722.97, Rewards Eval: 724.54, Total Timesteps: 1990000 episode:198 
+
+Rewards Agent: 723.20, Rewards Eval: 756.37, Total Timesteps: 2000000 episode:199 
+
+Rewards Agent: 729.76, Rewards Eval: 703.08, Total Timesteps: 2010000 episode:200 
+
+Rewards Agent: 717.95, Rewards Eval: 692.77, Total Timesteps: 2020000 episode:201 
+
+Rewards Agent: 741.58, Rewards Eval: 745.86, Total Timesteps: 2030000 episode:202 
+
+Rewards Agent: 736.85, Rewards Eval: 660.66, Total Timesteps: 2040000 episode:203 
+
+Rewards Agent: 747.40, Rewards Eval: 772.67, Total Timesteps: 2050000 episode:204 
+
+Rewards Agent: 739.73, Rewards Eval: 752.43, Total Timesteps: 2060000 episode:205 
+
+Rewards Agent: 734.94, Rewards Eval: 752.23, Total Timesteps: 2070000 episode:206 
+
+Rewards Agent: 742.82, Rewards Eval: 763.09, Total Timesteps: 2080000 episode:207 
+
+Rewards Agent: 733.87, Rewards Eval: 791.27, Total Timesteps: 2090000 episode:208 
+
+Rewards Agent: 748.19, Rewards Eval: 686.94, Total Timesteps: 2100000 episode:209 
+
+Rewards Agent: 754.59, Rewards Eval: 715.15, Total Timesteps: 2110000 episode:210 
+
+Rewards Agent: 741.27, Rewards Eval: 715.53, Total Timesteps: 2120000 episode:211 
+
+Rewards Agent: 735.92, Rewards Eval: 740.53, Total Timesteps: 2130000 episode:212 
+
+Rewards Agent: 734.95, Rewards Eval: 744.13, Total Timesteps: 2140000 episode:213 
+
+Rewards Agent: 751.91, Rewards Eval: 728.68, Total Timesteps: 2150000 episode:214 
+
+Rewards Agent: 749.36, Rewards Eval: 800.53, Total Timesteps: 2160000 episode:215 
+
+Rewards Agent: 754.71, Rewards Eval: 784.57, Total Timesteps: 2170000 episode:216 
+
+Rewards Agent: 752.85, Rewards Eval: 735.94, Total Timesteps: 2180000 episode:217 
+
+Rewards Agent: 747.06, Rewards Eval: 718.28, Total Timesteps: 2190000 episode:218 
+
+Rewards Agent: 735.04, Rewards Eval: 805.86, Total Timesteps: 2200000 episode:219 
+
+Rewards Agent: 751.22, Rewards Eval: 723.23, Total Timesteps: 2210000 episode:220 
+
+Rewards Agent: 751.02, Rewards Eval: 749.84, Total Timesteps: 2220000 episode:221 
+
+Rewards Agent: 762.84, Rewards Eval: 744.32, Total Timesteps: 2230000 episode:222 
+
+Rewards Agent: 758.96, Rewards Eval: 741.92, Total Timesteps: 2240000 episode:223 
+
+Rewards Agent: 775.51, Rewards Eval: 791.43, Total Timesteps: 2250000 episode:224 
+
+Rewards Agent: 773.77, Rewards Eval: 763.59, Total Timesteps: 2260000 episode:225 
+
+Rewards Agent: 757.21, Rewards Eval: 765.15, Total Timesteps: 2270000 episode:226 
+
+Rewards Agent: 757.82, Rewards Eval: 776.06, Total Timesteps: 2280000 episode:227 
+
+Rewards Agent: 754.82, Rewards Eval: 758.46, Total Timesteps: 2290000 episode:228 
+
+Rewards Agent: 770.71, Rewards Eval: 742.65, Total Timesteps: 2300000 episode:229 
+
+Rewards Agent: 764.91, Rewards Eval: 692.34, Total Timesteps: 2310000 episode:230 
+
+Rewards Agent: 764.94, Rewards Eval: 750.70, Total Timesteps: 2320000 episode:231 
+
+Rewards Agent: 773.78, Rewards Eval: 757.98, Total Timesteps: 2330000 episode:232 
+
+Rewards Agent: 762.85, Rewards Eval: 786.60, Total Timesteps: 2340000 episode:233 
+
+Rewards Agent: 762.30, Rewards Eval: 791.87, Total Timesteps: 2350000 episode:234 
+
+Rewards Agent: 769.87, Rewards Eval: 747.32, Total Timesteps: 2360000 episode:235 
+
+Rewards Agent: 777.02, Rewards Eval: 826.34, Total Timesteps: 2370000 episode:236 
+
+Rewards Agent: 775.18, Rewards Eval: 782.04, Total Timesteps: 2380000 episode:237 
+
+Rewards Agent: 767.44, Rewards Eval: 757.11, Total Timesteps: 2390000 episode:238 
+
+Rewards Agent: 781.60, Rewards Eval: 764.75, Total Timesteps: 2400000 episode:239 
+
+Rewards Agent: 770.29, Rewards Eval: 781.52, Total Timesteps: 2410000 episode:240 
+
+Rewards Agent: 765.89, Rewards Eval: 740.80, Total Timesteps: 2420000 episode:241 
+
+Rewards Agent: 783.99, Rewards Eval: 759.87, Total Timesteps: 2430000 episode:242 
+
+Rewards Agent: 762.30, Rewards Eval: 751.46, Total Timesteps: 2440000 episode:243 
+
+Rewards Agent: 774.57, Rewards Eval: 776.01, Total Timesteps: 2450000 episode:244 
+
+Rewards Agent: 781.86, Rewards Eval: 762.96, Total Timesteps: 2460000 episode:245 
+
+Rewards Agent: 787.60, Rewards Eval: 750.04, Total Timesteps: 2470000 episode:246 
+
+Rewards Agent: 765.86, Rewards Eval: 829.28, Total Timesteps: 2480000 episode:247 
+
+Rewards Agent: 774.64, Rewards Eval: 792.51, Total Timesteps: 2490000 episode:248 
+
+Rewards Agent: 781.51, Rewards Eval: 772.30, Total Timesteps: 2500000 episode:249 
+
+Rewards Agent: 767.31, Rewards Eval: 790.48, Total Timesteps: 2510000 episode:250 
+
+Rewards Agent: 777.70, Rewards Eval: 781.12, Total Timesteps: 2520000 episode:251 
+
+Rewards Agent: 778.30, Rewards Eval: 812.52, Total Timesteps: 2530000 episode:252 
+
+Rewards Agent: 768.94, Rewards Eval: 796.75, Total Timesteps: 2540000 episode:253 
+
+Rewards Agent: 781.89, Rewards Eval: 774.25, Total Timesteps: 2550000 episode:254 
+
+Rewards Agent: 780.04, Rewards Eval: 808.17, Total Timesteps: 2560000 episode:255 
+
+Rewards Agent: 780.40, Rewards Eval: 814.39, Total Timesteps: 2570000 episode:256 
+
+Rewards Agent: 787.99, Rewards Eval: 763.50, Total Timesteps: 2580000 episode:257 
+
+Rewards Agent: 766.97, Rewards Eval: 727.81, Total Timesteps: 2590000 episode:258 
+
+Rewards Agent: 788.22, Rewards Eval: 739.03, Total Timesteps: 2600000 episode:259 
+
+Rewards Agent: 777.58, Rewards Eval: 806.34, Total Timesteps: 2610000 episode:260 
+
+Rewards Agent: 782.08, Rewards Eval: 779.45, Total Timesteps: 2620000 episode:261 
+
+Rewards Agent: 788.65, Rewards Eval: 802.91, Total Timesteps: 2630000 episode:262 
+
+Rewards Agent: 785.22, Rewards Eval: 813.91, Total Timesteps: 2640000 episode:263 
+
+Rewards Agent: 794.56, Rewards Eval: 785.88, Total Timesteps: 2650000 episode:264 
+
+Rewards Agent: 780.19, Rewards Eval: 776.27, Total Timesteps: 2660000 episode:265 
+
+Rewards Agent: 787.30, Rewards Eval: 777.26, Total Timesteps: 2670000 episode:266 
+
+Rewards Agent: 779.60, Rewards Eval: 732.91, Total Timesteps: 2680000 episode:267 
+
+Rewards Agent: 794.00, Rewards Eval: 722.64, Total Timesteps: 2690000 episode:268 
+
+Rewards Agent: 776.45, Rewards Eval: 806.95, Total Timesteps: 2700000 episode:269 
+
+Rewards Agent: 784.42, Rewards Eval: 793.43, Total Timesteps: 2710000 episode:270 
+
+Rewards Agent: 786.57, Rewards Eval: 800.10, Total Timesteps: 2720000 episode:271 
+
+Rewards Agent: 791.73, Rewards Eval: 760.02, Total Timesteps: 2730000 episode:272 
+
+Rewards Agent: 785.03, Rewards Eval: 795.71, Total Timesteps: 2740000 episode:273 
+
+Rewards Agent: 788.40, Rewards Eval: 787.18, Total Timesteps: 2750000 episode:274 
+
+Rewards Agent: 784.26, Rewards Eval: 753.44, Total Timesteps: 2760000 episode:275 
+
+Rewards Agent: 773.51, Rewards Eval: 817.00, Total Timesteps: 2770000 episode:276 
+
+Rewards Agent: 782.11, Rewards Eval: 750.97, Total Timesteps: 2780000 episode:277 
+
+Rewards Agent: 785.66, Rewards Eval: 782.19, Total Timesteps: 2790000 episode:278 
+
+Rewards Agent: 784.41, Rewards Eval: 829.85, Total Timesteps: 2800000 episode:279 
+
+Rewards Agent: 793.42, Rewards Eval: 697.76, Total Timesteps: 2810000 episode:280 
+
+Rewards Agent: 795.43, Rewards Eval: 777.64, Total Timesteps: 2820000 episode:281 
+
+Rewards Agent: 796.14, Rewards Eval: 791.94, Total Timesteps: 2830000 episode:282 
+
+Rewards Agent: 792.38, Rewards Eval: 779.63, Total Timesteps: 2840000 episode:283 
+
+Rewards Agent: 795.44, Rewards Eval: 718.53, Total Timesteps: 2850000 episode:284 
+
+Rewards Agent: 789.05, Rewards Eval: 755.39, Total Timesteps: 2860000 episode:285 
+
+Rewards Agent: 797.21, Rewards Eval: 777.10, Total Timesteps: 2870000 episode:286 
+
+Rewards Agent: 803.09, Rewards Eval: 748.50, Total Timesteps: 2880000 episode:287 
+
+Rewards Agent: 793.85, Rewards Eval: 780.76, Total Timesteps: 2890000 episode:288 
+
+Rewards Agent: 786.70, Rewards Eval: 837.54, Total Timesteps: 2900000 episode:289 
+
+Rewards Agent: 778.90, Rewards Eval: 810.93, Total Timesteps: 2910000 episode:290 
+
+Rewards Agent: 783.19, Rewards Eval: 796.86, Total Timesteps: 2920000 episode:291 
+
+Rewards Agent: 791.95, Rewards Eval: 798.85, Total Timesteps: 2930000 episode:292 
+
+Rewards Agent: 788.64, Rewards Eval: 757.71, Total Timesteps: 2940000 episode:293 
+
+Rewards Agent: 761.81, Rewards Eval: 836.76, Total Timesteps: 2950000 episode:294 
+
+Rewards Agent: 790.19, Rewards Eval: 785.31, Total Timesteps: 2960000 episode:295 
+
+Rewards Agent: 797.73, Rewards Eval: 801.23, Total Timesteps: 2970000 episode:296 
+
+Rewards Agent: 800.44, Rewards Eval: 820.67, Total Timesteps: 2980000 episode:297 
+
+Rewards Agent: 780.42, Rewards Eval: 822.88, Total Timesteps: 2990000 episode:298 
+
+Rewards Agent: 798.92, Rewards Eval: 796.35, Total Timesteps: 3000000 episode:299 
+
+Rewards Agent: 793.51, Rewards Eval: 796.10, Total Timesteps: 3010000 episode:300 
+
+Rewards Agent: 783.64, Rewards Eval: 769.99, Total Timesteps: 3020000 episode:301 
+
+Rewards Agent: 791.93, Rewards Eval: 766.84, Total Timesteps: 3030000 episode:302 
+
+Rewards Agent: 795.17, Rewards Eval: 832.94, Total Timesteps: 3040000 episode:303 
+
+Rewards Agent: 804.63, Rewards Eval: 843.40, Total Timesteps: 3050000 episode:304 
+
+Rewards Agent: 799.10, Rewards Eval: 807.99, Total Timesteps: 3060000 episode:305 
+
+Rewards Agent: 784.93, Rewards Eval: 792.24, Total Timesteps: 3070000 episode:306 
+
+Rewards Agent: 795.84, Rewards Eval: 817.68, Total Timesteps: 3080000 episode:307 
+
+Rewards Agent: 803.96, Rewards Eval: 783.47, Total Timesteps: 3090000 episode:308 
+
+Rewards Agent: 800.26, Rewards Eval: 779.51, Total Timesteps: 3100000 episode:309 
+
+Rewards Agent: 800.32, Rewards Eval: 788.16, Total Timesteps: 3110000 episode:310 
+
+Rewards Agent: 808.14, Rewards Eval: 841.13, Total Timesteps: 3120000 episode:311 
+
+Rewards Agent: 819.15, Rewards Eval: 768.03, Total Timesteps: 3130000 episode:312 
+
+Rewards Agent: 805.21, Rewards Eval: 771.61, Total Timesteps: 3140000 episode:313 
+
+Rewards Agent: 792.13, Rewards Eval: 790.84, Total Timesteps: 3150000 episode:314 
+
+Rewards Agent: 806.40, Rewards Eval: 815.54, Total Timesteps: 3160000 episode:315 
+
+Rewards Agent: 798.77, Rewards Eval: 758.06, Total Timesteps: 3170000 episode:316 
+
+Rewards Agent: 811.30, Rewards Eval: 828.90, Total Timesteps: 3180000 episode:317 
+
+Rewards Agent: 815.10, Rewards Eval: 772.84, Total Timesteps: 3190000 episode:318 
+
+Rewards Agent: 808.61, Rewards Eval: 824.95, Total Timesteps: 3200000 episode:319 
+
+Rewards Agent: 815.44, Rewards Eval: 838.12, Total Timesteps: 3210000 episode:320 
+
+Rewards Agent: 806.12, Rewards Eval: 800.12, Total Timesteps: 3220000 episode:321 
+
+Rewards Agent: 794.79, Rewards Eval: 748.85, Total Timesteps: 3230000 episode:322 
+
+Rewards Agent: 795.89, Rewards Eval: 841.15, Total Timesteps: 3240000 episode:323 
+
+Rewards Agent: 807.11, Rewards Eval: 806.38, Total Timesteps: 3250000 episode:324 
+
+Rewards Agent: 816.73, Rewards Eval: 778.24, Total Timesteps: 3260000 episode:325 
+
+Rewards Agent: 800.63, Rewards Eval: 845.06, Total Timesteps: 3270000 episode:326 
+
+Rewards Agent: 826.37, Rewards Eval: 850.50, Total Timesteps: 3280000 episode:327 
+
+Rewards Agent: 814.66, Rewards Eval: 810.49, Total Timesteps: 3290000 episode:328 
+
+Rewards Agent: 815.83, Rewards Eval: 788.35, Total Timesteps: 3300000 episode:329 
+
+Rewards Agent: 819.89, Rewards Eval: 823.00, Total Timesteps: 3310000 episode:330 
+
+Rewards Agent: 828.62, Rewards Eval: 813.28, Total Timesteps: 3320000 episode:331 
+
+Rewards Agent: 822.96, Rewards Eval: 790.82, Total Timesteps: 3330000 episode:332 
+
+Rewards Agent: 808.82, Rewards Eval: 862.76, Total Timesteps: 3340000 episode:333 
+
+Rewards Agent: 811.56, Rewards Eval: 825.92, Total Timesteps: 3350000 episode:334 
+
+Rewards Agent: 801.80, Rewards Eval: 845.02, Total Timesteps: 3360000 episode:335 
+
+Rewards Agent: 817.05, Rewards Eval: 841.51, Total Timesteps: 3370000 episode:336 
+
+Rewards Agent: 823.96, Rewards Eval: 800.89, Total Timesteps: 3380000 episode:337 
+
+Rewards Agent: 816.32, Rewards Eval: 837.67, Total Timesteps: 3390000 episode:338 
+
+Rewards Agent: 819.75, Rewards Eval: 825.92, Total Timesteps: 3400000 episode:339 
+
+Rewards Agent: 811.73, Rewards Eval: 818.25, Total Timesteps: 3410000 episode:340 
+
+Rewards Agent: 833.39, Rewards Eval: 845.02, Total Timesteps: 3420000 episode:341 
+
+Rewards Agent: 814.36, Rewards Eval: 830.19, Total Timesteps: 3430000 episode:342 
+
+Rewards Agent: 834.79, Rewards Eval: 812.12, Total Timesteps: 3440000 episode:343 
+
+Rewards Agent: 819.14, Rewards Eval: 822.22, Total Timesteps: 3450000 episode:344 
+
+Rewards Agent: 820.91, Rewards Eval: 827.30, Total Timesteps: 3460000 episode:345 
+
+Rewards Agent: 808.51, Rewards Eval: 829.49, Total Timesteps: 3470000 episode:346 
+
+Rewards Agent: 820.38, Rewards Eval: 866.64, Total Timesteps: 3480000 episode:347 
+
+Rewards Agent: 831.38, Rewards Eval: 813.03, Total Timesteps: 3490000 episode:348 
+
+Rewards Agent: 823.05, Rewards Eval: 852.56, Total Timesteps: 3500000 episode:349 
+
+Rewards Agent: 820.48, Rewards Eval: 852.21, Total Timesteps: 3510000 episode:350 
+
+Rewards Agent: 824.87, Rewards Eval: 843.70, Total Timesteps: 3520000 episode:351 
+
+Rewards Agent: 841.66, Rewards Eval: 811.11, Total Timesteps: 3530000 episode:352 
+
+Rewards Agent: 827.86, Rewards Eval: 829.67, Total Timesteps: 3540000 episode:353 
+
+Rewards Agent: 836.73, Rewards Eval: 842.76, Total Timesteps: 3550000 episode:354 
+
+Rewards Agent: 832.84, Rewards Eval: 839.07, Total Timesteps: 3560000 episode:355 
+
+Rewards Agent: 830.56, Rewards Eval: 827.34, Total Timesteps: 3570000 episode:356 
+
+Rewards Agent: 821.95, Rewards Eval: 781.72, Total Timesteps: 3580000 episode:357 
+
+Rewards Agent: 826.88, Rewards Eval: 826.72, Total Timesteps: 3590000 episode:358 
+
+Rewards Agent: 824.62, Rewards Eval: 821.56, Total Timesteps: 3600000 episode:359 
+
+Rewards Agent: 827.36, Rewards Eval: 833.66, Total Timesteps: 3610000 episode:360 
+
+Rewards Agent: 823.55, Rewards Eval: 807.28, Total Timesteps: 3620000 episode:361 
+
+Rewards Agent: 833.68, Rewards Eval: 861.28, Total Timesteps: 3630000 episode:362 
+
+Rewards Agent: 835.91, Rewards Eval: 851.71, Total Timesteps: 3640000 episode:363 
+
+Rewards Agent: 820.61, Rewards Eval: 847.37, Total Timesteps: 3650000 episode:364 
+
+Rewards Agent: 816.47, Rewards Eval: 807.93, Total Timesteps: 3660000 episode:365 
+
+Rewards Agent: 831.86, Rewards Eval: 806.33, Total Timesteps: 3670000 episode:366 
+
+Rewards Agent: 815.08, Rewards Eval: 831.97, Total Timesteps: 3680000 episode:367 
+
+Rewards Agent: 832.38, Rewards Eval: 818.65, Total Timesteps: 3690000 episode:368 
+
+Rewards Agent: 830.86, Rewards Eval: 774.61, Total Timesteps: 3700000 episode:369 
+
+Rewards Agent: 831.62, Rewards Eval: 862.93, Total Timesteps: 3710000 episode:370 
+
+Rewards Agent: 834.72, Rewards Eval: 848.93, Total Timesteps: 3720000 episode:371 
+
+Rewards Agent: 830.90, Rewards Eval: 838.51, Total Timesteps: 3730000 episode:372 
+
+Rewards Agent: 836.22, Rewards Eval: 841.18, Total Timesteps: 3740000 episode:373 
+
+Rewards Agent: 827.16, Rewards Eval: 866.63, Total Timesteps: 3750000 episode:374 
+
+Rewards Agent: 831.11, Rewards Eval: 833.39, Total Timesteps: 3760000 episode:375 
+
+Rewards Agent: 826.99, Rewards Eval: 788.27, Total Timesteps: 3770000 episode:376 
+
+Rewards Agent: 826.06, Rewards Eval: 819.66, Total Timesteps: 3780000 episode:377 
+
+Rewards Agent: 837.49, Rewards Eval: 869.67, Total Timesteps: 3790000 episode:378 
+
+Rewards Agent: 840.47, Rewards Eval: 838.13, Total Timesteps: 3800000 episode:379 
+
+Rewards Agent: 818.99, Rewards Eval: 851.57, Total Timesteps: 3810000 episode:380 
+
+Rewards Agent: 833.32, Rewards Eval: 880.48, Total Timesteps: 3820000 episode:381 
+
+Rewards Agent: 831.07, Rewards Eval: 788.61, Total Timesteps: 3830000 episode:382 
+
+Rewards Agent: 834.39, Rewards Eval: 833.33, Total Timesteps: 3840000 episode:383 
+
+Rewards Agent: 835.97, Rewards Eval: 854.59, Total Timesteps: 3850000 episode:384 
+
+Rewards Agent: 830.85, Rewards Eval: 843.78, Total Timesteps: 3860000 episode:385 
+
+Rewards Agent: 824.02, Rewards Eval: 847.53, Total Timesteps: 3870000 episode:386 
+
+Rewards Agent: 844.41, Rewards Eval: 874.66, Total Timesteps: 3880000 episode:387 
+
+Rewards Agent: 843.56, Rewards Eval: 819.71, Total Timesteps: 3890000 episode:388 
+
+Rewards Agent: 833.84, Rewards Eval: 876.36, Total Timesteps: 3900000 episode:389 
+
+Rewards Agent: 840.47, Rewards Eval: 834.33, Total Timesteps: 3910000 episode:390 
+
+Rewards Agent: 836.06, Rewards Eval: 850.03, Total Timesteps: 3920000 episode:391 
+
+Rewards Agent: 842.79, Rewards Eval: 794.83, Total Timesteps: 3930000 episode:392 
+
+Rewards Agent: 838.97, Rewards Eval: 868.57, Total Timesteps: 3940000 episode:393 
+
+Rewards Agent: 845.90, Rewards Eval: 862.42, Total Timesteps: 3950000 episode:394 
+
+Rewards Agent: 840.00, Rewards Eval: 836.73, Total Timesteps: 3960000 episode:395 
+
+Rewards Agent: 837.73, Rewards Eval: 860.71, Total Timesteps: 3970000 episode:396 
+
+Rewards Agent: 835.45, Rewards Eval: 831.87, Total Timesteps: 3980000 episode:397 
+
+Rewards Agent: 842.51, Rewards Eval: 829.35, Total Timesteps: 3990000 episode:398 
+
+Rewards Agent: 841.16, Rewards Eval: 848.39, Total Timesteps: 4000000 episode:399 
+
+Rewards Agent: 831.98, Rewards Eval: 816.16, Total Timesteps: 4010000 episode:400 
+
+Rewards Agent: 841.25, Rewards Eval: 836.87, Total Timesteps: 4020000 episode:401 
+
+Rewards Agent: 837.35, Rewards Eval: 822.63, Total Timesteps: 4030000 episode:402 
+
+Rewards Agent: 830.63, Rewards Eval: 833.60, Total Timesteps: 4040000 episode:403 
+
+Rewards Agent: 854.29, Rewards Eval: 824.29, Total Timesteps: 4050000 episode:404 
+
+Rewards Agent: 816.86, Rewards Eval: 806.13, Total Timesteps: 4060000 episode:405 
+
+Rewards Agent: 829.60, Rewards Eval: 856.67, Total Timesteps: 4070000 episode:406 
+
+Rewards Agent: 847.74, Rewards Eval: 875.51, Total Timesteps: 4080000 episode:407 
+
+Rewards Agent: 851.44, Rewards Eval: 846.68, Total Timesteps: 4090000 episode:408 
+
+Rewards Agent: 841.97, Rewards Eval: 887.96, Total Timesteps: 4100000 episode:409 
+
+Rewards Agent: 854.40, Rewards Eval: 897.53, Total Timesteps: 4110000 episode:410 
+
+Rewards Agent: 837.45, Rewards Eval: 808.27, Total Timesteps: 4120000 episode:411 
+
+Rewards Agent: 846.34, Rewards Eval: 844.94, Total Timesteps: 4130000 episode:412 
+
+Rewards Agent: 854.75, Rewards Eval: 840.83, Total Timesteps: 4140000 episode:413 
+
+Rewards Agent: 855.34, Rewards Eval: 846.12, Total Timesteps: 4150000 episode:414 
+
+Rewards Agent: 856.46, Rewards Eval: 874.74, Total Timesteps: 4160000 episode:415 
+
+Rewards Agent: 843.45, Rewards Eval: 858.47, Total Timesteps: 4170000 episode:416 
+
+Rewards Agent: 852.67, Rewards Eval: 840.00, Total Timesteps: 4180000 episode:417 
+
+Rewards Agent: 850.06, Rewards Eval: 841.44, Total Timesteps: 4190000 episode:418 
+
+Rewards Agent: 829.22, Rewards Eval: 838.30, Total Timesteps: 4200000 episode:419 
+
+Rewards Agent: 837.87, Rewards Eval: 811.99, Total Timesteps: 4210000 episode:420 
+
+Rewards Agent: 849.23, Rewards Eval: 870.88, Total Timesteps: 4220000 episode:421 
+
+Rewards Agent: 848.65, Rewards Eval: 829.87, Total Timesteps: 4230000 episode:422 
+
+Rewards Agent: 848.85, Rewards Eval: 858.07, Total Timesteps: 4240000 episode:423 
+
+Rewards Agent: 853.59, Rewards Eval: 851.85, Total Timesteps: 4250000 episode:424 
+
+Rewards Agent: 853.17, Rewards Eval: 800.01, Total Timesteps: 4260000 episode:425 
+
+Rewards Agent: 861.65, Rewards Eval: 854.54, Total Timesteps: 4270000 episode:426 
+
+Rewards Agent: 852.77, Rewards Eval: 844.60, Total Timesteps: 4280000 episode:427 
+
+Rewards Agent: 844.54, Rewards Eval: 871.01, Total Timesteps: 4290000 episode:428 
+
+Rewards Agent: 858.96, Rewards Eval: 826.39, Total Timesteps: 4300000 episode:429 
+
+Rewards Agent: 844.85, Rewards Eval: 838.44, Total Timesteps: 4310000 episode:430 
+
+Rewards Agent: 858.47, Rewards Eval: 849.93, Total Timesteps: 4320000 episode:431 
+
+Rewards Agent: 845.24, Rewards Eval: 825.14, Total Timesteps: 4330000 episode:432 
+
+Rewards Agent: 856.07, Rewards Eval: 853.86, Total Timesteps: 4340000 episode:433 
+
+Rewards Agent: 837.84, Rewards Eval: 828.93, Total Timesteps: 4350000 episode:434 
+
+Rewards Agent: 859.19, Rewards Eval: 833.88, Total Timesteps: 4360000 episode:435 
+
+Rewards Agent: 852.92, Rewards Eval: 820.05, Total Timesteps: 4370000 episode:436 
+
+Rewards Agent: 850.33, Rewards Eval: 848.39, Total Timesteps: 4380000 episode:437 
+
+Rewards Agent: 861.41, Rewards Eval: 863.00, Total Timesteps: 4390000 episode:438 
+
+Rewards Agent: 853.10, Rewards Eval: 847.93, Total Timesteps: 4400000 episode:439 
+
+Rewards Agent: 844.71, Rewards Eval: 848.69, Total Timesteps: 4410000 episode:440 
+
+Rewards Agent: 854.59, Rewards Eval: 852.69, Total Timesteps: 4420000 episode:441 
+
+Rewards Agent: 863.19, Rewards Eval: 846.71, Total Timesteps: 4430000 episode:442 
+
+Rewards Agent: 862.98, Rewards Eval: 848.24, Total Timesteps: 4440000 episode:443 
+
+Rewards Agent: 856.88, Rewards Eval: 845.70, Total Timesteps: 4450000 episode:444 
+
+Rewards Agent: 860.99, Rewards Eval: 840.79, Total Timesteps: 4460000 episode:445 
+
+Rewards Agent: 846.69, Rewards Eval: 869.73, Total Timesteps: 4470000 episode:446 
+
+Rewards Agent: 857.79, Rewards Eval: 832.83, Total Timesteps: 4480000 episode:447 
+
+Rewards Agent: 854.68, Rewards Eval: 846.94, Total Timesteps: 4490000 episode:448 
+
+Rewards Agent: 850.56, Rewards Eval: 847.12, Total Timesteps: 4500000 episode:449 
+
+Rewards Agent: 840.45, Rewards Eval: 903.60, Total Timesteps: 4510000 episode:450 
+
+Rewards Agent: 872.43, Rewards Eval: 846.57, Total Timesteps: 4520000 episode:451 
+
+Rewards Agent: 862.25, Rewards Eval: 847.61, Total Timesteps: 4530000 episode:452 
+
+Rewards Agent: 855.51, Rewards Eval: 828.81, Total Timesteps: 4540000 episode:453 
+
+Rewards Agent: 844.61, Rewards Eval: 848.29, Total Timesteps: 4550000 episode:454 
+
+Rewards Agent: 856.84, Rewards Eval: 895.20, Total Timesteps: 4560000 episode:455 
+
+Rewards Agent: 856.99, Rewards Eval: 818.03, Total Timesteps: 4570000 episode:456 
+
+Rewards Agent: 866.19, Rewards Eval: 866.85, Total Timesteps: 4580000 episode:457 
+
+Rewards Agent: 851.21, Rewards Eval: 875.03, Total Timesteps: 4590000 episode:458 
+
+Rewards Agent: 848.27, Rewards Eval: 842.63, Total Timesteps: 4600000 episode:459 
+
+Rewards Agent: 863.36, Rewards Eval: 874.81, Total Timesteps: 4610000 episode:460 
+
+Rewards Agent: 850.31, Rewards Eval: 882.55, Total Timesteps: 4620000 episode:461 
+
+Rewards Agent: 856.86, Rewards Eval: 857.53, Total Timesteps: 4630000 episode:462 
+
+Rewards Agent: 870.60, Rewards Eval: 800.84, Total Timesteps: 4640000 episode:463 
+
+Rewards Agent: 864.33, Rewards Eval: 848.56, Total Timesteps: 4650000 episode:464 
+
+Rewards Agent: 857.95, Rewards Eval: 886.07, Total Timesteps: 4660000 episode:465 
+
+Rewards Agent: 852.27, Rewards Eval: 867.69, Total Timesteps: 4670000 episode:466 
+
+Rewards Agent: 847.06, Rewards Eval: 833.70, Total Timesteps: 4680000 episode:467 
+
+Rewards Agent: 854.46, Rewards Eval: 881.98, Total Timesteps: 4690000 episode:468 
+
+Rewards Agent: 866.57, Rewards Eval: 856.55, Total Timesteps: 4700000 episode:469 
+
+Rewards Agent: 860.36, Rewards Eval: 874.79, Total Timesteps: 4710000 episode:470 
+
+Rewards Agent: 856.88, Rewards Eval: 883.91, Total Timesteps: 4720000 episode:471 
+
+Rewards Agent: 856.59, Rewards Eval: 830.81, Total Timesteps: 4730000 episode:472 
+
+Rewards Agent: 871.63, Rewards Eval: 867.52, Total Timesteps: 4740000 episode:473 
+
+Rewards Agent: 857.09, Rewards Eval: 877.27, Total Timesteps: 4750000 episode:474 
+
+Rewards Agent: 858.54, Rewards Eval: 875.96, Total Timesteps: 4760000 episode:475 
+
+Rewards Agent: 854.31, Rewards Eval: 902.09, Total Timesteps: 4770000 episode:476 
+
+Rewards Agent: 869.66, Rewards Eval: 866.29, Total Timesteps: 4780000 episode:477 
+
+Rewards Agent: 871.73, Rewards Eval: 898.06, Total Timesteps: 4790000 episode:478 
+
+Rewards Agent: 870.76, Rewards Eval: 876.89, Total Timesteps: 4800000 episode:479 
+
+Rewards Agent: 859.51, Rewards Eval: 847.63, Total Timesteps: 4810000 episode:480 
+
+Rewards Agent: 856.31, Rewards Eval: 834.68, Total Timesteps: 4820000 episode:481 
+
+Rewards Agent: 859.82, Rewards Eval: 879.15, Total Timesteps: 4830000 episode:482 
+
+Rewards Agent: 868.47, Rewards Eval: 826.29, Total Timesteps: 4840000 episode:483 
+
+Rewards Agent: 861.50, Rewards Eval: 874.85, Total Timesteps: 4850000 episode:484 
+
+Rewards Agent: 862.88, Rewards Eval: 854.32, Total Timesteps: 4860000 episode:485 
+
+Rewards Agent: 867.71, Rewards Eval: 851.13, Total Timesteps: 4870000 episode:486 
+
+Rewards Agent: 867.58, Rewards Eval: 840.94, Total Timesteps: 4880000 episode:487 
+
+Rewards Agent: 865.78, Rewards Eval: 854.94, Total Timesteps: 4890000 episode:488 
+
+Rewards Agent: 868.63, Rewards Eval: 875.30, Total Timesteps: 4900000 episode:489 
+
+Rewards Agent: 858.61, Rewards Eval: 867.60, Total Timesteps: 4910000 episode:490 
+
+Rewards Agent: 860.84, Rewards Eval: 849.14, Total Timesteps: 4920000 episode:491 
+
+Rewards Agent: 864.42, Rewards Eval: 858.31, Total Timesteps: 4930000 episode:492 
+
+Rewards Agent: 867.09, Rewards Eval: 869.47, Total Timesteps: 4940000 episode:493 
+
+Rewards Agent: 858.67, Rewards Eval: 834.88, Total Timesteps: 4950000 episode:494 
+
+Rewards Agent: 866.13, Rewards Eval: 919.14, Total Timesteps: 4960000 episode:495 
+
+Rewards Agent: 872.97, Rewards Eval: 827.67, Total Timesteps: 4970000 episode:496 
+
+Rewards Agent: 877.87, Rewards Eval: 834.39, Total Timesteps: 4980000 episode:497 
+
+Rewards Agent: 878.19, Rewards Eval: 872.50, Total Timesteps: 4990000 episode:498 
+
+Rewards Agent: 867.25, Rewards Eval: 908.13, Total Timesteps: 5000000 episode:499 
+
+For Seed: 3 
+
+Rewards Agent: -41.97, Rewards Eval: -58.65, Total Timesteps: 10000 episode:0 
+
+Rewards Agent: -57.93, Rewards Eval: -38.93, Total Timesteps: 20000 episode:1 
+
+Rewards Agent: -47.75, Rewards Eval: -58.36, Total Timesteps: 30000 episode:2 
+
+Rewards Agent: -57.91, Rewards Eval: -58.39, Total Timesteps: 40000 episode:3 
+
+Rewards Agent: -57.73, Rewards Eval: -57.80, Total Timesteps: 50000 episode:4 
+
+Rewards Agent: -57.81, Rewards Eval: -58.31, Total Timesteps: 60000 episode:5 
+
+Rewards Agent: -57.78, Rewards Eval: -57.59, Total Timesteps: 70000 episode:6 
+
+Rewards Agent: -57.75, Rewards Eval: -58.46, Total Timesteps: 80000 episode:7 
+
+Rewards Agent: -57.83, Rewards Eval: -58.14, Total Timesteps: 90000 episode:8 
+
+Rewards Agent: -57.89, Rewards Eval: -56.72, Total Timesteps: 100000 episode:9 
+
+Rewards Agent: -57.77, Rewards Eval: -57.93, Total Timesteps: 110000 episode:10 
+
+Rewards Agent: -57.88, Rewards Eval: -57.13, Total Timesteps: 120000 episode:11 
+
+Rewards Agent: -56.62, Rewards Eval: -53.31, Total Timesteps: 130000 episode:12 
+
+Rewards Agent: -85.23, Rewards Eval: -36.93, Total Timesteps: 140000 episode:13 
+
+Rewards Agent: -30.68, Rewards Eval: -42.13, Total Timesteps: 150000 episode:14 
+
+Rewards Agent: -51.42, Rewards Eval: -55.44, Total Timesteps: 160000 episode:15 
+
+Rewards Agent: -55.55, Rewards Eval: -71.44, Total Timesteps: 170000 episode:16 
+
+Rewards Agent: -82.27, Rewards Eval: -55.39, Total Timesteps: 180000 episode:17 
+
+Rewards Agent: -49.60, Rewards Eval: -52.25, Total Timesteps: 190000 episode:18 
+
+Rewards Agent: -34.80, Rewards Eval: -6.80, Total Timesteps: 200000 episode:19 
+
+Rewards Agent: -21.44, Rewards Eval: -43.98, Total Timesteps: 210000 episode:20 
+
+Rewards Agent: -39.32, Rewards Eval: -42.25, Total Timesteps: 220000 episode:21 
+
+Rewards Agent: -32.30, Rewards Eval: -46.55, Total Timesteps: 230000 episode:22 
+
+Rewards Agent: -32.28, Rewards Eval: -10.53, Total Timesteps: 240000 episode:23 
+
+Rewards Agent: -8.51, Rewards Eval: -5.96, Total Timesteps: 250000 episode:24 
+
+Rewards Agent: 0.21, Rewards Eval: 7.42, Total Timesteps: 260000 episode:25 
+
+Rewards Agent: 7.91, Rewards Eval: 14.98, Total Timesteps: 270000 episode:26 
+
+Rewards Agent: 0.62, Rewards Eval: 7.14, Total Timesteps: 280000 episode:27 
+
+Rewards Agent: 9.89, Rewards Eval: 31.80, Total Timesteps: 290000 episode:28 
+
+Rewards Agent: 22.39, Rewards Eval: 30.34, Total Timesteps: 300000 episode:29 
+
+Rewards Agent: 27.00, Rewards Eval: 32.78, Total Timesteps: 310000 episode:30 
+
+Rewards Agent: 28.60, Rewards Eval: 51.04, Total Timesteps: 320000 episode:31 
+
+Rewards Agent: 43.20, Rewards Eval: 60.19, Total Timesteps: 330000 episode:32 
+
+Rewards Agent: 62.61, Rewards Eval: 82.73, Total Timesteps: 340000 episode:33 
+
+Rewards Agent: 76.97, Rewards Eval: 84.97, Total Timesteps: 350000 episode:34 
+
+Rewards Agent: 66.97, Rewards Eval: 60.11, Total Timesteps: 360000 episode:35 
+
+Rewards Agent: 70.76, Rewards Eval: 105.55, Total Timesteps: 370000 episode:36 
+
+Rewards Agent: -3.93, Rewards Eval: -59.57, Total Timesteps: 380000 episode:37 
+
+Rewards Agent: -25.52, Rewards Eval: -7.55, Total Timesteps: 390000 episode:38 
+
+Rewards Agent: 19.80, Rewards Eval: 14.25, Total Timesteps: 400000 episode:39 
+
+Rewards Agent: 28.60, Rewards Eval: 133.29, Total Timesteps: 410000 episode:40 
+
+Rewards Agent: 84.93, Rewards Eval: 91.06, Total Timesteps: 420000 episode:41 
+
+Rewards Agent: 53.05, Rewards Eval: 156.73, Total Timesteps: 430000 episode:42 
+
+Rewards Agent: 65.95, Rewards Eval: 114.31, Total Timesteps: 440000 episode:43 
+
+Rewards Agent: 81.96, Rewards Eval: 166.77, Total Timesteps: 450000 episode:44 
+
+Rewards Agent: 137.82, Rewards Eval: 123.77, Total Timesteps: 460000 episode:45 
+
+Rewards Agent: 124.11, Rewards Eval: 183.18, Total Timesteps: 470000 episode:46 
+
+Rewards Agent: 99.45, Rewards Eval: 70.43, Total Timesteps: 480000 episode:47 
+
+Rewards Agent: 68.74, Rewards Eval: 13.34, Total Timesteps: 490000 episode:48 
+
+Rewards Agent: 124.51, Rewards Eval: 105.26, Total Timesteps: 500000 episode:49 
+
+Rewards Agent: 123.01, Rewards Eval: 56.67, Total Timesteps: 510000 episode:50 
+
+Rewards Agent: 114.43, Rewards Eval: 37.10, Total Timesteps: 520000 episode:51 
+
+Rewards Agent: 97.41, Rewards Eval: 25.93, Total Timesteps: 530000 episode:52 
+
+Rewards Agent: 160.72, Rewards Eval: 260.69, Total Timesteps: 540000 episode:53 
+
+Rewards Agent: 116.39, Rewards Eval: 199.28, Total Timesteps: 550000 episode:54 
+
+Rewards Agent: 214.82, Rewards Eval: 76.07, Total Timesteps: 560000 episode:55 
+
+Rewards Agent: 192.96, Rewards Eval: 260.95, Total Timesteps: 570000 episode:56 
+
+Rewards Agent: 247.78, Rewards Eval: 99.42, Total Timesteps: 580000 episode:57 
+
+Rewards Agent: 209.08, Rewards Eval: 241.20, Total Timesteps: 590000 episode:58 
+
+Rewards Agent: 236.65, Rewards Eval: 365.03, Total Timesteps: 600000 episode:59 
+
+Rewards Agent: 246.69, Rewards Eval: 164.85, Total Timesteps: 610000 episode:60 
+
+Rewards Agent: 226.11, Rewards Eval: 136.37, Total Timesteps: 620000 episode:61 
+
+Rewards Agent: 250.93, Rewards Eval: 288.95, Total Timesteps: 630000 episode:62 
+
+Rewards Agent: 218.97, Rewards Eval: 212.12, Total Timesteps: 640000 episode:63 
+
+Rewards Agent: 303.54, Rewards Eval: 382.72, Total Timesteps: 650000 episode:64 
+
+Rewards Agent: 306.82, Rewards Eval: 178.94, Total Timesteps: 660000 episode:65 
+
+Rewards Agent: 295.83, Rewards Eval: 374.62, Total Timesteps: 670000 episode:66 
+
+Rewards Agent: 313.74, Rewards Eval: 249.20, Total Timesteps: 680000 episode:67 
+
+Rewards Agent: 303.72, Rewards Eval: 269.70, Total Timesteps: 690000 episode:68 
+
+Rewards Agent: 283.07, Rewards Eval: 459.43, Total Timesteps: 700000 episode:69 
+
+Rewards Agent: 277.27, Rewards Eval: 173.81, Total Timesteps: 710000 episode:70 
+
+Rewards Agent: 334.53, Rewards Eval: 427.91, Total Timesteps: 720000 episode:71 
+
+Rewards Agent: 315.45, Rewards Eval: 202.54, Total Timesteps: 730000 episode:72 
+
+Rewards Agent: 295.87, Rewards Eval: 401.70, Total Timesteps: 740000 episode:73 
+
+Rewards Agent: 310.99, Rewards Eval: 245.86, Total Timesteps: 750000 episode:74 
+
+Rewards Agent: 322.75, Rewards Eval: 410.08, Total Timesteps: 760000 episode:75 
+
+Rewards Agent: 317.00, Rewards Eval: 309.72, Total Timesteps: 770000 episode:76 
+
+Rewards Agent: 366.62, Rewards Eval: 501.17, Total Timesteps: 780000 episode:77 
+
+Rewards Agent: 332.10, Rewards Eval: 419.32, Total Timesteps: 790000 episode:78 
+
+Rewards Agent: 394.74, Rewards Eval: 447.97, Total Timesteps: 800000 episode:79 
+
+Rewards Agent: 341.44, Rewards Eval: 311.73, Total Timesteps: 810000 episode:80 
+
+Rewards Agent: 418.81, Rewards Eval: 363.49, Total Timesteps: 820000 episode:81 
+
+Rewards Agent: 390.37, Rewards Eval: 313.68, Total Timesteps: 830000 episode:82 
+
+Rewards Agent: 422.09, Rewards Eval: 479.47, Total Timesteps: 840000 episode:83 
+
+Rewards Agent: 420.08, Rewards Eval: 413.05, Total Timesteps: 850000 episode:84 
+
+Rewards Agent: 460.24, Rewards Eval: 393.86, Total Timesteps: 860000 episode:85 
+
+Rewards Agent: 443.63, Rewards Eval: 458.03, Total Timesteps: 870000 episode:86 
+
+Rewards Agent: 452.62, Rewards Eval: 322.12, Total Timesteps: 880000 episode:87 
+
+Rewards Agent: 397.51, Rewards Eval: 458.32, Total Timesteps: 890000 episode:88 
+
+Rewards Agent: 424.58, Rewards Eval: 509.54, Total Timesteps: 900000 episode:89 
+
+Rewards Agent: 400.39, Rewards Eval: 309.57, Total Timesteps: 910000 episode:90 
+
+Rewards Agent: 395.16, Rewards Eval: 359.84, Total Timesteps: 920000 episode:91 
+
+Rewards Agent: 520.58, Rewards Eval: 519.47, Total Timesteps: 930000 episode:92 
+
+Rewards Agent: 435.31, Rewards Eval: 472.92, Total Timesteps: 940000 episode:93 
+
+Rewards Agent: 450.50, Rewards Eval: 496.80, Total Timesteps: 950000 episode:94 
+
+Rewards Agent: 457.50, Rewards Eval: 517.53, Total Timesteps: 960000 episode:95 
+
+Rewards Agent: 434.25, Rewards Eval: 561.03, Total Timesteps: 970000 episode:96 
+
+Rewards Agent: 462.24, Rewards Eval: 453.03, Total Timesteps: 980000 episode:97 
+
+Rewards Agent: 448.37, Rewards Eval: 552.05, Total Timesteps: 990000 episode:98 
+
+Rewards Agent: 459.94, Rewards Eval: 198.31, Total Timesteps: 1000000 episode:99 
+
+Rewards Agent: 473.25, Rewards Eval: 502.66, Total Timesteps: 1010000 episode:100 
+
+Rewards Agent: 443.97, Rewards Eval: 487.32, Total Timesteps: 1020000 episode:101 
+
+Rewards Agent: 455.49, Rewards Eval: 507.69, Total Timesteps: 1030000 episode:102 
+
+Rewards Agent: 473.57, Rewards Eval: 387.60, Total Timesteps: 1040000 episode:103 
+
+Rewards Agent: 493.50, Rewards Eval: 356.10, Total Timesteps: 1050000 episode:104 
+
+Rewards Agent: 464.24, Rewards Eval: 508.14, Total Timesteps: 1060000 episode:105 
+
+Rewards Agent: 503.03, Rewards Eval: 395.68, Total Timesteps: 1070000 episode:106 
+
+Rewards Agent: 567.69, Rewards Eval: 425.57, Total Timesteps: 1080000 episode:107 
+
+Rewards Agent: 509.25, Rewards Eval: 532.27, Total Timesteps: 1090000 episode:108 
+
+Rewards Agent: 572.28, Rewards Eval: 557.09, Total Timesteps: 1100000 episode:109 
+
+Rewards Agent: 511.51, Rewards Eval: 501.94, Total Timesteps: 1110000 episode:110 
+
+Rewards Agent: 540.96, Rewards Eval: 564.06, Total Timesteps: 1120000 episode:111 
+
+Rewards Agent: 559.81, Rewards Eval: 542.20, Total Timesteps: 1130000 episode:112 
+
+Rewards Agent: 516.57, Rewards Eval: 463.90, Total Timesteps: 1140000 episode:113 
+
+Rewards Agent: 544.08, Rewards Eval: 572.23, Total Timesteps: 1150000 episode:114 
+
+Rewards Agent: 590.90, Rewards Eval: 709.92, Total Timesteps: 1160000 episode:115 
+
+Rewards Agent: 526.79, Rewards Eval: 363.35, Total Timesteps: 1170000 episode:116 
+
+Rewards Agent: 555.00, Rewards Eval: 558.48, Total Timesteps: 1180000 episode:117 
+
+Rewards Agent: 550.79, Rewards Eval: 678.20, Total Timesteps: 1190000 episode:118 
+
+Rewards Agent: 529.32, Rewards Eval: 499.24, Total Timesteps: 1200000 episode:119 
+
+Rewards Agent: 621.70, Rewards Eval: 671.26, Total Timesteps: 1210000 episode:120 
+
+Rewards Agent: 594.45, Rewards Eval: 643.40, Total Timesteps: 1220000 episode:121 
+
+Rewards Agent: 603.95, Rewards Eval: 555.06, Total Timesteps: 1230000 episode:122 
+
+Rewards Agent: 596.73, Rewards Eval: 527.84, Total Timesteps: 1240000 episode:123 
+
+Rewards Agent: 546.86, Rewards Eval: 696.98, Total Timesteps: 1250000 episode:124 
+
+Rewards Agent: 596.06, Rewards Eval: 725.49, Total Timesteps: 1260000 episode:125 
+
+Rewards Agent: 651.86, Rewards Eval: 666.87, Total Timesteps: 1270000 episode:126 
+
+Rewards Agent: 618.98, Rewards Eval: 717.23, Total Timesteps: 1280000 episode:127 
+
+Rewards Agent: 637.31, Rewards Eval: 498.73, Total Timesteps: 1290000 episode:128 
+
+Rewards Agent: 663.92, Rewards Eval: 564.35, Total Timesteps: 1300000 episode:129 
+
+Rewards Agent: 653.89, Rewards Eval: 717.91, Total Timesteps: 1310000 episode:130 
+
+Rewards Agent: 649.22, Rewards Eval: 530.84, Total Timesteps: 1320000 episode:131 
+
+Rewards Agent: 622.17, Rewards Eval: 679.00, Total Timesteps: 1330000 episode:132 
+
+Rewards Agent: 623.99, Rewards Eval: 602.98, Total Timesteps: 1340000 episode:133 
+
+Rewards Agent: 674.84, Rewards Eval: 808.67, Total Timesteps: 1350000 episode:134 
+
+Rewards Agent: 658.06, Rewards Eval: 853.77, Total Timesteps: 1360000 episode:135 
+
+Rewards Agent: 742.56, Rewards Eval: 637.29, Total Timesteps: 1370000 episode:136 
+
+Rewards Agent: 718.09, Rewards Eval: 678.55, Total Timesteps: 1380000 episode:137 
+
+Rewards Agent: 668.07, Rewards Eval: 828.60, Total Timesteps: 1390000 episode:138 
+
+Rewards Agent: 696.63, Rewards Eval: 584.28, Total Timesteps: 1400000 episode:139 
+
+Rewards Agent: 712.87, Rewards Eval: 745.88, Total Timesteps: 1410000 episode:140 
+
+Rewards Agent: 724.00, Rewards Eval: 655.16, Total Timesteps: 1420000 episode:141 
+
+Rewards Agent: 693.69, Rewards Eval: 554.95, Total Timesteps: 1430000 episode:142 
+
+Rewards Agent: 732.82, Rewards Eval: 736.83, Total Timesteps: 1440000 episode:143 
+
+Rewards Agent: 718.08, Rewards Eval: 740.38, Total Timesteps: 1450000 episode:144 
+
+Rewards Agent: 719.82, Rewards Eval: 744.96, Total Timesteps: 1460000 episode:145 
+
+Rewards Agent: 737.48, Rewards Eval: 755.96, Total Timesteps: 1470000 episode:146 
+
+Rewards Agent: 745.05, Rewards Eval: 779.83, Total Timesteps: 1480000 episode:147 
+
+Rewards Agent: 720.69, Rewards Eval: 739.13, Total Timesteps: 1490000 episode:148 
+
+Rewards Agent: 745.96, Rewards Eval: 797.65, Total Timesteps: 1500000 episode:149 
+
+Rewards Agent: 748.90, Rewards Eval: 652.54, Total Timesteps: 1510000 episode:150 
+
+Rewards Agent: 747.46, Rewards Eval: 493.20, Total Timesteps: 1520000 episode:151 
+
+Rewards Agent: 758.70, Rewards Eval: 786.88, Total Timesteps: 1530000 episode:152 
+
+Rewards Agent: 750.05, Rewards Eval: 744.55, Total Timesteps: 1540000 episode:153 
+
+Rewards Agent: 753.53, Rewards Eval: 693.49, Total Timesteps: 1550000 episode:154 
+
+Rewards Agent: 772.38, Rewards Eval: 763.63, Total Timesteps: 1560000 episode:155 
+
+Rewards Agent: 780.16, Rewards Eval: 832.64, Total Timesteps: 1570000 episode:156 
+
+Rewards Agent: 744.66, Rewards Eval: 807.11, Total Timesteps: 1580000 episode:157 
+
+Rewards Agent: 787.68, Rewards Eval: 836.06, Total Timesteps: 1590000 episode:158 
+
+Rewards Agent: 786.50, Rewards Eval: 871.82, Total Timesteps: 1600000 episode:159 
+
+Rewards Agent: 795.95, Rewards Eval: 793.49, Total Timesteps: 1610000 episode:160 
+
+Rewards Agent: 768.34, Rewards Eval: 859.29, Total Timesteps: 1620000 episode:161 
+
+Rewards Agent: 782.37, Rewards Eval: 685.40, Total Timesteps: 1630000 episode:162 
+
+Rewards Agent: 775.90, Rewards Eval: 723.02, Total Timesteps: 1640000 episode:163 
+
+Rewards Agent: 767.09, Rewards Eval: 864.45, Total Timesteps: 1650000 episode:164 
+
+Rewards Agent: 775.16, Rewards Eval: 666.72, Total Timesteps: 1660000 episode:165 
+
+Rewards Agent: 769.50, Rewards Eval: 806.15, Total Timesteps: 1670000 episode:166 
+
+Rewards Agent: 781.82, Rewards Eval: 812.67, Total Timesteps: 1680000 episode:167 
+
+Rewards Agent: 767.53, Rewards Eval: 766.30, Total Timesteps: 1690000 episode:168 
+
+Rewards Agent: 778.82, Rewards Eval: 835.68, Total Timesteps: 1700000 episode:169 
+
+Rewards Agent: 765.79, Rewards Eval: 848.53, Total Timesteps: 1710000 episode:170 
+
+Rewards Agent: 823.19, Rewards Eval: 795.46, Total Timesteps: 1720000 episode:171 
+
+Rewards Agent: 781.87, Rewards Eval: 573.34, Total Timesteps: 1730000 episode:172 
+
+Rewards Agent: 777.20, Rewards Eval: 846.78, Total Timesteps: 1740000 episode:173 
+
+Rewards Agent: 807.70, Rewards Eval: 796.88, Total Timesteps: 1750000 episode:174 
+
+Rewards Agent: 807.11, Rewards Eval: 742.31, Total Timesteps: 1760000 episode:175 
+
+Rewards Agent: 795.45, Rewards Eval: 786.17, Total Timesteps: 1770000 episode:176 
+
+Rewards Agent: 824.47, Rewards Eval: 744.88, Total Timesteps: 1780000 episode:177 
+
+Rewards Agent: 786.73, Rewards Eval: 822.63, Total Timesteps: 1790000 episode:178 
+
+Rewards Agent: 813.24, Rewards Eval: 878.08, Total Timesteps: 1800000 episode:179 
+
+Rewards Agent: 835.02, Rewards Eval: 805.07, Total Timesteps: 1810000 episode:180 
+
+Rewards Agent: 824.44, Rewards Eval: 871.87, Total Timesteps: 1820000 episode:181 
+
+Rewards Agent: 809.69, Rewards Eval: 861.74, Total Timesteps: 1830000 episode:182 
+
+Rewards Agent: 831.46, Rewards Eval: 911.53, Total Timesteps: 1840000 episode:183 
+
+Rewards Agent: 804.62, Rewards Eval: 868.60, Total Timesteps: 1850000 episode:184 
+
+Rewards Agent: 817.18, Rewards Eval: 751.26, Total Timesteps: 1860000 episode:185 
+
+Rewards Agent: 827.42, Rewards Eval: 835.77, Total Timesteps: 1870000 episode:186 
+
+Rewards Agent: 817.36, Rewards Eval: 771.31, Total Timesteps: 1880000 episode:187 
+
+Rewards Agent: 820.37, Rewards Eval: 793.91, Total Timesteps: 1890000 episode:188 
+
+Rewards Agent: 812.97, Rewards Eval: 804.02, Total Timesteps: 1900000 episode:189 
+
+Rewards Agent: 822.19, Rewards Eval: 773.46, Total Timesteps: 1910000 episode:190 
+
+Rewards Agent: 824.71, Rewards Eval: 905.67, Total Timesteps: 1920000 episode:191 
+
+Rewards Agent: 861.65, Rewards Eval: 780.85, Total Timesteps: 1930000 episode:192 
+
+Rewards Agent: 851.56, Rewards Eval: 960.84, Total Timesteps: 1940000 episode:193 
+
+Rewards Agent: 855.10, Rewards Eval: 825.87, Total Timesteps: 1950000 episode:194 
+
+Rewards Agent: 877.33, Rewards Eval: 835.18, Total Timesteps: 1960000 episode:195 
+
+Rewards Agent: 871.01, Rewards Eval: 824.40, Total Timesteps: 1970000 episode:196 
+
+Rewards Agent: 871.01, Rewards Eval: 734.37, Total Timesteps: 1980000 episode:197 
+
+Rewards Agent: 880.87, Rewards Eval: 851.13, Total Timesteps: 1990000 episode:198 
+
+Rewards Agent: 857.92, Rewards Eval: 839.16, Total Timesteps: 2000000 episode:199 
+
+Rewards Agent: 864.20, Rewards Eval: 1008.73, Total Timesteps: 2010000 episode:200 
+
+Rewards Agent: 866.30, Rewards Eval: 849.23, Total Timesteps: 2020000 episode:201 
+
+Rewards Agent: 899.57, Rewards Eval: 891.79, Total Timesteps: 2030000 episode:202 
+
+Rewards Agent: 879.52, Rewards Eval: 756.21, Total Timesteps: 2040000 episode:203 
+
+Rewards Agent: 860.23, Rewards Eval: 871.53, Total Timesteps: 2050000 episode:204 
+
+Rewards Agent: 871.75, Rewards Eval: 899.96, Total Timesteps: 2060000 episode:205 
+
+Rewards Agent: 891.93, Rewards Eval: 999.41, Total Timesteps: 2070000 episode:206 
+
+Rewards Agent: 907.28, Rewards Eval: 918.83, Total Timesteps: 2080000 episode:207 
+
+Rewards Agent: 884.09, Rewards Eval: 864.98, Total Timesteps: 2090000 episode:208 
+
+Rewards Agent: 887.60, Rewards Eval: 940.21, Total Timesteps: 2100000 episode:209 
+
+Rewards Agent: 882.87, Rewards Eval: 884.72, Total Timesteps: 2110000 episode:210 
+
+Rewards Agent: 925.10, Rewards Eval: 878.67, Total Timesteps: 2120000 episode:211 
+
+Rewards Agent: 910.84, Rewards Eval: 932.85, Total Timesteps: 2130000 episode:212 
+
+Rewards Agent: 902.24, Rewards Eval: 913.42, Total Timesteps: 2140000 episode:213 
+
+Rewards Agent: 883.81, Rewards Eval: 956.54, Total Timesteps: 2150000 episode:214 
+
+Rewards Agent: 899.68, Rewards Eval: 903.80, Total Timesteps: 2160000 episode:215 
+
+Rewards Agent: 895.67, Rewards Eval: 873.76, Total Timesteps: 2170000 episode:216 
+
+Rewards Agent: 909.28, Rewards Eval: 906.19, Total Timesteps: 2180000 episode:217 
+
+Rewards Agent: 903.99, Rewards Eval: 916.41, Total Timesteps: 2190000 episode:218 
+
+Rewards Agent: 892.60, Rewards Eval: 882.00, Total Timesteps: 2200000 episode:219 
+
+Rewards Agent: 912.46, Rewards Eval: 912.04, Total Timesteps: 2210000 episode:220 
+
+Rewards Agent: 904.14, Rewards Eval: 863.02, Total Timesteps: 2220000 episode:221 
+
+Rewards Agent: 921.65, Rewards Eval: 884.13, Total Timesteps: 2230000 episode:222 
+
+Rewards Agent: 918.27, Rewards Eval: 875.38, Total Timesteps: 2240000 episode:223 
+
+Rewards Agent: 937.35, Rewards Eval: 881.18, Total Timesteps: 2250000 episode:224 
+
+Rewards Agent: 929.71, Rewards Eval: 948.52, Total Timesteps: 2260000 episode:225 
+
+Rewards Agent: 905.75, Rewards Eval: 966.89, Total Timesteps: 2270000 episode:226 
+
+Rewards Agent: 917.01, Rewards Eval: 934.83, Total Timesteps: 2280000 episode:227 
+
+Rewards Agent: 870.51, Rewards Eval: 981.05, Total Timesteps: 2290000 episode:228 
+
+Rewards Agent: 928.51, Rewards Eval: 870.00, Total Timesteps: 2300000 episode:229 
+
+Rewards Agent: 931.04, Rewards Eval: 942.92, Total Timesteps: 2310000 episode:230 
+
+Rewards Agent: 932.22, Rewards Eval: 1013.09, Total Timesteps: 2320000 episode:231 
+
+Rewards Agent: 931.65, Rewards Eval: 846.51, Total Timesteps: 2330000 episode:232 
+
+Rewards Agent: 912.38, Rewards Eval: 970.08, Total Timesteps: 2340000 episode:233 
+
+Rewards Agent: 952.83, Rewards Eval: 930.65, Total Timesteps: 2350000 episode:234 
+
+Rewards Agent: 933.59, Rewards Eval: 1026.00, Total Timesteps: 2360000 episode:235 
+
+Rewards Agent: 954.52, Rewards Eval: 925.42, Total Timesteps: 2370000 episode:236 
+
+Rewards Agent: 954.64, Rewards Eval: 944.94, Total Timesteps: 2380000 episode:237 
+
+Rewards Agent: 928.67, Rewards Eval: 940.68, Total Timesteps: 2390000 episode:238 
+
+Rewards Agent: 930.82, Rewards Eval: 950.10, Total Timesteps: 2400000 episode:239 
+
+Rewards Agent: 957.08, Rewards Eval: 937.05, Total Timesteps: 2410000 episode:240 
+
+Rewards Agent: 942.35, Rewards Eval: 897.55, Total Timesteps: 2420000 episode:241 
+
+Rewards Agent: 959.64, Rewards Eval: 982.64, Total Timesteps: 2430000 episode:242 
+
+Rewards Agent: 961.79, Rewards Eval: 964.22, Total Timesteps: 2440000 episode:243 
+
+Rewards Agent: 943.10, Rewards Eval: 1002.48, Total Timesteps: 2450000 episode:244 
+
+Rewards Agent: 963.62, Rewards Eval: 1006.20, Total Timesteps: 2460000 episode:245 
+
+Rewards Agent: 967.27, Rewards Eval: 929.63, Total Timesteps: 2470000 episode:246 
+
+Rewards Agent: 958.31, Rewards Eval: 1016.65, Total Timesteps: 2480000 episode:247 
+
+Rewards Agent: 941.85, Rewards Eval: 956.24, Total Timesteps: 2490000 episode:248 
+
+Rewards Agent: 944.89, Rewards Eval: 1010.16, Total Timesteps: 2500000 episode:249 
+
+Rewards Agent: 973.02, Rewards Eval: 1013.92, Total Timesteps: 2510000 episode:250 
+
+Rewards Agent: 977.68, Rewards Eval: 993.26, Total Timesteps: 2520000 episode:251 
+
+Rewards Agent: 968.10, Rewards Eval: 1010.26, Total Timesteps: 2530000 episode:252 
+
+Rewards Agent: 975.03, Rewards Eval: 712.50, Total Timesteps: 2540000 episode:253 
+
+Rewards Agent: 970.13, Rewards Eval: 927.03, Total Timesteps: 2550000 episode:254 
+
+Rewards Agent: 954.66, Rewards Eval: 1023.80, Total Timesteps: 2560000 episode:255 
+
+Rewards Agent: 967.30, Rewards Eval: 906.83, Total Timesteps: 2570000 episode:256 
+
+Rewards Agent: 993.12, Rewards Eval: 942.14, Total Timesteps: 2580000 episode:257 
+
+Rewards Agent: 927.77, Rewards Eval: 976.02, Total Timesteps: 2590000 episode:258 
+
+Rewards Agent: 965.16, Rewards Eval: 980.40, Total Timesteps: 2600000 episode:259 
+
+Rewards Agent: 972.42, Rewards Eval: 906.54, Total Timesteps: 2610000 episode:260 
+
+Rewards Agent: 962.88, Rewards Eval: 1004.91, Total Timesteps: 2620000 episode:261 
+
+Rewards Agent: 942.26, Rewards Eval: 1006.70, Total Timesteps: 2630000 episode:262 
+
+Rewards Agent: 1005.40, Rewards Eval: 1101.02, Total Timesteps: 2640000 episode:263 
+
+Rewards Agent: 969.21, Rewards Eval: 997.45, Total Timesteps: 2650000 episode:264 
+
+Rewards Agent: 982.89, Rewards Eval: 978.25, Total Timesteps: 2660000 episode:265 
+
+Rewards Agent: 997.61, Rewards Eval: 978.22, Total Timesteps: 2670000 episode:266 
+
+Rewards Agent: 979.51, Rewards Eval: 1099.41, Total Timesteps: 2680000 episode:267 
+
+Rewards Agent: 976.32, Rewards Eval: 974.37, Total Timesteps: 2690000 episode:268 
+
+Rewards Agent: 999.85, Rewards Eval: 937.05, Total Timesteps: 2700000 episode:269 
+
+Rewards Agent: 1008.42, Rewards Eval: 994.90, Total Timesteps: 2710000 episode:270 
+
+Rewards Agent: 968.62, Rewards Eval: 994.60, Total Timesteps: 2720000 episode:271 
+
+Rewards Agent: 995.05, Rewards Eval: 1028.75, Total Timesteps: 2730000 episode:272 
+
+Rewards Agent: 1004.02, Rewards Eval: 1057.96, Total Timesteps: 2740000 episode:273 
+
+Rewards Agent: 1000.26, Rewards Eval: 1065.70, Total Timesteps: 2750000 episode:274 
+
+Rewards Agent: 974.82, Rewards Eval: 908.49, Total Timesteps: 2760000 episode:275 
+
+Rewards Agent: 1011.20, Rewards Eval: 978.69, Total Timesteps: 2770000 episode:276 
+
+Rewards Agent: 1004.86, Rewards Eval: 1103.73, Total Timesteps: 2780000 episode:277 
+
+Rewards Agent: 985.85, Rewards Eval: 989.61, Total Timesteps: 2790000 episode:278 
+
+Rewards Agent: 989.35, Rewards Eval: 968.11, Total Timesteps: 2800000 episode:279 
+
+Rewards Agent: 1014.63, Rewards Eval: 976.54, Total Timesteps: 2810000 episode:280 
+
+Rewards Agent: 1007.88, Rewards Eval: 1037.97, Total Timesteps: 2820000 episode:281 
+
+Rewards Agent: 985.46, Rewards Eval: 958.56, Total Timesteps: 2830000 episode:282 
+
+Rewards Agent: 961.07, Rewards Eval: 906.06, Total Timesteps: 2840000 episode:283 
+
+Rewards Agent: 984.01, Rewards Eval: 1004.66, Total Timesteps: 2850000 episode:284 
+
+Rewards Agent: 992.36, Rewards Eval: 1005.04, Total Timesteps: 2860000 episode:285 
+
+Rewards Agent: 1011.61, Rewards Eval: 972.37, Total Timesteps: 2870000 episode:286 
+
+Rewards Agent: 1000.29, Rewards Eval: 1006.73, Total Timesteps: 2880000 episode:287 
+
+Rewards Agent: 981.59, Rewards Eval: 949.36, Total Timesteps: 2890000 episode:288 
+
+Rewards Agent: 998.65, Rewards Eval: 959.19, Total Timesteps: 2900000 episode:289 
+
+Rewards Agent: 1012.00, Rewards Eval: 1017.89, Total Timesteps: 2910000 episode:290 
+
+Rewards Agent: 1024.09, Rewards Eval: 990.23, Total Timesteps: 2920000 episode:291 
+
+Rewards Agent: 987.94, Rewards Eval: 883.49, Total Timesteps: 2930000 episode:292 
+
+Rewards Agent: 993.34, Rewards Eval: 935.26, Total Timesteps: 2940000 episode:293 
+
+Rewards Agent: 997.25, Rewards Eval: 1110.64, Total Timesteps: 2950000 episode:294 
+
+Rewards Agent: 998.68, Rewards Eval: 1021.79, Total Timesteps: 2960000 episode:295 
+
+Rewards Agent: 1022.97, Rewards Eval: 982.92, Total Timesteps: 2970000 episode:296 
+
+Rewards Agent: 1022.28, Rewards Eval: 859.39, Total Timesteps: 2980000 episode:297 
+
+Rewards Agent: 1007.29, Rewards Eval: 1095.86, Total Timesteps: 2990000 episode:298 
+
+Rewards Agent: 988.06, Rewards Eval: 951.36, Total Timesteps: 3000000 episode:299 
+
+Rewards Agent: 982.24, Rewards Eval: 792.15, Total Timesteps: 3010000 episode:300 
+
+Rewards Agent: 1022.37, Rewards Eval: 1020.92, Total Timesteps: 3020000 episode:301 
+
+Rewards Agent: 1024.85, Rewards Eval: 983.26, Total Timesteps: 3030000 episode:302 
+
+Rewards Agent: 1011.88, Rewards Eval: 994.96, Total Timesteps: 3040000 episode:303 
+
+Rewards Agent: 1016.08, Rewards Eval: 1084.89, Total Timesteps: 3050000 episode:304 
+
+Rewards Agent: 992.38, Rewards Eval: 1050.81, Total Timesteps: 3060000 episode:305 
+
+Rewards Agent: 1014.17, Rewards Eval: 1021.95, Total Timesteps: 3070000 episode:306 
+
+Rewards Agent: 1014.61, Rewards Eval: 923.73, Total Timesteps: 3080000 episode:307 
+
+Rewards Agent: 1046.02, Rewards Eval: 989.03, Total Timesteps: 3090000 episode:308 
+
+Rewards Agent: 958.98, Rewards Eval: 1017.63, Total Timesteps: 3100000 episode:309 
+
+Rewards Agent: 1023.69, Rewards Eval: 970.56, Total Timesteps: 3110000 episode:310 
+
+Rewards Agent: 1045.70, Rewards Eval: 1035.45, Total Timesteps: 3120000 episode:311 
+
+Rewards Agent: 1002.04, Rewards Eval: 979.45, Total Timesteps: 3130000 episode:312 
+
+Rewards Agent: 1012.35, Rewards Eval: 1042.36, Total Timesteps: 3140000 episode:313 
+
+Rewards Agent: 987.18, Rewards Eval: 936.60, Total Timesteps: 3150000 episode:314 
+
+Rewards Agent: 971.26, Rewards Eval: 1053.05, Total Timesteps: 3160000 episode:315 
+
+Rewards Agent: 1029.01, Rewards Eval: 1038.70, Total Timesteps: 3170000 episode:316 
+
+Rewards Agent: 1000.10, Rewards Eval: 971.92, Total Timesteps: 3180000 episode:317 
+
+Rewards Agent: 1017.30, Rewards Eval: 1004.81, Total Timesteps: 3190000 episode:318 
+
+Rewards Agent: 1027.00, Rewards Eval: 978.37, Total Timesteps: 3200000 episode:319 
+
+Rewards Agent: 1009.51, Rewards Eval: 1054.53, Total Timesteps: 3210000 episode:320 
+
+Rewards Agent: 1038.32, Rewards Eval: 1033.42, Total Timesteps: 3220000 episode:321 
+
+Rewards Agent: 1023.61, Rewards Eval: 1049.72, Total Timesteps: 3230000 episode:322 
+
+Rewards Agent: 1033.12, Rewards Eval: 987.01, Total Timesteps: 3240000 episode:323 
+
+Rewards Agent: 1016.73, Rewards Eval: 1004.26, Total Timesteps: 3250000 episode:324 
+
+Rewards Agent: 1012.76, Rewards Eval: 952.04, Total Timesteps: 3260000 episode:325 
+
+Rewards Agent: 1051.65, Rewards Eval: 1089.94, Total Timesteps: 3270000 episode:326 
+
+Rewards Agent: 1039.22, Rewards Eval: 1123.78, Total Timesteps: 3280000 episode:327 
+
+Rewards Agent: 1035.55, Rewards Eval: 1058.76, Total Timesteps: 3290000 episode:328 
+
+Rewards Agent: 1035.38, Rewards Eval: 1095.89, Total Timesteps: 3300000 episode:329 
+
+Rewards Agent: 1040.02, Rewards Eval: 1060.58, Total Timesteps: 3310000 episode:330 
+
+Rewards Agent: 1021.09, Rewards Eval: 1101.04, Total Timesteps: 3320000 episode:331 
+
+Rewards Agent: 1036.20, Rewards Eval: 978.94, Total Timesteps: 3330000 episode:332 
+
+Rewards Agent: 1031.08, Rewards Eval: 1083.91, Total Timesteps: 3340000 episode:333 
+
+Rewards Agent: 1019.95, Rewards Eval: 1068.31, Total Timesteps: 3350000 episode:334 
+
+Rewards Agent: 1044.47, Rewards Eval: 1032.56, Total Timesteps: 3360000 episode:335 
+
+Rewards Agent: 1035.33, Rewards Eval: 1053.52, Total Timesteps: 3370000 episode:336 
+
+Rewards Agent: 1023.18, Rewards Eval: 1018.22, Total Timesteps: 3380000 episode:337 
+
+Rewards Agent: 1020.69, Rewards Eval: 901.44, Total Timesteps: 3390000 episode:338 
+
+Rewards Agent: 1052.91, Rewards Eval: 963.24, Total Timesteps: 3400000 episode:339 
+
+Rewards Agent: 1014.87, Rewards Eval: 1039.69, Total Timesteps: 3410000 episode:340 
+
+Rewards Agent: 1042.83, Rewards Eval: 1067.91, Total Timesteps: 3420000 episode:341 
+
+Rewards Agent: 1015.59, Rewards Eval: 1039.46, Total Timesteps: 3430000 episode:342 
+
+Rewards Agent: 1030.29, Rewards Eval: 1065.53, Total Timesteps: 3440000 episode:343 
+
+Rewards Agent: 1011.47, Rewards Eval: 1038.26, Total Timesteps: 3450000 episode:344 
+
+Rewards Agent: 1005.15, Rewards Eval: 1096.06, Total Timesteps: 3460000 episode:345 
+
+Rewards Agent: 1062.14, Rewards Eval: 1038.77, Total Timesteps: 3470000 episode:346 
+
+Rewards Agent: 1040.00, Rewards Eval: 1014.82, Total Timesteps: 3480000 episode:347 
+
+Rewards Agent: 1048.40, Rewards Eval: 1063.97, Total Timesteps: 3490000 episode:348 
+
+Rewards Agent: 1059.72, Rewards Eval: 1051.43, Total Timesteps: 3500000 episode:349 
+
+Rewards Agent: 1035.69, Rewards Eval: 1047.14, Total Timesteps: 3510000 episode:350 
+
+Rewards Agent: 1070.69, Rewards Eval: 906.27, Total Timesteps: 3520000 episode:351 
+
+Rewards Agent: 1027.11, Rewards Eval: 940.74, Total Timesteps: 3530000 episode:352 
+
+Rewards Agent: 1043.90, Rewards Eval: 1036.53, Total Timesteps: 3540000 episode:353 
+
+Rewards Agent: 1022.53, Rewards Eval: 1067.80, Total Timesteps: 3550000 episode:354 
+
+Rewards Agent: 1043.78, Rewards Eval: 992.59, Total Timesteps: 3560000 episode:355 
+
+Rewards Agent: 1040.15, Rewards Eval: 1072.29, Total Timesteps: 3570000 episode:356 
+
+Rewards Agent: 1064.44, Rewards Eval: 1088.02, Total Timesteps: 3580000 episode:357 
+
+Rewards Agent: 1055.81, Rewards Eval: 1061.47, Total Timesteps: 3590000 episode:358 
+
+Rewards Agent: 1043.82, Rewards Eval: 1106.26, Total Timesteps: 3600000 episode:359 
+
+Rewards Agent: 1051.17, Rewards Eval: 1037.54, Total Timesteps: 3610000 episode:360 
+
+Rewards Agent: 1025.37, Rewards Eval: 1073.07, Total Timesteps: 3620000 episode:361 
+
+Rewards Agent: 1057.51, Rewards Eval: 1082.38, Total Timesteps: 3630000 episode:362 
+
+Rewards Agent: 1042.25, Rewards Eval: 1120.33, Total Timesteps: 3640000 episode:363 
+
+Rewards Agent: 1071.85, Rewards Eval: 1062.58, Total Timesteps: 3650000 episode:364 
+
+Rewards Agent: 1054.83, Rewards Eval: 1040.61, Total Timesteps: 3660000 episode:365 
+
+Rewards Agent: 1068.00, Rewards Eval: 1040.25, Total Timesteps: 3670000 episode:366 
+
+Rewards Agent: 1039.83, Rewards Eval: 1115.18, Total Timesteps: 3680000 episode:367 
+
+Rewards Agent: 1053.54, Rewards Eval: 1081.24, Total Timesteps: 3690000 episode:368 
+
+Rewards Agent: 1050.03, Rewards Eval: 1037.86, Total Timesteps: 3700000 episode:369 
+
+Rewards Agent: 1066.94, Rewards Eval: 984.02, Total Timesteps: 3710000 episode:370 
+
+Rewards Agent: 1068.79, Rewards Eval: 939.44, Total Timesteps: 3720000 episode:371 
+
+Rewards Agent: 1054.53, Rewards Eval: 1003.64, Total Timesteps: 3730000 episode:372 
+
+Rewards Agent: 1051.08, Rewards Eval: 998.30, Total Timesteps: 3740000 episode:373 
+
+Rewards Agent: 1056.23, Rewards Eval: 1047.06, Total Timesteps: 3750000 episode:374 
+
+Rewards Agent: 1065.75, Rewards Eval: 1051.64, Total Timesteps: 3760000 episode:375 
+
+Rewards Agent: 1058.45, Rewards Eval: 993.92, Total Timesteps: 3770000 episode:376 
+
+Rewards Agent: 1076.80, Rewards Eval: 1024.45, Total Timesteps: 3780000 episode:377 
+
+Rewards Agent: 1077.90, Rewards Eval: 1065.07, Total Timesteps: 3790000 episode:378 
+
+Rewards Agent: 1055.22, Rewards Eval: 1075.99, Total Timesteps: 3800000 episode:379 
+
+Rewards Agent: 1078.95, Rewards Eval: 1084.13, Total Timesteps: 3810000 episode:380 
+
+Rewards Agent: 1075.97, Rewards Eval: 1144.48, Total Timesteps: 3820000 episode:381 
+
+Rewards Agent: 1053.86, Rewards Eval: 1126.28, Total Timesteps: 3830000 episode:382 
+
+Rewards Agent: 1048.22, Rewards Eval: 1091.67, Total Timesteps: 3840000 episode:383 
+
+Rewards Agent: 1066.37, Rewards Eval: 1077.48, Total Timesteps: 3850000 episode:384 
+
+Rewards Agent: 1051.76, Rewards Eval: 962.34, Total Timesteps: 3860000 episode:385 
+
+Rewards Agent: 1070.96, Rewards Eval: 1111.57, Total Timesteps: 3870000 episode:386 
+
+Rewards Agent: 1080.91, Rewards Eval: 1028.23, Total Timesteps: 3880000 episode:387 
+
+Rewards Agent: 1065.83, Rewards Eval: 1046.08, Total Timesteps: 3890000 episode:388 
+
+Rewards Agent: 1065.74, Rewards Eval: 1102.38, Total Timesteps: 3900000 episode:389 
+
+Rewards Agent: 1069.69, Rewards Eval: 1126.84, Total Timesteps: 3910000 episode:390 
+
+Rewards Agent: 1070.07, Rewards Eval: 1065.78, Total Timesteps: 3920000 episode:391 
+
+Rewards Agent: 1071.59, Rewards Eval: 1069.02, Total Timesteps: 3930000 episode:392 
+
+Rewards Agent: 1066.96, Rewards Eval: 1071.16, Total Timesteps: 3940000 episode:393 
+
+Rewards Agent: 1058.42, Rewards Eval: 999.09, Total Timesteps: 3950000 episode:394 
+
+Rewards Agent: 1095.04, Rewards Eval: 952.10, Total Timesteps: 3960000 episode:395 
+
+Rewards Agent: 1037.87, Rewards Eval: 1056.12, Total Timesteps: 3970000 episode:396 
+
+Rewards Agent: 1079.85, Rewards Eval: 1110.04, Total Timesteps: 3980000 episode:397 
+
+Rewards Agent: 1073.84, Rewards Eval: 1060.47, Total Timesteps: 3990000 episode:398 
+
+Rewards Agent: 1070.83, Rewards Eval: 1090.80, Total Timesteps: 4000000 episode:399 
+
+Rewards Agent: 1084.36, Rewards Eval: 1100.88, Total Timesteps: 4010000 episode:400 
+
+Rewards Agent: 1079.49, Rewards Eval: 1094.82, Total Timesteps: 4020000 episode:401 
+
+Rewards Agent: 1044.97, Rewards Eval: 1062.02, Total Timesteps: 4030000 episode:402 
+
+Rewards Agent: 1092.41, Rewards Eval: 1115.87, Total Timesteps: 4040000 episode:403 
+
+Rewards Agent: 1065.50, Rewards Eval: 1025.81, Total Timesteps: 4050000 episode:404 
+
+Rewards Agent: 1069.32, Rewards Eval: 1045.49, Total Timesteps: 4060000 episode:405 
+
+Rewards Agent: 1054.12, Rewards Eval: 1092.76, Total Timesteps: 4070000 episode:406 
+
+Rewards Agent: 1064.21, Rewards Eval: 1059.66, Total Timesteps: 4080000 episode:407 
+
+Rewards Agent: 1055.82, Rewards Eval: 1030.59, Total Timesteps: 4090000 episode:408 
+
+Rewards Agent: 1066.35, Rewards Eval: 1147.09, Total Timesteps: 4100000 episode:409 
+
+Rewards Agent: 1047.57, Rewards Eval: 1094.01, Total Timesteps: 4110000 episode:410 
+
+Rewards Agent: 1075.08, Rewards Eval: 1055.41, Total Timesteps: 4120000 episode:411 
+
+Rewards Agent: 1089.18, Rewards Eval: 1095.47, Total Timesteps: 4130000 episode:412 
+
+Rewards Agent: 1093.41, Rewards Eval: 1088.45, Total Timesteps: 4140000 episode:413 
+
+Rewards Agent: 1083.82, Rewards Eval: 1031.35, Total Timesteps: 4150000 episode:414 
+
+Rewards Agent: 1064.44, Rewards Eval: 1170.58, Total Timesteps: 4160000 episode:415 
+
+Rewards Agent: 1065.95, Rewards Eval: 1109.59, Total Timesteps: 4170000 episode:416 
+
+Rewards Agent: 1108.20, Rewards Eval: 1073.33, Total Timesteps: 4180000 episode:417 
+
+Rewards Agent: 1082.97, Rewards Eval: 1073.15, Total Timesteps: 4190000 episode:418 
+
+Rewards Agent: 1092.37, Rewards Eval: 1083.46, Total Timesteps: 4200000 episode:419 
+
+Rewards Agent: 1078.61, Rewards Eval: 1070.12, Total Timesteps: 4210000 episode:420 
+
+Rewards Agent: 1060.46, Rewards Eval: 1043.19, Total Timesteps: 4220000 episode:421 
+
+Rewards Agent: 1051.24, Rewards Eval: 1128.48, Total Timesteps: 4230000 episode:422 
+
+Rewards Agent: 1094.09, Rewards Eval: 1141.45, Total Timesteps: 4240000 episode:423 
+
+Rewards Agent: 1061.21, Rewards Eval: 1075.54, Total Timesteps: 4250000 episode:424 
+
+Rewards Agent: 1060.37, Rewards Eval: 979.06, Total Timesteps: 4260000 episode:425 
+
+Rewards Agent: 1062.13, Rewards Eval: 1036.99, Total Timesteps: 4270000 episode:426 
+
+Rewards Agent: 1083.87, Rewards Eval: 1022.85, Total Timesteps: 4280000 episode:427 
+
+Rewards Agent: 1119.06, Rewards Eval: 1089.23, Total Timesteps: 4290000 episode:428 
+
+Rewards Agent: 1079.32, Rewards Eval: 1154.42, Total Timesteps: 4300000 episode:429 
+
+Rewards Agent: 1074.96, Rewards Eval: 1072.02, Total Timesteps: 4310000 episode:430 
+
+Rewards Agent: 1085.54, Rewards Eval: 963.85, Total Timesteps: 4320000 episode:431 
+
+Rewards Agent: 1068.04, Rewards Eval: 1072.59, Total Timesteps: 4330000 episode:432 
+
+Rewards Agent: 1081.31, Rewards Eval: 1133.46, Total Timesteps: 4340000 episode:433 
+
+Rewards Agent: 1101.77, Rewards Eval: 1104.37, Total Timesteps: 4350000 episode:434 
+
+Rewards Agent: 1084.62, Rewards Eval: 1132.56, Total Timesteps: 4360000 episode:435 
+
+Rewards Agent: 1087.37, Rewards Eval: 1099.09, Total Timesteps: 4370000 episode:436 
+
+Rewards Agent: 1091.75, Rewards Eval: 1001.55, Total Timesteps: 4380000 episode:437 
+
+Rewards Agent: 1088.86, Rewards Eval: 1118.21, Total Timesteps: 4390000 episode:438 
+
+Rewards Agent: 1100.03, Rewards Eval: 1041.30, Total Timesteps: 4400000 episode:439 
+
+Rewards Agent: 1108.70, Rewards Eval: 1185.75, Total Timesteps: 4410000 episode:440 
+
+Rewards Agent: 1100.81, Rewards Eval: 1029.68, Total Timesteps: 4420000 episode:441 
+
+Rewards Agent: 1117.48, Rewards Eval: 1180.74, Total Timesteps: 4430000 episode:442 
+
+Rewards Agent: 1101.90, Rewards Eval: 1128.69, Total Timesteps: 4440000 episode:443 
+
+Rewards Agent: 1080.83, Rewards Eval: 1080.18, Total Timesteps: 4450000 episode:444 
+
+Rewards Agent: 1095.77, Rewards Eval: 1074.30, Total Timesteps: 4460000 episode:445 
+
+Rewards Agent: 1099.83, Rewards Eval: 1060.01, Total Timesteps: 4470000 episode:446 
+
+Rewards Agent: 1108.92, Rewards Eval: 1084.31, Total Timesteps: 4480000 episode:447 
+
+Rewards Agent: 1085.38, Rewards Eval: 1104.24, Total Timesteps: 4490000 episode:448 
+
+Rewards Agent: 1108.02, Rewards Eval: 1146.83, Total Timesteps: 4500000 episode:449 
+
+Rewards Agent: 1119.82, Rewards Eval: 1097.55, Total Timesteps: 4510000 episode:450 
+
+Rewards Agent: 1069.73, Rewards Eval: 1105.37, Total Timesteps: 4520000 episode:451 
+
+Rewards Agent: 1098.12, Rewards Eval: 1061.14, Total Timesteps: 4530000 episode:452 
+
+Rewards Agent: 1093.20, Rewards Eval: 1080.75, Total Timesteps: 4540000 episode:453 
+
+Rewards Agent: 1103.16, Rewards Eval: 1084.80, Total Timesteps: 4550000 episode:454 
+
+Rewards Agent: 1088.76, Rewards Eval: 1028.22, Total Timesteps: 4560000 episode:455 
+
+Rewards Agent: 1073.33, Rewards Eval: 1144.73, Total Timesteps: 4570000 episode:456 
+
+Rewards Agent: 1094.69, Rewards Eval: 1069.45, Total Timesteps: 4580000 episode:457 
+
+Rewards Agent: 1117.97, Rewards Eval: 1116.68, Total Timesteps: 4590000 episode:458 
+
+Rewards Agent: 1071.25, Rewards Eval: 1081.46, Total Timesteps: 4600000 episode:459 
+
+Rewards Agent: 1066.16, Rewards Eval: 1046.11, Total Timesteps: 4610000 episode:460 
+
+Rewards Agent: 1098.16, Rewards Eval: 1162.82, Total Timesteps: 4620000 episode:461 
+
+Rewards Agent: 1102.80, Rewards Eval: 1042.84, Total Timesteps: 4630000 episode:462 
+
+Rewards Agent: 1087.65, Rewards Eval: 1062.88, Total Timesteps: 4640000 episode:463 
+
+Rewards Agent: 1092.04, Rewards Eval: 1070.48, Total Timesteps: 4650000 episode:464 
+
+Rewards Agent: 1092.42, Rewards Eval: 1177.40, Total Timesteps: 4660000 episode:465 
+
+Rewards Agent: 1095.54, Rewards Eval: 1139.15, Total Timesteps: 4670000 episode:466 
+
+Rewards Agent: 1095.89, Rewards Eval: 1136.48, Total Timesteps: 4680000 episode:467 
+
+Rewards Agent: 1091.51, Rewards Eval: 1089.62, Total Timesteps: 4690000 episode:468 
+
+Rewards Agent: 1107.78, Rewards Eval: 1139.08, Total Timesteps: 4700000 episode:469 
+
+Rewards Agent: 1093.88, Rewards Eval: 1096.49, Total Timesteps: 4710000 episode:470 
+
+Rewards Agent: 1109.30, Rewards Eval: 1191.85, Total Timesteps: 4720000 episode:471 
+
+Rewards Agent: 1099.26, Rewards Eval: 1096.67, Total Timesteps: 4730000 episode:472 
+
+Rewards Agent: 1092.97, Rewards Eval: 1157.04, Total Timesteps: 4740000 episode:473 
+
+Rewards Agent: 1102.70, Rewards Eval: 1064.10, Total Timesteps: 4750000 episode:474 
+
+Rewards Agent: 1111.02, Rewards Eval: 1079.38, Total Timesteps: 4760000 episode:475 
+
+Rewards Agent: 1114.78, Rewards Eval: 1087.78, Total Timesteps: 4770000 episode:476 
+
+Rewards Agent: 1110.08, Rewards Eval: 1182.98, Total Timesteps: 4780000 episode:477 
+
+Rewards Agent: 1078.85, Rewards Eval: 1101.22, Total Timesteps: 4790000 episode:478 
+
+Rewards Agent: 1103.29, Rewards Eval: 1100.93, Total Timesteps: 4800000 episode:479 
+
+Rewards Agent: 1104.35, Rewards Eval: 1107.98, Total Timesteps: 4810000 episode:480 
+
+Rewards Agent: 1114.27, Rewards Eval: 1038.67, Total Timesteps: 4820000 episode:481 
+
+Rewards Agent: 1105.86, Rewards Eval: 1100.71, Total Timesteps: 4830000 episode:482 
+
+Rewards Agent: 1090.80, Rewards Eval: 1087.38, Total Timesteps: 4840000 episode:483 
+
+Rewards Agent: 1102.25, Rewards Eval: 1102.46, Total Timesteps: 4850000 episode:484 
+
+Rewards Agent: 1116.14, Rewards Eval: 1126.84, Total Timesteps: 4860000 episode:485 
+
+Rewards Agent: 1090.98, Rewards Eval: 1164.35, Total Timesteps: 4870000 episode:486 
+
+Rewards Agent: 1126.79, Rewards Eval: 1059.98, Total Timesteps: 4880000 episode:487 
+
+Rewards Agent: 1098.83, Rewards Eval: 1173.20, Total Timesteps: 4890000 episode:488 
+
+Rewards Agent: 1104.20, Rewards Eval: 1186.70, Total Timesteps: 4900000 episode:489 
+
+Rewards Agent: 1122.51, Rewards Eval: 1098.57, Total Timesteps: 4910000 episode:490 
+
+Rewards Agent: 1111.59, Rewards Eval: 1099.88, Total Timesteps: 4920000 episode:491 
+
+Rewards Agent: 1101.76, Rewards Eval: 1148.57, Total Timesteps: 4930000 episode:492 
+
+Rewards Agent: 1100.98, Rewards Eval: 1143.53, Total Timesteps: 4940000 episode:493 
+
+Rewards Agent: 1129.15, Rewards Eval: 1098.44, Total Timesteps: 4950000 episode:494 
+
+Rewards Agent: 1107.14, Rewards Eval: 1194.96, Total Timesteps: 4960000 episode:495 
+
+Rewards Agent: 1117.38, Rewards Eval: 1158.63, Total Timesteps: 4970000 episode:496 
+
+Rewards Agent: 1103.05, Rewards Eval: 1147.50, Total Timesteps: 4980000 episode:497 
+
+Rewards Agent: 1133.84, Rewards Eval: 1109.41, Total Timesteps: 4990000 episode:498 
+
+Rewards Agent: 1122.84, Rewards Eval: 1158.08, Total Timesteps: 5000000 episode:499 
+

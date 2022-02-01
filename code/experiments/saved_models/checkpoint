@@ -1,0 +1,2 @@
+model_checkpoint_path: "model_maml_adr_tf_halfcheetah_custom_rand-v2"
+all_model_checkpoint_paths: "model_maml_adr_tf_halfcheetah_custom_rand-v2"
