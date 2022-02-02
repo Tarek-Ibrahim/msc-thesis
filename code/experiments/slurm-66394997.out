@@ -3,3 +3,5 @@ For Seed: 1
 2022-01-31 16:41:37.832545: I tensorflow/core/platform/cpu_feature_guard.cc:142] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  SSE4.1 SSE4.2 AVX AVX2 AVX512F FMA
 To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
 2022-01-31 16:41:43.280674: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1510] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 30115 MB memory:  -> device: 0, name: Tesla V100-PCIE-32GB, pci bus id: 0000:3b:00.0, compute capability: 7.0
+slurmstepd: error: *** JOB 66394997 ON gpu10 CANCELLED AT 2022-02-01T15:42:32 ***
+Job has already finished for job 66394997

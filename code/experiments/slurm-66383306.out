@@ -2011,3 +2011,5 @@ Rewards Tr: 151.49, Rewards Val: 93.08, Rewards Disc: 0.50, Rewards Eval: 142.22
 
 For Seed: 3 
 
+slurmstepd: error: *** JOB 66383306 ON dgx5 CANCELLED AT 2022-02-02T00:38:55 DUE TO TIME LIMIT ***
+Job has already finished for job 66383306

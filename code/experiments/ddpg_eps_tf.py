@@ -67,7 +67,7 @@ def rollout(n_envs, env, policy_agent, RB, T_env, T_agent_init, b_agent, gamma_a
     # Train agent policy
     if len(RB.storage) > T_agent_init: #if it has enough samples
         # policy_agent.train(RB=RB, eps=rollouts_len,batch_size=b_agent,gamma=gamma_agent)
-        policy_agent.train(RB=RB, eps=rollouts_len,batch_size=b_agent,gamma=gamma_agent)
+        policy_agent.train(RB=RB, eps=T_env,batch_size=b_agent,gamma=gamma_agent)
 
     return rewards_sum.mean(), rollouts_len
 
