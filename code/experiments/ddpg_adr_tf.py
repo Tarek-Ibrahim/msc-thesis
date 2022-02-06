@@ -239,13 +239,13 @@ if __name__ == '__main__':
     #Evaluation
     evaluate=config["evaluate"]
     log_ival=config["log_ival"]
-    eval_eps=config["eval_eps"]
+    eval_eps=10 #config["eval_eps"]
     
     #general
     tr_eps=config["tr_eps"]
     file_name=os.path.basename(__file__).split(".")[0]
     common_name = "_"+file_name+"_"+env_name
-    verbose=config["verbose"]
+    verbose=0 #config["verbose"]
     T_rand_rollout=config["T_rand_rollout"]
     
     #Seed

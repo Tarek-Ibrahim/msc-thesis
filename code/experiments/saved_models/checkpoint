@@ -1,2 +1,2 @@
-model_checkpoint_path: "model_maml_lr1_beta2_tf_halfcheetah_custom_rand-v2"
-all_model_checkpoint_paths: "model_maml_lr1_beta2_tf_halfcheetah_custom_rand-v2"
+model_checkpoint_path: "model_maml_trpo_udr_tf_halfcheetah_custom_rand-v2"
+all_model_checkpoint_paths: "model_maml_trpo_udr_tf_halfcheetah_custom_rand-v2"

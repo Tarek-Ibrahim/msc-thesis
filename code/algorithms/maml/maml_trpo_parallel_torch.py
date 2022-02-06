@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Sep  5 18:56:33 2021
-
-@author: TIB001
-"""
 
 # %% TODOs
 # TODO: include [custom] environments in the main repo (and remove the need for the gym-custom repo) 

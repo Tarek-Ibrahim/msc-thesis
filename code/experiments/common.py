@@ -453,19 +453,26 @@ def conjugate_gradients(Avp_f, b, rdotr_tol=1e-10, nsteps=10):
     return x
 
 
-def surrogate_loss(Ds, D_dashes,policy,value_net,gamma,alpha,prev_pis=None):
+def surrogate_loss(D_dashes,policy,value_net,gamma,alpha=None,prev_pis=None, Ds=None):
     
     kls, losses, pis =[], [], []
+    if Ds is None:
+        Ds = [None] * len(D_dashes)
+        
     if prev_pis is None:
-        prev_pis = [None] * len(Ds)
+        prev_pis = [None] * len(D_dashes)
         
     for D, D_dash, prev_pi in zip(Ds,D_dashes,prev_pis):
-        
-        theta_dash=adapt(D,value_net,policy,alpha)
 
         states, actions, rewards, masks = D_dash
         
-        pi=policy(states,params=theta_dash)
+        if D is not None:
+            theta_dash=adapt(D,value_net,policy,alpha)
+            pi=policy(states,params=theta_dash)
+        else:
+            value_net.fit_params(states,rewards,masks)
+            pi=policy(states)
+        
         pis.append(detach_dist(pi))
         
         if prev_pi is None:
@@ -476,7 +483,7 @@ def surrogate_loss(Ds, D_dashes,policy,value_net,gamma,alpha,prev_pis=None):
         ratio=pi.log_prob(actions)-prev_pi.log_prob(actions)
         if len(ratio.shape) > 2:
             ratio = tf.reduce_sum(ratio, axis=2)
-        loss = - weighted_mean(ratio*advantages,axis=0,weights=masks)
+        loss = - weighted_mean(tf.exp(ratio)*advantages,axis=0,weights=masks)
         losses.append(loss)
         
         if len(actions.shape) > 2:
@@ -494,13 +501,13 @@ def surrogate_loss(Ds, D_dashes,policy,value_net,gamma,alpha,prev_pis=None):
     return prev_loss, kl, pis
 
 
-def line_search(policy, prev_loss, prev_pis, value_net, alpha, gamma, b, D_dashes, Ds, step, prev_params, max_grad_kl, max_backtracks=10, zeta=0.5):
+def line_search(policy, prev_loss, prev_pis, value_net, gamma, b, D_dashes, step, prev_params, max_grad_kl, max_backtracks=10, zeta=0.5, alpha=None, Ds=None):
     """backtracking line search"""
     
     for step_frac in [zeta**x for x in range(max_backtracks)]:
         vector_to_parameters(prev_params - step_frac * step, policy.trainable_variables)
         
-        loss, kl, _ = surrogate_loss(Ds, D_dashes,policy,value_net,gamma,alpha,prev_pis=prev_pis)
+        loss, kl, _ = surrogate_loss(D_dashes,policy,value_net,gamma,alpha=alpha,prev_pis=prev_pis,Ds=Ds)
         
         #check improvement
         actual_improve = loss - prev_loss
@@ -512,13 +519,20 @@ def line_search(policy, prev_loss, prev_pis, value_net, alpha, gamma, b, D_dashe
         vector_to_parameters(prev_params, policy.trainable_variables)
 
 
-def kl_div(Ds,D_dashes,value_net,policy,alpha):
+def kl_div(D_dashes,value_net,policy,alpha=None,Ds=None):
     kls=[]
+    
+    if Ds is None:
+        Ds = [None] * len(D_dashes)
+                          
     for D, D_dash in zip(Ds,D_dashes):
         
-        theta_dash=adapt(D,value_net,policy,alpha)
-
         states, actions, _, masks = D_dash
+        
+        if D is not None:
+            theta_dash=adapt(D,value_net,policy,alpha)
+        else:
+            theta_dash=None
         
         pi=policy(states,params=theta_dash)
         
@@ -536,11 +550,11 @@ def kl_div(Ds,D_dashes,value_net,policy,alpha):
     return tf.math.reduce_mean(tf.stack(kls, axis=0))
 
 
-def HVP(Ds,D_dashes,policy,value_net,alpha,damping):
+def HVP(D_dashes,policy,value_net,damping,alpha=None,Ds=None):
     def _HVP(v):
         with tf.GradientTape() as outer_tape:
              with tf.GradientTape() as inner_tape:
-                 kl = kl_div(Ds,D_dashes,value_net,policy,alpha)
+                 kl = kl_div(D_dashes,value_net,policy,alpha,Ds)
              grad_kl=parameters_to_vector(inner_tape.gradient(kl,policy.trainable_variables),policy.trainable_variables)
              dot=tf.tensordot(grad_kl, v, axes=1)
         return parameters_to_vector(outer_tape.gradient(dot, policy.trainable_variables),policy.trainable_variables) + damping * v            

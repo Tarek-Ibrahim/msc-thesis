@@ -341,7 +341,7 @@ def surrogate_loss(Ds, D_dashes,policy,value_net,gamma,alpha,T,prev_pis=None):
         ratio=pi.log_prob(actions)-prev_pi.log_prob(actions)
         if len(ratio.shape) > 2:
             ratio = tf.reduce_sum(ratio, axis=2)
-        loss = - weighted_mean(ratio*advantages,axis=0,weights=masks)
+        loss = - weighted_mean(tf.exp(ratio)*advantages,axis=0,weights=masks)
         losses.append(loss)
         
         if len(actions.shape) > 2:
