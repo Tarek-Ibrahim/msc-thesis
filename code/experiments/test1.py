@@ -61,17 +61,17 @@ T_svpg_init=config["T_svpg_init"]
 T_svpg=config["T_svpg"]
 n_particles=config["n_particles"]
 
-h=config["h_maml"]
+h=config["h_maml"] #256
 gamma=config["gamma_maml"]
 alpha=config["lr_maml"]
 h1_agent=config["h1_ddpg"]
 h2_agent=config["h2_ddpg"]
 
-visualize=False #True
+visualize=True
 test_eps=5
-test_random=True #Whether to use randomized envs in testing vs default/reference env
+test_random=True #False #Whether to use randomized envs in testing vs default/reference env
 
-env_name=config["env_name"]
+env_name='halfcheetah_custom_rand-v3' #'hopper_custom_rand-v1' #config["env_name"]
 env=gym.make(env_name)
 ds=env.observation_space.shape[0] #state dims
 da=env.action_space.shape[0] #action dims
@@ -85,17 +85,17 @@ setting=env_name.split("_")[0]+f" {env.rand}"
 
 value_net = ValueNetwork(in_size,gamma)
 
-policy_maml = PolicyNetwork(in_size,h,out_size)
+# policy_maml = PolicyNetwork(in_size,h,out_size)
 policy_ddpg=DDPG(ds, h1_agent, h2_agent, da, a_max)
 # policies=[policy_maml]
 policies=[policy_ddpg]
 test_rewards=[[] for _ in range(len(policies))]
 control_actions=[[] for _ in range(len(policies))]
-filenames=["ddpg_tf"]
+filenames=["ddpg_eps_tf"]
 labels=["DDPG"]
 
 for i, file_name in enumerate(filenames):
-    common_name = "_"+file_name+"_"+env_name
+    common_name = "_"+file_name+"_"+'halfcheetah_custom_rand-v2'
     policies[i].load_weights(f"saved_models/model{common_name}")
     
 #%% Testing
@@ -103,7 +103,7 @@ for i, file_name in enumerate(filenames):
 for i, policy in enumerate(policies):
     if visualize: print(f"For {labels[i]}: \n")
     for test_ep in range(test_eps):
-        if test_random: env.randomize(["random"]*dr); print(env.unwrapped.dimensions[0].current_value)
+        if test_random: env.randomize([0.0]*dr); print(env.unwrapped.dimensions[0].current_value)
         
         s=env.reset()
         
@@ -136,6 +136,9 @@ for i, policy in enumerate(policies):
                 
                 dist=policy(state,params=theta_dash)
                 a=tf.squeeze(dist.sample()).numpy()
+            elif "trpo" in filenames[i]:
+                    dist=policy(state)
+                    a=tf.squeeze(dist.sample()).numpy()
             else:
                 a=policy(state).numpy()
             

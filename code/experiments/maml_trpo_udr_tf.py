@@ -9,6 +9,7 @@ import os
 # os.environ["OMP_NUM_THREADS"] = "1"
 import yaml
 from common import set_seed, progress , parameters_to_vector, PolicyNetwork, ValueNetwork, surrogate_loss, HVP, conjugate_gradients, line_search, adapt
+import timeit
 
 #env
 import gym
@@ -214,7 +215,7 @@ if __name__ == '__main__':
     #%% Inputs
     
     modes=["debug_mode","run_mode"]
-    mode=modes[0]
+    mode=modes[1]
     
     with open("config.yaml", 'r') as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
@@ -261,6 +262,7 @@ if __name__ == '__main__':
     for seed in seeds:
         
         print(f"For Seed: {seed} \n")
+        start_time=timeit.default_timer()
   
         #%% Initializations
         #multiprocessing
@@ -403,6 +405,9 @@ if __name__ == '__main__':
                     print(log_msg+f" episode:{episode} \n")
                 else:
                     episodes.set_description(desc=log_msg); episodes.refresh()
+        
+        end_time=timeit.default_timer()
+        print("Elapsed Time: {:.1f} minutes \n".format((end_time-start_time)/60.0))
         
         plot_tr_rewards_all.append(plot_tr_rewards)
         plot_val_rewards_all.append(plot_val_rewards)

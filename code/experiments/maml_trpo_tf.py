@@ -211,7 +211,7 @@ if __name__ == '__main__':
     #%% Inputs
     
     modes=["debug_mode","run_mode"]
-    mode=modes[0]
+    mode=modes[1]
     
     with open("config.yaml", 'r') as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
@@ -232,7 +232,7 @@ if __name__ == '__main__':
     damping=config["damping"]
     
     #Env
-    env_name=config["env_name"]
+    env_name='hopper_custom_rand-v1' #config["env_name"]
     n_workers=config["n_workers"] 
     
     #Evaluation
@@ -244,7 +244,7 @@ if __name__ == '__main__':
     tr_eps=config["tr_eps"]
     file_name=os.path.basename(__file__).split(".")[0]
     common_name = "_"+file_name+"_"+env_name
-    verbose=config["verbose"]
+    verbose=0 #config["verbose"]
     T_rand_rollout=config["T_rand_rollout"]
     
     #Seed

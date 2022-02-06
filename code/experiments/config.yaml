@@ -1,7 +1,7 @@
 ---
 
 #available choices
-env_names: ['cartpole_custom-v1', 'halfcheetah_custom-v1', 'halfcheetah_custom_norm-v1', 'halfcheetah_custom_rand-v1', 'halfcheetah_custom_rand-v2', 'lunarlander_custom_default_rand-v0']
+env_names: ['cartpole_custom-v1', 'halfcheetah_custom-v1', 'halfcheetah_custom_norm-v1', 'halfcheetah_custom_rand-v1', 'halfcheetah_custom_rand-v2', 'lunarlander_custom_default_rand-v0','hopper_custom_rand-v1']
 types_particles: ["discrete","continuous"] #???: which one is better?
 
 
@@ -17,7 +17,7 @@ debug_mode:
     # seed: seeds[1]
     
     #Env
-    env_name: 'halfcheetah_custom_rand-v2' #env_names[-2]
+    env_name: 'hopper_custom_rand-v1' #env_names[-2]
     n_workers: &n_workers_debug 3 #n_envs
     
     #MAML
@@ -75,20 +75,20 @@ debug_mode:
 run_mode:
 
     #General
-    tr_eps: 500
+    tr_eps: 250 #500
     verbose: 1 #or: False/True (False/0: display progress bar; True/1: display 1 log newline per episode) 
     
     #Seed
     # seeds: [None,1,2,3,4,5]
-    seeds: [1,2,3]
+    seeds: [1,2,4]
     
     #Env
-    env_name: 'halfcheetah_custom_rand-v2' #env_names[-2]
+    env_name: 'hopper_custom_rand-v1' #env_names[-2]
     n_workers: &n_workers_run 10 #n_particles #mp.cpu_count() - 1 #:n_envs
     
     #MAML
     # n: 2 #no. of NN layers
-    h_maml: 100 #size of hidden layers
+    h_maml: 256 #100 #size of hidden layers
     lr_maml: &lr_agent 0.001 #adaptation step size / inner learning rate
     gamma_maml: 0.99
     b_maml: *n_workers_run #batch size: Number of trajectories (rollouts) to sample from each task
@@ -122,7 +122,7 @@ run_mode:
     kld_coeff: 0.0 #kld : KL Divergence
     T_svpg_reset: 25 #how often to fully reset svpg particles
     delta_max: 0.05 #maximum allowable change to env randomization params caused by svpg particles (If discrete, this is fixed, If continuous, this is max)
-    T_svpg_init: 100 #1000 #number of svpg steps to take before updates
+    T_svpg_init: 50 #100 #1000 #number of svpg steps to take before updates
     T_svpg: &T_svpg_run 5 #length of one svpg particle rollout
     lr_svpg: 0.0003
     gamma_svpg: 0.99
