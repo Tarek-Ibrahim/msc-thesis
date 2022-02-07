@@ -256,8 +256,8 @@ class Discriminator(object): #TIP: reward of discriminator (score) is in the int
     def train(self, ref_traj, rand_traj, eps):
         """Trains discriminator to distinguish between reference and randomized state action tuples"""
         for _ in range(eps):
-            randind = np.random.randint(0, len(rand_traj[0]), size=int(self.batch_size))
-            refind = np.random.randint(0, len(ref_traj[0]), size=int(self.batch_size))
+            randind = np.random.randint(0, len(rand_traj), size=int(self.batch_size))
+            refind = np.random.randint(0, len(ref_traj), size=int(self.batch_size))
             
             with tf.GradientTape() as tape:
                 rand_batch = tf.convert_to_tensor(rand_traj[randind],dtype=tf.float32)
