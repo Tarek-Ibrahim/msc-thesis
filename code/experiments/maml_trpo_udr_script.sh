@@ -5,6 +5,7 @@
 #SBATCH --cpus-per-task=10
 #SBATCH --gres=gpu
 #SBATCH --job-name=run_maml_udr_trpo
+#SBATCH --output=scripts/run_maml_udr_trpo.out
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=tarek.ibrahim@tuni.fi
 
