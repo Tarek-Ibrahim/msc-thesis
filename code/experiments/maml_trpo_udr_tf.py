@@ -384,7 +384,7 @@ if __name__ == '__main__':
                     eval_rewards.append(R)
                 
                 eval_rewards_mean=np.mean(np.array(eval_rewards).flatten())
-                plot_eval_rewards.append(eval_rewards_mean)
+            plot_eval_rewards.append(eval_rewards_mean)
         
             #compute & log results
             # compute rewards
