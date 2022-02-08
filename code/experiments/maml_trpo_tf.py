@@ -254,6 +254,7 @@ if __name__ == '__main__':
     plot_val_rewards_all=[]
     plot_eval_rewards_all=[]
     total_timesteps_all=[]
+    best_reward=-1e6
     
     for seed in seeds:
         
@@ -282,7 +283,6 @@ if __name__ == '__main__':
         #results 
         plot_tr_rewards=[]
         plot_val_rewards=[]
-        best_reward=-1e6
         total_timesteps=[]
         t_agent = 0
         
@@ -367,7 +367,7 @@ if __name__ == '__main__':
                     eval_rewards.append(R)
                 
                 eval_rewards_mean=np.mean(np.array(eval_rewards).flatten())
-                plot_eval_rewards.append(eval_rewards_mean)
+            plot_eval_rewards.append(eval_rewards_mean)
         
             #compute & log results
             # compute rewards

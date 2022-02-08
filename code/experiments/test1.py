@@ -12,12 +12,6 @@ import seaborn as sns
 
 #env
 import gym
-#------only for spyder IDE
-for env in gym.envs.registration.registry.env_specs.copy():
-     if 'custom' in env:
-         print('Remove {} from registry'.format(env))
-         del gym.envs.registration.registry.env_specs[env]
-#------
 import gym_custom
 
 #Utils
@@ -69,9 +63,9 @@ h2_agent=config["h2_ddpg"]
 
 visualize=True
 test_eps=5
-test_random=True #False #Whether to use randomized envs in testing vs default/reference env
+test_random=False #True #Whether to use randomized envs in testing vs default/reference env
 
-env_name='halfcheetah_custom_rand-v3' #'hopper_custom_rand-v1' #config["env_name"]
+env_name='halfcheetah_custom_rand-v2' #'hopper_custom_rand-v1' #config["env_name"]
 env=gym.make(env_name)
 ds=env.observation_space.shape[0] #state dims
 da=env.action_space.shape[0] #action dims
@@ -85,17 +79,17 @@ setting=env_name.split("_")[0]+f" {env.rand}"
 
 value_net = ValueNetwork(in_size,gamma)
 
-# policy_maml = PolicyNetwork(in_size,h,out_size)
+policy_maml = PolicyNetwork(in_size,h,out_size)
 policy_ddpg=DDPG(ds, h1_agent, h2_agent, da, a_max)
 # policies=[policy_maml]
 policies=[policy_ddpg]
 test_rewards=[[] for _ in range(len(policies))]
 control_actions=[[] for _ in range(len(policies))]
 filenames=["ddpg_eps_tf"]
-labels=["DDPG"]
+labels=["TRPO"]
 
 for i, file_name in enumerate(filenames):
-    common_name = "_"+file_name+"_"+'halfcheetah_custom_rand-v2'
+    common_name = "_"+file_name+"_"+env_name
     policies[i].load_weights(f"saved_models/model{common_name}")
     
 #%% Testing
@@ -170,11 +164,11 @@ plt.show()
 
 
 #control actions
-for i, policy in enumerate(policies):
-    title=f"Control Actions for {labels[i]} ({setting})"
-    plt.figure(figsize=(16,8))
-    plt.grid(1)
-    plt.plot(control_actions[i],label=range(da))
-    plt.title(title)
-    plt.legend(loc="upper right")
-    plt.show()
+# for i, policy in enumerate(policies):
+#     title=f"Control Actions for {labels[i]} ({setting})"
+#     plt.figure(figsize=(16,8))
+#     plt.grid(1)
+#     plt.plot(control_actions[i],label=range(da))
+#     plt.title(title)
+#     plt.legend(loc="upper right")
+#     plt.show()

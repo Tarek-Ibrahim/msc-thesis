@@ -17,7 +17,7 @@ debug_mode:
     # seed: seeds[1]
     
     #Env
-    env_name: 'hopper_custom_rand-v1' #env_names[-2]
+    env_name: 'hopper_custom_rand-v2' #env_names[-2]
     n_workers: &n_workers_debug 3 #n_envs
     
     #MAML
@@ -83,7 +83,7 @@ run_mode:
     seeds: [1,2,4]
     
     #Env
-    env_name: 'hopper_custom_rand-v1' #env_names[-2]
+    env_name: 'hopper_custom_rand-v2' #env_names[-2]
     n_workers: &n_workers_run 10 #n_particles #mp.cpu_count() - 1 #:n_envs
     
     #MAML

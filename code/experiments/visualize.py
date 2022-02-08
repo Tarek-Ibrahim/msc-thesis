@@ -11,12 +11,6 @@ import seaborn as sns
 
 #env
 import gym
-#------only for spyder IDE
-for env in gym.envs.registration.registry.env_specs.copy():
-     if 'custom' in env:
-         print('Remove {} from registry'.format(env))
-         del gym.envs.registration.registry.env_specs[env]
-#------
 import gym_custom
 
 #Utils
