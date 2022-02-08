@@ -221,7 +221,7 @@ class MPC:
         num_batches = int(np.ceil(idxs.shape[-1] / b)) #(no. of batches=roundup(no. of [model] training input examples so far / batch size))
         
         #training loop
-        for _ in range(epochs): #for each epoch
+        for _ in range(self.epochs): #for each epoch
             for batch_num in range(num_batches): # for each batch 
                 # choose a batch from tr and target inputs randomly (i.e. pick random entries/rows/samples from inputs to construct a batch, via: input[random_idxs[:,batch_idxs]]) --> batch_idxs change with each inner iteration as a function of current batch no. and b, while rest stay constant; this also inserts an additional dimension at the beginning to inputs = B; random_idxs used for each net are shuffled row-wise with each outer loop; idxs are reset w/ every call to train func [i.e. each tr_ep] (which would also have different no. of tr samples)
                 batch_idxs = idxs[:, batch_num * b : (batch_num + 1) * b]
