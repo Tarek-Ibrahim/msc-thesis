@@ -62,10 +62,10 @@ h1_agent=config["h1_ddpg"]
 h2_agent=config["h2_ddpg"]
 
 visualize=True
-test_eps=5
+test_eps=3
 test_random=False #True #Whether to use randomized envs in testing vs default/reference env
 
-env_name='halfcheetah_custom_rand-v2' #'hopper_custom_rand-v1' #config["env_name"]
+env_name='hopper_custom_rand-v1' #'halfcheetah_custom_rand-v2' #'hopper_custom_rand-v1' #config["env_name"]
 env=gym.make(env_name)
 ds=env.observation_space.shape[0] #state dims
 da=env.action_space.shape[0] #action dims
@@ -80,13 +80,13 @@ setting=env_name.split("_")[0]+f" {env.rand}"
 value_net = ValueNetwork(in_size,gamma)
 
 policy_maml = PolicyNetwork(in_size,h,out_size)
-policy_ddpg=DDPG(ds, h1_agent, h2_agent, da, a_max)
-# policies=[policy_maml]
-policies=[policy_ddpg]
+# policy_ddpg=DDPG(ds, h1_agent, h2_agent, da, a_max)
+policies=[policy_maml]
+# policies=[policy_ddpg]
 test_rewards=[[] for _ in range(len(policies))]
 control_actions=[[] for _ in range(len(policies))]
-filenames=["ddpg_eps_tf"]
-labels=["TRPO"]
+filenames=["maml_trpo_adr_tf"]
+labels=["TRPO + UDR"]
 
 for i, file_name in enumerate(filenames):
     common_name = "_"+file_name+"_"+env_name

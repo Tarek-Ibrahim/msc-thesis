@@ -80,7 +80,7 @@ run_mode:
     
     #Seed
     # seeds: [None,1,2,3,4,5]
-    seeds: [1,2,4]
+    seeds: [1,2,3]
     
     #Env
     env_name: 'hopper_custom_rand-v2' #env_names[-2]

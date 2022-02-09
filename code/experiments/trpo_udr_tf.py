@@ -190,51 +190,52 @@ if __name__ == '__main__':
                 else:
                     episodes.set_description(desc=log_msg); episodes.refresh()
         
-        end_time=timeit.default_timer()
-        print("Elapsed Time: {:.1f} minutes \n".format((end_time-start_time)/60.0))
         
         plot_tr_rewards_all.append(plot_tr_rewards)
         plot_eval_rewards_all.append(plot_eval_rewards)
         total_timesteps_all.append(total_timesteps)
         
+        #%% Results & Plot
+        #process results
+        plot_tr_rewards_mean = np.stack(plot_tr_rewards_all).mean(0)
+        plot_eval_rewards_mean = np.stack(plot_eval_rewards_all).mean(0)
+        total_timesteps_mean = np.stack(total_timesteps_all).mean(0)
+        
+        plot_tr_rewards_std = np.stack(plot_tr_rewards_all).std(0)
+        plot_eval_rewards_std = np.stack(plot_eval_rewards_all).std(0)
+        
+        #save results to df
+        df = pd.DataFrame(list(zip(plot_tr_rewards_mean,
+                                   plot_tr_rewards_std,
+                                   plot_eval_rewards_mean,
+                                   plot_eval_rewards_std,
+                                   total_timesteps_mean)),
+                          columns =['Rewards_Tr_Mean', 'Rewards_Tr_Std', 'Rewards_Eval_Mean', 'Rewards_Eval_Std', 'Total_Timesteps'])
+        df.to_pickle(f"plots/results{common_name}.pkl")
+        
+        #plot results
+        title="Training Rewards"
+        plt.figure(figsize=(16,8))
+        plt.grid(1)
+        plt.plot(plot_tr_rewards_mean)
+        plt.fill_between(range(tr_eps), plot_tr_rewards_mean + plot_tr_rewards_std, plot_tr_rewards_mean - plot_tr_rewards_std, alpha=0.2)
+        # plt.axhline(y = env.spec.reward_threshold, color = 'r', linestyle = '--',label='Solved')
+        plt.title(title)
+        plt.savefig(f'plots/tr{common_name}.png')
+        
+        title="Evaluation Rewards"
+        plt.figure(figsize=(16,8))
+        plt.grid(1)
+        plt.plot(plot_eval_rewards_mean)
+        plt.fill_between(range(len(plot_eval_rewards_mean)), plot_eval_rewards_mean + plot_eval_rewards_std, plot_eval_rewards_mean - plot_eval_rewards_std,alpha=0.2)
+        # plt.axhline(y = env.spec.reward_threshold, color = 'r', linestyle = '--',label='Solved')
+        plt.title(title)
+        plt.savefig(f'plots/ts{common_name}.png')
+
+
+        #record elapsed time and close envs
+        end_time=timeit.default_timer()
+        print("Elapsed Time: {:.1f} minutes \n".format((end_time-start_time)/60.0))
+        
         env.close()
         env_rand.close()
-    
-    #%% Results & Plot
-    #process results
-    plot_tr_rewards_mean = np.stack(plot_tr_rewards_all).mean(0)
-    plot_eval_rewards_mean = np.stack(plot_eval_rewards_all).mean(0)
-    total_timesteps_mean = np.stack(total_timesteps_all).mean(0)
-    
-    plot_tr_rewards_std = np.stack(plot_tr_rewards_all).std(0)
-    plot_eval_rewards_std = np.stack(plot_eval_rewards_all).std(0)
-    
-    #save results to df
-    df = pd.DataFrame(list(zip(plot_tr_rewards_mean,
-                               plot_tr_rewards_std,
-                               plot_eval_rewards_mean,
-                               plot_eval_rewards_std,
-                               total_timesteps_mean)),
-                      columns =['Rewards_Tr_Mean', 'Rewards_Tr_Std', 'Rewards_Eval_Mean', 'Rewards_Eval_Std', 'Total_Timesteps'])
-    df.to_pickle(f"plots/results{common_name}.pkl")
-    
-    #plot results
-    title="Training Rewards"
-    plt.figure(figsize=(16,8))
-    plt.grid(1)
-    plt.plot(plot_tr_rewards_mean)
-    plt.fill_between(range(tr_eps), plot_tr_rewards_mean + plot_tr_rewards_std, plot_tr_rewards_mean - plot_tr_rewards_std, alpha=0.2)
-    # plt.axhline(y = env.spec.reward_threshold, color = 'r', linestyle = '--',label='Solved')
-    plt.title(title)
-    plt.savefig(f'plots/tr{common_name}.png')
-    
-    title="Evaluation Rewards"
-    plt.figure(figsize=(16,8))
-    plt.grid(1)
-    plt.plot(plot_eval_rewards_mean)
-    plt.fill_between(range(len(plot_eval_rewards_mean)), plot_eval_rewards_mean + plot_eval_rewards_std, plot_eval_rewards_mean - plot_eval_rewards_std,alpha=0.2)
-    # plt.axhline(y = env.spec.reward_threshold, color = 'r', linestyle = '--',label='Solved')
-    plt.title(title)
-    plt.savefig(f'plots/ts{common_name}.png')
-
-            

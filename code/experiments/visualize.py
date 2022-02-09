@@ -42,7 +42,7 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 #%% Inputs
 
 modes=["debug_mode","run_mode"]
-mode=modes[0]
+mode=modes[1]
 
 with open("config.yaml", 'r') as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
@@ -84,7 +84,8 @@ policy_trpo_adr = PolicyNetwork(in_size,h,out_size)
 policy_trpo_udr = PolicyNetwork(in_size,h,out_size)
 policy_trpo = PolicyNetwork(in_size,h,out_size)
 
-policies=[policy_maml_adr,policy_maml_udr,policy_trpo_adr,policy_trpo_udr,policy_trpo]  
+# policies=[policy_maml_adr,policy_maml_udr,policy_trpo_adr,policy_trpo_udr,policy_trpo]  
+policies=[policy_maml_udr,policy_trpo_udr,policy_trpo] 
 
 # policy_ddpg_adr=DDPG(ds, h1_agent, h2_agent, da, a_max)
 # policy_ddpg_udr=DDPG(ds, h1_agent, h2_agent, da, a_max)
@@ -100,9 +101,12 @@ control_actions=[[] for _ in range(len(policies))]
 
 dfs=[]
 dfs_sr=[]
-filenames=["maml_trpo_adr_tf","maml_trpo_udr_tf","trpo_adr_tf","trpo_udr_tf","trpo_tf"]
-labels=["MAML + ADR", "MAML + UDR", "TRPO + ADR","TRPO + UDR","TRPO"]
+# filenames=["maml_trpo_adr_tf","maml_trpo_udr_tf","trpo_adr_tf","trpo_udr_tf","trpo_tf"]
+# labels=["MAML + ADR", "MAML + UDR", "TRPO + ADR","TRPO + UDR","TRPO"]
 keys=['Rewards_Tr','Rewards_Val','Rewards_Eval','Rewards_Disc']
+
+filenames=["maml_trpo_udr_tf","trpo_udr_tf","trpo_tf"]
+labels=["MAML + UDR", "TRPO + UDR","TRPO"]
 
 for i, file_name in enumerate(filenames):
     common_name = "_"+file_name+"_"+env_name
@@ -133,20 +137,33 @@ for key in keys:
     plt.show()
 
 
+#sampling efficiency
+title=f"Sampling Efficiency ({setting})"
+plt.figure(figsize=(16,8))
+plt.grid(1)
+for i, df in enumerate(dfs):
+    if "trpo" in filenames[i]:
+        plt.plot(df["Total_Timesteps"],df["Rewards_Eval_Mean"],label=labels[i])
+        plt.fill_between(df["Total_Timesteps"], df["Rewards_Eval_Mean"] + df["Rewards_Eval_Std"], df["Rewards_Eval_Mean"] - df["Rewards_Eval_Std"], alpha=0.2)
+# plt.axhline(y = env.spec.reward_threshold, color = 'r', linestyle = '--',label='Solved')
+plt.legend()
+plt.title(title)
+plt.legend(loc="upper right")
+plt.show()
+
 # #sampling efficiency
-# title=f"MAML Sampling Efficiency ({setting})"
+# title=f"TRPO Sampling Efficiency ({setting})"
 # plt.figure(figsize=(16,8))
 # plt.grid(1)
 # for i, df in enumerate(dfs):
-#     if "maml" in filenames[i]:
-#         plt.plot(df["Total_Timesteps"],df["Rewards_Eval"],label=labels[i])
-#         plt.fill_between(df["Total_Timesteps"], df["Rewards_Eval_Max"], df["Rewards_Eval_Min"],alpha=0.2)
+#     if "maml" not in filenames[i]:
+#         plt.plot(df["Total_Timesteps"],df["Rewards_Eval_Mean"],label=labels[i])
+#         plt.fill_between(df["Total_Timesteps"], df["Rewards_Eval_Mean"] + df["Rewards_Eval_Std"], df["Rewards_Eval_Mean"] - df["Rewards_Eval_Std"], alpha=0.2)
 # # plt.axhline(y = env.spec.reward_threshold, color = 'r', linestyle = '--',label='Solved')
 # plt.legend()
 # plt.title(title)
 # plt.legend(loc="upper right")
 # plt.show()
-
 
 # title=f"DDPG Sampling Efficiency ({setting})"
 # plt.figure(figsize=(16,8))
@@ -162,33 +179,33 @@ for key in keys:
 # plt.show()
 
 #plot sampled regions
-eps_step=int((tr_eps-T_svpg_init)/4)
-region_step=eps_step*T_svpg*n_particles
-labels_sr=[label_sr for label_sr in labels if "adr" in label_sr.lower()]
+# eps_step=int((tr_eps-T_svpg_init)/4)
+# region_step=eps_step*T_svpg*n_particles
+# labels_sr=[label_sr for label_sr in labels if "adr" in label_sr.lower()]
 
-for j, df_sr in enumerate(dfs_sr): 
-    sampled_regions=[list(df_sr.values[:,i]) for i in range(df_sr.values.shape[-1])]
-    for dim, regions in enumerate(sampled_regions):
+# for j, df_sr in enumerate(dfs_sr): 
+#     sampled_regions=[list(df_sr.values[:,i]) for i in range(df_sr.values.shape[-1])]
+#     for dim, regions in enumerate(sampled_regions):
         
-        low=env.unwrapped.dimensions[dim].range_min
-        high=env.unwrapped.dimensions[dim].range_max
+#         low=env.unwrapped.dimensions[dim].range_min
+#         high=env.unwrapped.dimensions[dim].range_max
         
-        dim_name=env.unwrapped.dimensions[dim].name
+#         dim_name=env.unwrapped.dimensions[dim].name
         
-        d = decimal.Decimal(str(low))
-        step_exp=d.as_tuple().exponent-1
-        step=10**step_exp
+#         d = decimal.Decimal(str(low))
+#         step_exp=d.as_tuple().exponent-1
+#         step=10**step_exp
     
-        x=np.arange(low,high+step,step)
+#         x=np.arange(low,high+step,step)
         
-        title=f"Sampled Regions for Randomization Dim = {dim_name} {env.rand} Over Time ({labels_sr[j]})"
-        plt.figure(figsize=(16,8))
-        plt.grid(1)
-        plt.hist((regions[region_step*0:region_step*1],regions[region_step*1:region_step*2],regions[region_step*2:region_step*3], regions[region_step*3:]), np.arange(min(x),max(x)+2*step,step), histtype='barstacked', label=[f'{eps_step*1} eps',f'{eps_step*2} eps', f'{eps_step*3} eps', f'{eps_step*4} eps'],color=["lightskyblue","blueviolet","hotpink","lightsalmon"])
-        plt.xlim(min(x), max(x)+step)
-        plt.legend()
-        plt.title(title)
-        plt.show()
+#         title=f"Sampled Regions for Randomization Dim = {dim_name} {env.rand} Over Time ({labels_sr[j]})"
+#         plt.figure(figsize=(16,8))
+#         plt.grid(1)
+#         plt.hist((regions[region_step*0:region_step*1],regions[region_step*1:region_step*2],regions[region_step*2:region_step*3], regions[region_step*3:]), np.arange(min(x),max(x)+2*step,step), histtype='barstacked', label=[f'{eps_step*1} eps',f'{eps_step*2} eps', f'{eps_step*3} eps', f'{eps_step*4} eps'],color=["lightskyblue","blueviolet","hotpink","lightsalmon"])
+#         plt.xlim(min(x), max(x)+step)
+#         plt.legend()
+#         plt.title(title)
+#         plt.show()
 
 #%% Testing
 

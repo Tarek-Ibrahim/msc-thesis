@@ -259,95 +259,98 @@ if __name__ == '__main__':
                     print(log_msg+f" episode:{episode} \n")
                 else:
                     episodes.set_description(desc=log_msg); episodes.refresh()
-        
-        end_time=timeit.default_timer()
-        print("Elapsed Time: {:.1f} minutes \n".format((end_time-start_time)/60.0))
+                    
         
         plot_tr_rewards_all.append(plot_tr_rewards)
         plot_eval_rewards_all.append(plot_eval_rewards)
         plot_disc_rewards_all.append(plot_disc_rewards)
         total_timesteps_all.append(total_timesteps)
         
+        #%% Results & Plot
+        #process results
+        plot_tr_rewards_mean = np.stack(plot_tr_rewards_all).mean(0)
+        plot_eval_rewards_mean = np.stack(plot_eval_rewards_all).mean(0)
+        plot_disc_rewards_mean = np.stack(plot_disc_rewards_all).mean(0)
+        total_timesteps_mean = np.stack(total_timesteps_all).mean(0)
+        
+        plot_tr_rewards_std = np.stack(plot_tr_rewards_all).std(0)
+        plot_eval_rewards_std = np.stack(plot_eval_rewards_all).std(0)
+        plot_disc_rewards_std = np.stack(plot_disc_rewards_all).std(0)
+        
+        #save results to df
+        df = pd.DataFrame(list(zip(plot_tr_rewards_mean,
+                                   plot_tr_rewards_std,
+                                   plot_eval_rewards_mean,
+                                   plot_eval_rewards_std,
+                                   plot_disc_rewards_mean,
+                                   plot_disc_rewards_std,
+                                   total_timesteps_mean)),
+                          columns =['Rewards_Tr_Mean', 'Rewards_Tr_Std', 'Rewards_Eval_Mean', 'Rewards_Eval_Std', 'Rewards_Disc_Mean', 'Rewards_Disc_Std', 'Total_Timesteps'])
+        
+        df.to_pickle(f"plots/results{common_name}.pkl")
+        
+        #plot results
+        title="Training Rewards"
+        plt.figure(figsize=(16,8))
+        plt.grid(1)
+        plt.plot(plot_tr_rewards_mean)
+        plt.fill_between(range(tr_eps), plot_tr_rewards_mean + plot_tr_rewards_std, plot_tr_rewards_mean - plot_tr_rewards_std, alpha=0.2)
+        # plt.axhline(y = env.spec.reward_threshold, color = 'r', linestyle = '--',label='Solved')
+        plt.title(title)
+        plt.savefig(f'plots/tr{common_name}.png')
+        
+        title="Evaluation Rewards"
+        plt.figure(figsize=(16,8))
+        plt.grid(1)
+        plt.plot(plot_eval_rewards_mean)
+        plt.fill_between(range(len(plot_eval_rewards_mean)), plot_eval_rewards_mean + plot_eval_rewards_std, plot_eval_rewards_mean - plot_eval_rewards_std,alpha=0.2)
+        # plt.axhline(y = env.spec.reward_threshold, color = 'r', linestyle = '--',label='Solved')
+        plt.title(title)
+        plt.savefig(f'plots/ts{common_name}.png')
+        
+        title="Discriminator Rewards"
+        plt.figure(figsize=(16,8))
+        plt.grid(1)
+        plt.plot(plot_disc_rewards_mean)
+        plt.fill_between(range(tr_eps),plot_disc_rewards_mean + plot_disc_rewards_std, plot_disc_rewards_mean - plot_disc_rewards_std,alpha=0.2)
+        plt.title(title)
+        plt.savefig(f'plots/disc{common_name}.png')
+            
+        eps_step=int((tr_eps-T_svpg_init)/4)
+        region_step=eps_step*T_svpg*n_particles
+        df2=pd.DataFrame()
+        for dim, regions in enumerate(sampled_regions):
+            
+            low=env.unwrapped.dimensions[dim].range_min
+            high=env.unwrapped.dimensions[dim].range_max
+            
+            dim_name=env.unwrapped.dimensions[dim].name
+            
+            d = decimal.Decimal(str(low))
+            step_exp=d.as_tuple().exponent-1
+            step=10**step_exp
+    
+            x=np.arange(low,high+step,step)
+            
+            title=f"Sampled Regions for Randomization Dim = {dim_name} {env.rand} Over Time"
+            plt.figure(figsize=(16,8))
+            plt.grid(1)
+            plt.hist((regions[region_step*0:region_step*1],regions[region_step*1:region_step*2],regions[region_step*2:region_step*3], regions[region_step*3:]), np.arange(min(x),max(x)+2*step,step), histtype='barstacked', label=[f'{eps_step*1} eps',f'{eps_step*2} eps', f'{eps_step*3} eps', f'{eps_step*4} eps'],color=["lightskyblue","blueviolet","hotpink","lightsalmon"])
+            plt.xlim(min(x), max(x)+step)
+            plt.legend()
+            plt.title(title)
+            #save results
+            plt.savefig(f'plots/sampled_regions_dim_{dim_name}_{env.rand}{common_name}.png')
+            df2[f'Sampled_Regions_{dim_name}_{env.rand}'] = list(regions)
+        
+        df2.to_pickle(f"plots/sampled_regions{common_name}.pkl")
+        
+        
+        #record elapsed time and close envs
+        end_time=timeit.default_timer()
+        print("Elapsed Time: {:.1f} minutes \n".format((end_time-start_time)/60.0))
+        
         env.close()
         env_ref.close()
         env_rand.close()
-        
-    #%% Results & Plot
-    #process results
-    plot_tr_rewards_mean = np.stack(plot_tr_rewards_all).mean(0)
-    plot_eval_rewards_mean = np.stack(plot_eval_rewards_all).mean(0)
-    plot_disc_rewards_mean = np.stack(plot_disc_rewards_all).mean(0)
-    total_timesteps_mean = np.stack(total_timesteps_all).mean(0)
-    
-    plot_tr_rewards_std = np.stack(plot_tr_rewards_all).std(0)
-    plot_eval_rewards_std = np.stack(plot_eval_rewards_all).std(0)
-    plot_disc_rewards_std = np.stack(plot_disc_rewards_all).std(0)
-    
-    #save results to df
-    df = pd.DataFrame(list(zip(plot_tr_rewards_mean,
-                               plot_tr_rewards_std,
-                               plot_eval_rewards_mean,
-                               plot_eval_rewards_std,
-                               plot_disc_rewards_mean,
-                               plot_disc_rewards_std,
-                               total_timesteps_mean)),
-                      columns =['Rewards_Tr_Mean', 'Rewards_Tr_Std', 'Rewards_Eval_Mean', 'Rewards_Eval_Std', 'Rewards_Disc_Mean', 'Rewards_Disc_Std', 'Total_Timesteps'])
-    
-    df.to_pickle(f"plots/results{common_name}.pkl")
-    
-    #plot results
-    title="Training Rewards"
-    plt.figure(figsize=(16,8))
-    plt.grid(1)
-    plt.plot(plot_tr_rewards_mean)
-    plt.fill_between(range(tr_eps), plot_tr_rewards_mean + plot_tr_rewards_std, plot_tr_rewards_mean - plot_tr_rewards_std, alpha=0.2)
-    # plt.axhline(y = env.spec.reward_threshold, color = 'r', linestyle = '--',label='Solved')
-    plt.title(title)
-    plt.savefig(f'plots/tr{common_name}.png')
-    
-    title="Evaluation Rewards"
-    plt.figure(figsize=(16,8))
-    plt.grid(1)
-    plt.plot(plot_eval_rewards_mean)
-    plt.fill_between(range(len(plot_eval_rewards_mean)), plot_eval_rewards_mean + plot_eval_rewards_std, plot_eval_rewards_mean - plot_eval_rewards_std,alpha=0.2)
-    # plt.axhline(y = env.spec.reward_threshold, color = 'r', linestyle = '--',label='Solved')
-    plt.title(title)
-    plt.savefig(f'plots/ts{common_name}.png')
-    
-    title="Discriminator Rewards"
-    plt.figure(figsize=(16,8))
-    plt.grid(1)
-    plt.plot(plot_disc_rewards_mean)
-    plt.fill_between(range(tr_eps),plot_disc_rewards_mean + plot_disc_rewards_std, plot_disc_rewards_mean - plot_disc_rewards_std,alpha=0.2)
-    plt.title(title)
-    plt.savefig(f'plots/disc{common_name}.png')
-        
-    eps_step=int((tr_eps-T_svpg_init)/4)
-    region_step=eps_step*T_svpg*n_particles
-    df2=pd.DataFrame()
-    for dim, regions in enumerate(sampled_regions):
-        
-        low=env.unwrapped.dimensions[dim].range_min
-        high=env.unwrapped.dimensions[dim].range_max
-        
-        dim_name=env.unwrapped.dimensions[dim].name
-        
-        d = decimal.Decimal(str(low))
-        step_exp=d.as_tuple().exponent-1
-        step=10**step_exp
-
-        x=np.arange(low,high+step,step)
-        
-        title=f"Sampled Regions for Randomization Dim = {dim_name} {env.rand} Over Time"
-        plt.figure(figsize=(16,8))
-        plt.grid(1)
-        plt.hist((regions[region_step*0:region_step*1],regions[region_step*1:region_step*2],regions[region_step*2:region_step*3], regions[region_step*3:]), np.arange(min(x),max(x)+2*step,step), histtype='barstacked', label=[f'{eps_step*1} eps',f'{eps_step*2} eps', f'{eps_step*3} eps', f'{eps_step*4} eps'],color=["lightskyblue","blueviolet","hotpink","lightsalmon"])
-        plt.xlim(min(x), max(x)+step)
-        plt.legend()
-        plt.title(title)
-        #save results
-        plt.savefig(f'plots/sampled_regions_dim_{dim_name}_{env.rand}{common_name}.png')
-        df2[f'Sampled_Regions_{dim_name}_{env.rand}'] = list(regions)
-    
-    df2.to_pickle(f"plots/sampled_regions{common_name}.pkl")
-        
+            
