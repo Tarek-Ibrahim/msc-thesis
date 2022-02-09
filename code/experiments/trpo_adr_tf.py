@@ -35,7 +35,7 @@ if __name__ == '__main__':
     #%% Inputs
     
     modes=["debug_mode","run_mode"]
-    mode=modes[0]
+    mode=modes[1]
     
     with open("config.yaml", 'r') as f:
         config = yaml.load(f, Loader=yaml.FullLoader)

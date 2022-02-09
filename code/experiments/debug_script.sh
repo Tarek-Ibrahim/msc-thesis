@@ -12,4 +12,4 @@
 module load anaconda
 module load mujoco
 
-python maml_trpo_adr_tf.py
+python trpo_adr_tf.py

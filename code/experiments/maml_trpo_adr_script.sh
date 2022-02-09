@@ -1,7 +1,7 @@
 #!/bin/bash -l
 
 #SBATCH --time=03-00
-#SBATCH --mem=48G
+#SBATCH --mem=128G
 #SBATCH --cpus-per-task=10
 #SBATCH --gres=gpu
 #SBATCH --job-name=run_maml_trpo_adr

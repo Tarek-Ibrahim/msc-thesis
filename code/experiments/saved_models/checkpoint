@@ -1,2 +1,2 @@
-model_checkpoint_path: "model_trpo_tf_hopper_custom_rand-v1"
-all_model_checkpoint_paths: "model_trpo_tf_hopper_custom_rand-v1"
+model_checkpoint_path: "model_trpo_adr_tf_hopper_custom_rand-v1"
+all_model_checkpoint_paths: "model_trpo_adr_tf_hopper_custom_rand-v1"

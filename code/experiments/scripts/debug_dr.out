@@ -1,0 +1,39 @@
+For Seed: 1 
+
+2022-02-08 18:33:50.245115: I tensorflow/core/platform/cpu_feature_guard.cc:142] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  SSE4.1 SSE4.2 AVX AVX2 FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2022-02-08 18:33:54.091319: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1510] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 30115 MB memory:  -> device: 0, name: Tesla V100-SXM2-32GB, pci bus id: 0000:85:00.0, compute capability: 7.0
+Rewards Tr: 9.40, Rewards Disc: 0.56, Rewards Eval: 0.00, Total Timesteps: 141 episode:0 
+
+Rewards Tr: 16.66, Rewards Disc: 0.41, Rewards Eval: 0.00, Total Timesteps: 342 episode:1 
+
+Rewards Tr: 49.12, Rewards Disc: 0.36, Rewards Eval: 0.00, Total Timesteps: 681 episode:2 
+
+Rewards Tr: 47.45, Rewards Disc: 0.98, Rewards Eval: 0.00, Total Timesteps: 918 episode:3 
+
+Rewards Tr: 38.95, Rewards Disc: 0.55, Rewards Eval: 0.00, Total Timesteps: 1290 episode:4 
+
+Rewards Tr: 51.02, Rewards Disc: 0.53, Rewards Eval: 0.00, Total Timesteps: 1542 episode:5 
+
+Rewards Tr: 63.50, Rewards Disc: 0.41, Rewards Eval: 0.00, Total Timesteps: 1986 episode:6 
+
+Elapsed Time: 0.7 minutes 
+
+For Seed: 2 
+
+Rewards Tr: 7.95, Rewards Disc: 0.39, Rewards Eval: 0.00, Total Timesteps: 75 episode:0 
+
+Rewards Tr: 8.31, Rewards Disc: 0.56, Rewards Eval: 0.00, Total Timesteps: 147 episode:1 
+
+Rewards Tr: 5.70, Rewards Disc: 0.51, Rewards Eval: 0.00, Total Timesteps: 198 episode:2 
+
+Rewards Tr: 7.46, Rewards Disc: 0.08, Rewards Eval: 0.00, Total Timesteps: 273 episode:3 
+
+Rewards Tr: 7.71, Rewards Disc: 0.05, Rewards Eval: 0.00, Total Timesteps: 333 episode:4 
+
+Rewards Tr: 9.22, Rewards Disc: 0.09, Rewards Eval: 0.00, Total Timesteps: 405 episode:5 
+
+Rewards Tr: 8.55, Rewards Disc: 0.24, Rewards Eval: 0.00, Total Timesteps: 483 episode:6 
+
+Elapsed Time: 0.3 minutes 
+
