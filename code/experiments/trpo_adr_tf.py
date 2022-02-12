@@ -35,7 +35,7 @@ if __name__ == '__main__':
     #%% Inputs
     
     modes=["debug_mode","run_mode"]
-    mode=modes[1]
+    mode=modes[0]
     
     with open("config.yaml", 'r') as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
@@ -88,6 +88,7 @@ if __name__ == '__main__':
     common_name = "_"+file_name+"_"+env_name
     verbose=config["verbose"]
     T_rand_rollout=config["T_rand_rollout"]
+    load_policy=False
     
     #Seed
     seeds=config["seeds"]
@@ -123,6 +124,8 @@ if __name__ == '__main__':
         in_size=ds
         out_size=da
         policy = PolicyNetwork(in_size,h,out_size) #dynamics model
+        if load_policy:
+            policy.load_weights(f"saved_models/model{common_name}")
         value_net=ValueNetwork(in_size,gamma)
         discriminator=Discriminator(ds, da, h_disc, b_disc, r_disc_scale, lr_disc)
         svpg = SVPG(n_particles, dr, h_svpg, delta_max, T_svpg, T_svpg_reset, temp, kld_coeff, lr_svpg, gamma_svpg, type_particles)

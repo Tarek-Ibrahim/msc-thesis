@@ -65,6 +65,7 @@ if __name__ == '__main__':
     common_name = "_"+file_name+"_"+env_name
     verbose=config["verbose"]
     T_rand_rollout=config["T_rand_rollout"]
+    load_policy=False
     
     #Seed
     seeds=config["seeds"]
@@ -98,6 +99,8 @@ if __name__ == '__main__':
         out_size=da
         policy = PolicyNetwork(in_size,h,out_size) #dynamics model
         value_net=ValueNetwork(in_size,gamma)
+        if load_policy:
+            policy.load_weights(f"saved_models/model{common_name}")
         
         #results 
         plot_tr_rewards=[]

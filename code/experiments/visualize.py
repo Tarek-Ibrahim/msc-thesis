@@ -64,7 +64,7 @@ visualize=False
 test_eps=10
 test_random=True #Whether to use randomized envs in testing vs default/reference env
 
-env_name=config["env_name"]
+env_name='hopper_custom_rand-v1' #config["env_name"]
 env=gym.make(env_name)
 ds=env.observation_space.shape[0] #state dims
 da=env.action_space.shape[0] #action dims
@@ -84,8 +84,8 @@ policy_trpo_adr = PolicyNetwork(in_size,h,out_size)
 policy_trpo_udr = PolicyNetwork(in_size,h,out_size)
 policy_trpo = PolicyNetwork(in_size,h,out_size)
 
-# policies=[policy_maml_adr,policy_maml_udr,policy_trpo_adr,policy_trpo_udr,policy_trpo]  
-policies=[policy_maml_udr,policy_trpo_udr,policy_trpo] 
+policies=[policy_maml_adr,policy_maml_udr,policy_trpo_adr,policy_trpo_udr,policy_trpo]  
+# policies=[policy_maml_udr,policy_trpo_udr,policy_trpo] 
 
 # policy_ddpg_adr=DDPG(ds, h1_agent, h2_agent, da, a_max)
 # policy_ddpg_udr=DDPG(ds, h1_agent, h2_agent, da, a_max)
@@ -101,12 +101,12 @@ control_actions=[[] for _ in range(len(policies))]
 
 dfs=[]
 dfs_sr=[]
-# filenames=["maml_trpo_adr_tf","maml_trpo_udr_tf","trpo_adr_tf","trpo_udr_tf","trpo_tf"]
-# labels=["MAML + ADR", "MAML + UDR", "TRPO + ADR","TRPO + UDR","TRPO"]
+filenames=["maml_trpo_adr_tf","maml_trpo_udr_tf","trpo_adr_tf","trpo_udr_tf","trpo_tf"]
+labels=["MAML + ADR", "MAML + UDR", "TRPO + ADR","TRPO + UDR","TRPO"]
 keys=['Rewards_Tr','Rewards_Val','Rewards_Eval','Rewards_Disc']
 
-filenames=["maml_trpo_udr_tf","trpo_udr_tf","trpo_tf"]
-labels=["MAML + UDR", "TRPO + UDR","TRPO"]
+# filenames=["maml_trpo_udr_tf","trpo_udr_tf","trpo_tf"]
+# labels=["MAML + UDR", "TRPO + UDR","TRPO"]
 
 for i, file_name in enumerate(filenames):
     common_name = "_"+file_name+"_"+env_name
