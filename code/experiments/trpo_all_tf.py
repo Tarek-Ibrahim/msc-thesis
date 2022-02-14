@@ -8,7 +8,7 @@ import pandas as pd
 # import os
 # os.environ["OMP_NUM_THREADS"] = "1"
 import yaml
-from common import set_seed, progress, parameters_to_vector, vector_to_parameters, PolicyNetwork, ValueNetwork, SVPG, Discriminator, make_vec_envs, collect_rollout_batch, weighted_mean, weighted_normalize, detach_dist
+from common import set_seed, progress, parameters_to_vector, vector_to_parameters, PolicyNetwork, ValueNetwork, SVPG, Discriminator, make_vec_envs, collect_rollout_batch, weighted_mean, detach_dist, compute_advantages, adapt
 
 #env
 import gym
@@ -31,55 +31,7 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 import multiprocessing as mp
 
 
-#%% MAML
-def adapt(D,value_net,policy,alpha):
-    
-    #unpack
-    states, actions, rewards, masks = D
-    
-    value_net.fit_params(states,rewards,masks)
-    
-    with tf.GradientTape() as tape:
-        advantages=compute_advantages(states,rewards,value_net,value_net.gamma,masks)
-        pi=policy(states)
-        log_probs=pi.log_prob(actions)
-        if len(log_probs.shape) > 2:
-            log_probs = tf.reduce_sum(log_probs, axis=2)
-        loss=-weighted_mean(log_probs*advantages,axis=0,weights=masks)
-                
-    #compute adapted params (via: GD) --> perform 1 gradient step update
-    grads = tape.gradient(loss, policy.trainable_variables)
-    theta_dash=policy.update_params(grads, alpha) 
-    
-    return theta_dash 
-
 #%% TRPO
-
-def compute_advantages(states,rewards,value_net,gamma,masks):
-    
-    T_max=states.shape[0]
-    
-    values = value_net(states,masks)
-    if len(list(values.shape))>2: values = tf.squeeze(values, axis=2)
-    values = tf.pad(values*masks,[[0, 1], [0, 0]])
-    
-    deltas = rewards + gamma * values[1:] - values[:-1] #delta = r + gamma * v - v' #TD error
-    # advantages = tf.zeros_like(deltas, dtype=tf.float32)
-    advantages = tf.TensorArray(tf.float32, *deltas.shape)
-    advantage = tf.zeros_like(deltas[0], dtype=tf.float32)
-    
-    for t in range(T_max - 1, -1, -1): #reversed(range(-1,T -1 )):
-        advantage = advantage * gamma + deltas[t]
-        advantages = advantages.write(t, advantage)
-        # advantages[t] = advantage
-    
-    advantages = advantages.stack()
-    
-    #Normalize advantages to improve: learning, numerical stability & convergence
-    advantages = weighted_normalize(advantages,weights=masks)
-    
-    return advantages
-
 
 def conjugate_gradients(Avp_f, b, rdotr_tol=1e-10, nsteps=10):
     """
@@ -230,9 +182,9 @@ if __name__ == '__main__':
     mode=modes[args.mode]
     
     with open("config.yaml", 'r') as f:
-        config = yaml.load(f, Loader=yaml.FullLoader)
+        config_file = yaml.load(f, Loader=yaml.FullLoader)
     
-    config=config[mode]
+    config=config_file[mode]
     
     if args.maml:
         #MAML
@@ -240,6 +192,7 @@ if __name__ == '__main__':
         plot_val_rewards_all=[]
     else:
         alpha = None
+    
     #TRPO
     h=config["h_maml"]
     b = config["b_maml"]
@@ -278,7 +231,8 @@ if __name__ == '__main__':
         T_rollout=T_rand_rollout
     
     #Env
-    env_name=config["env_name"]
+    env_key="hopper_friction"
+    env_name=config_file["env_names"][env_key] #config["env_name"]
     n_workers=config["n_workers"] 
     
     #Evaluation
@@ -289,7 +243,7 @@ if __name__ == '__main__':
     #general
     tr_eps=config["tr_eps"]
     file_name=("maml_" if args.maml else "")+"trpo"+("_" if args.dr_type else "")+args.dr_type
-    common_name = "_"+file_name+"_"+env_name
+    common_name = "_"+file_name+"_"+env_key
     verbose=config["verbose"]
     add_noise=True if args.dr_type else False
     
@@ -343,7 +297,7 @@ if __name__ == '__main__':
         t_agent = 0
         
         #evaluation
-        eval_rewards_mean=0
+        eval_rewards_mean=0 #best_reward
         eval_freq = T_env * n_workers
         t_eval=0 #agent timesteps since eval 
         

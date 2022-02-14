@@ -7,7 +7,7 @@ from common import PolicyNetwork, ValueNetwork, adapt
 
 #visualize
 import matplotlib.pyplot as plt
-import seaborn as sns
+# import seaborn as sns
 
 #env
 import gym
@@ -21,33 +21,33 @@ import tensorflow as tf
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 #%% Models
-#DDPG
-# class DDPG(tf.keras.Model):
-#     def __init__(self, in_size, h1, h2, out_size, max_action):
-#         super(DDPG, self).__init__()
+# DDPG
+class DDPG(tf.keras.Model):
+    def __init__(self, in_size, h1, h2, out_size, max_action):
+        super(DDPG, self).__init__()
         
-#         self.actor=tf.keras.models.Sequential(layers=[
-#             tf.keras.layers.Input(in_size),
-#             tf.keras.layers.Dense(h1,activation="relu"),
-#             tf.keras.layers.Dense(h2,activation="relu"),
-#             tf.keras.layers.Dense(out_size,activation="tanh")
-#             ])
+        self.actor=tf.keras.models.Sequential(layers=[
+            tf.keras.layers.Input(in_size),
+            tf.keras.layers.Dense(h1,activation="relu"),
+            tf.keras.layers.Dense(h2,activation="relu"),
+            tf.keras.layers.Dense(out_size,activation="tanh")
+            ])
 
-#         self.max_action = max_action
+        self.max_action = max_action
 
-#     def call(self, x):
-#         x=self.max_action * self.actor(x)
-#         return x
+    def call(self, x):
+        x=self.max_action * self.actor(x)
+        return x
 
 #%% Inputs
 
 modes=["debug_mode","run_mode"]
-mode=modes[1]
+mode=modes[0]
 
 with open("config.yaml", 'r') as f:
-    config = yaml.load(f, Loader=yaml.FullLoader)
+    config_file = yaml.load(f, Loader=yaml.FullLoader)
 
-config=config[mode]
+config=config_file[mode]
 
 tr_eps=config["tr_eps"]
 T_svpg_init=config["T_svpg_init"]
@@ -57,19 +57,24 @@ n_particles=config["n_particles"]
 h=config["h_maml"]
 gamma=config["gamma_maml"]
 alpha=config["lr_maml"]
-# h1_agent=config["h1_ddpg"]
-# h2_agent=config["h2_ddpg"]
+
 
 visualize=False
 test_eps=10
 test_random=True #Whether to use randomized envs in testing vs default/reference env
+algs=["trpo","ppo","ddpg"]
+alg=algs[1]
 
-env_name='hopper_custom_rand-v1' #config["env_name"]
+env_key='halfcheetah_friction' #'hopper_friction'
+env_name=config_file["env_names"][env_key] #config["env_name"]
 env=gym.make(env_name)
 ds=env.observation_space.shape[0] #state dims
 da=env.action_space.shape[0] #action dims
 dr=env.unwrapped.randomization_space.shape[0] #N_rand (no. of randomization params)
-# a_max=env.action_space.high[0]
+if alg=="ddpg":
+    a_max=env.action_space.high[0]
+    h1_agent=config["h1_ddpg"]
+    h2_agent=config["h2_ddpg"]
 
 in_size=ds
 out_size=da
@@ -85,13 +90,13 @@ policy_trpo_udr = PolicyNetwork(in_size,h,out_size)
 policy_trpo = PolicyNetwork(in_size,h,out_size)
 
 policies=[policy_maml_adr,policy_maml_udr,policy_trpo_adr,policy_trpo_udr,policy_trpo]  
-# policies=[policy_maml_udr,policy_trpo_udr,policy_trpo] 
 
-# policy_ddpg_adr=DDPG(ds, h1_agent, h2_agent, da, a_max)
-# policy_ddpg_udr=DDPG(ds, h1_agent, h2_agent, da, a_max)
-# policy_ddpg=DDPG(ds, h1_agent, h2_agent, da, a_max)
-
-# policies=[policy_maml_adr,policy_maml_udr,policy_ddpg_adr,policy_ddpg_udr,policy_maml,policy_ddpg]
+if alg=="ddpg":
+    policy_ddpg_adr=DDPG(ds, h1_agent, h2_agent, da, a_max)
+    policy_ddpg_udr=DDPG(ds, h1_agent, h2_agent, da, a_max)
+    policy_ddpg=DDPG(ds, h1_agent, h2_agent, da, a_max)
+    
+    policies=[policy_maml_adr,policy_maml_udr,policy_ddpg_adr,policy_ddpg_udr,policy_ddpg]
 
 test_rewards=[[] for _ in range(len(policies))]
 test_rewards_var=[[] for _ in range(len(policies))]
@@ -101,15 +106,20 @@ control_actions=[[] for _ in range(len(policies))]
 
 dfs=[]
 dfs_sr=[]
-filenames=["maml_trpo_adr_tf","maml_trpo_udr_tf","trpo_adr_tf","trpo_udr_tf","trpo_tf"]
-labels=["MAML + ADR", "MAML + UDR", "TRPO + ADR","TRPO + UDR","TRPO"]
+
+if alg == "trpo":
+    # filenames=["maml_trpo_adr_tf","maml_trpo_udr_tf","trpo_adr_tf","trpo_udr_tf","trpo_tf"]
+    filenames=["maml_trpo_adr","maml_trpo_udr","trpo_adr","trpo_udr","trpo"]
+    labels=["MAML + ADR", "MAML + UDR", "TRPO + ADR","TRPO + UDR","TRPO"]
+elif alg == "ppo":
+    filenames=["maml_ppo_adr","maml_ppo_udr","ppo_adr","ppo_udr","ppo"]
+    labels=["MAML + ADR", "MAML + UDR", "PPO + ADR","PPO + UDR","PPO"]
+
 keys=['Rewards_Tr','Rewards_Val','Rewards_Eval','Rewards_Disc']
 
-# filenames=["maml_trpo_udr_tf","trpo_udr_tf","trpo_tf"]
-# labels=["MAML + UDR", "TRPO + UDR","TRPO"]
 
 for i, file_name in enumerate(filenames):
-    common_name = "_"+file_name+"_"+env_name
+    common_name = "_"+file_name+"_"+env_key
     dfs.append(pd.read_pickle(f"plots/results{common_name}.pkl"))
     policies[i].load_weights(f"saved_models/model{common_name}")
     if "adr" in file_name:
@@ -142,7 +152,7 @@ title=f"Sampling Efficiency ({setting})"
 plt.figure(figsize=(16,8))
 plt.grid(1)
 for i, df in enumerate(dfs):
-    if "trpo" in filenames[i]:
+    if "trpo" in filenames[i] or "ppo" in filenames[i]:
         plt.plot(df["Total_Timesteps"],df["Rewards_Eval_Mean"],label=labels[i])
         plt.fill_between(df["Total_Timesteps"], df["Rewards_Eval_Mean"] + df["Rewards_Eval_Std"], df["Rewards_Eval_Mean"] - df["Rewards_Eval_Std"], alpha=0.2)
 # plt.axhline(y = env.spec.reward_threshold, color = 'r', linestyle = '--',label='Solved')
@@ -178,34 +188,34 @@ plt.show()
 # plt.legend(loc="upper right")
 # plt.show()
 
-#plot sampled regions
-# eps_step=int((tr_eps-T_svpg_init)/4)
-# region_step=eps_step*T_svpg*n_particles
-# labels_sr=[label_sr for label_sr in labels if "adr" in label_sr.lower()]
+# plot sampled regions
+eps_step=int((tr_eps-T_svpg_init)/4)
+region_step=eps_step*T_svpg*n_particles
+labels_sr=[label_sr for label_sr in labels if "adr" in label_sr.lower()]
 
-# for j, df_sr in enumerate(dfs_sr): 
-#     sampled_regions=[list(df_sr.values[:,i]) for i in range(df_sr.values.shape[-1])]
-#     for dim, regions in enumerate(sampled_regions):
+for j, df_sr in enumerate(dfs_sr): 
+    sampled_regions=[list(df_sr.values[:,i]) for i in range(df_sr.values.shape[-1])]
+    for dim, regions in enumerate(sampled_regions):
         
-#         low=env.unwrapped.dimensions[dim].range_min
-#         high=env.unwrapped.dimensions[dim].range_max
+        low=env.unwrapped.dimensions[dim].range_min
+        high=env.unwrapped.dimensions[dim].range_max
         
-#         dim_name=env.unwrapped.dimensions[dim].name
+        dim_name=env.unwrapped.dimensions[dim].name
         
-#         d = decimal.Decimal(str(low))
-#         step_exp=d.as_tuple().exponent-1
-#         step=10**step_exp
+        d = decimal.Decimal(str(low))
+        step_exp=d.as_tuple().exponent-1
+        step=10**step_exp
     
-#         x=np.arange(low,high+step,step)
+        x=np.arange(low,high+step,step)
         
-#         title=f"Sampled Regions for Randomization Dim = {dim_name} {env.rand} Over Time ({labels_sr[j]})"
-#         plt.figure(figsize=(16,8))
-#         plt.grid(1)
-#         plt.hist((regions[region_step*0:region_step*1],regions[region_step*1:region_step*2],regions[region_step*2:region_step*3], regions[region_step*3:]), np.arange(min(x),max(x)+2*step,step), histtype='barstacked', label=[f'{eps_step*1} eps',f'{eps_step*2} eps', f'{eps_step*3} eps', f'{eps_step*4} eps'],color=["lightskyblue","blueviolet","hotpink","lightsalmon"])
-#         plt.xlim(min(x), max(x)+step)
-#         plt.legend()
-#         plt.title(title)
-#         plt.show()
+        title=f"Sampled Regions for Randomization Dim = {dim_name} {env.rand} Over Time ({labels_sr[j]})"
+        plt.figure(figsize=(16,8))
+        plt.grid(1)
+        plt.hist((regions[region_step*0:region_step*1],regions[region_step*1:region_step*2],regions[region_step*2:region_step*3], regions[region_step*3:]), np.arange(min(x),max(x)+2*step,step), histtype='barstacked', label=[f'{eps_step*1} eps',f'{eps_step*2} eps', f'{eps_step*3} eps', f'{eps_step*4} eps'],color=["lightskyblue","blueviolet","hotpink","lightsalmon"])
+        plt.xlim(min(x), max(x)+step)
+        plt.legend()
+        plt.title(title)
+        plt.show()
 
 #%% Testing
 
@@ -254,7 +264,7 @@ for i, policy in enumerate(policies):
                     
                     dist=policy(state,params=theta_dash)
                     a=tf.squeeze(dist.sample()).numpy()
-                elif "trpo" in filenames[i]:
+                elif "trpo" in filenames[i] or "ppo" in filenames[i]:
                     dist=policy(state)
                     a=tf.squeeze(dist.sample()).numpy()
                 else:
