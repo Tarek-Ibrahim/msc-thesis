@@ -12,4 +12,6 @@
 module load anaconda
 module load mujoco
 
-python maml_trpo_adr_tf.py
+# python maml_trpo_adr_tf.py
+
+python trpo_all_tf.py --dr_type=adr --maml=True

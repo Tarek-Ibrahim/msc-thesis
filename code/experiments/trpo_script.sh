@@ -12,4 +12,6 @@
 module load anaconda
 module load mujoco
 
-python trpo_tf.py
+# python trpo_tf.py
+
+python trpo_all_tf.py
