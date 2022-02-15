@@ -51,7 +51,7 @@ debug_mode:
     b_ddpg: 100 #batch size
     
     #Discriminator
-    r_disc_scale: 1.0 #reward scale
+    r_disc_scale: -1.0 #reward scale
     h_disc: 32
     lr_disc: 0.02 
     b_disc: 128
@@ -59,8 +59,8 @@ debug_mode:
     #SVPG
     n_particles: *n_workers_debug
     temp: 10.0 #temperature
-    type_particles: "discrete" #types_particles[0]
-    kld_coeff: 0.0 #kld : KL Divergence
+    type_particles: "continuous" #types_particles[0]
+    kld_coeff: 0.01 #kld : KL Divergence
     T_svpg_reset: 25 #how often to fully reset svpg particles
     delta_max: 0.05 #maximum allowable change to env randomization params caused by svpg particles (If discrete, this is fixed, If continuous, this is max)
     T_svpg_init: 1 #number of svpg steps to take before updates
@@ -121,7 +121,7 @@ run_mode:
     b_ddpg: 1000 #100 #batch size
     
     #Discriminator
-    r_disc_scale: 1.0 #reward scale
+    r_disc_scale: -1.0 #reward scale
     h_disc: 128
     lr_disc: 0.002 
     b_disc: 128
@@ -129,8 +129,8 @@ run_mode:
     #SVPG
     n_particles: *n_workers_run
     temp: 10.0 #temperature
-    type_particles: "discrete" #types_particles[0]
-    kld_coeff: 0.0 #kld : KL Divergence
+    type_particles: "continuous" #types_particles[0]
+    kld_coeff: 0.01 #kld : KL Divergence
     T_svpg_reset: 25 #how often to fully reset svpg particles
     delta_max: 0.05 #maximum allowable change to env randomization params caused by svpg particles (If discrete, this is fixed, If continuous, this is max)
     T_svpg_init: 50 #100 #1000 #number of svpg steps to take before updates
