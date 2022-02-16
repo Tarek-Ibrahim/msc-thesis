@@ -76,7 +76,7 @@ if __name__ == '__main__':
     h_svpg=config["h_svpg"]
     
     #Env
-    env_name=config["env_name"]
+    env_name='halfcheetah_custom_rand-v2' #config["env_name"]
     n_workers=config["n_workers"] 
     
     #Evaluation
