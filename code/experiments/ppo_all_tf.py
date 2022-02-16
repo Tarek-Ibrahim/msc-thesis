@@ -1,5 +1,9 @@
 # %% TODOs
 
+# TODO: use 5 seeds
+# TODO: add to comparison: disc between pre and post adaptation maml (instead of post adaptation ref and rand)
+# TODO: investigate problem with cuda (and multiprocessing) on start of second seed in adr mode
+# TODO: investigate no gradients found tensorflow warnings
 
 # %% Imports
 #general
@@ -74,9 +78,9 @@ if __name__ == '__main__':
     #%% Inputs
     
     parser = argparse.ArgumentParser()
-    parser.add_argument("--load_policy", "-l", type=bool, default=False, help="Whether to start training from saved policy")
+    parser.add_argument("--load_policy", "-l", action='store_true', help="Whether to start training from saved policy")
     parser.add_argument("--dr_type", "-r", type=str, default="", help="Type of domain randomization", choices=["","udr","adr"])
-    parser.add_argument("--maml", "-M", type=bool, default=False, help="Whether to use MAML algorithm (defaults to base RL algorithm)")
+    parser.add_argument("--maml", "-M", action='store_true', help="Whether to use MAML algorithm (defaults to base RL algorithm)")
     parser.add_argument("--mode", "-m", type=int, default=1, help="0: debug mode; 1: run mode")
     args = parser.parse_args()
 
@@ -487,3 +491,4 @@ if __name__ == '__main__':
         env.close()
         if args.dr_type=="adr": env_ref.close()
         env_rand.close()
+        

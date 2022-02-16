@@ -70,6 +70,13 @@ debug_mode:
     h_svpg: 16
     T_rand_rollout: *T_svpg_debug #for UDR
     
+    #MB-MPO
+    n_models: *n_workers_debug #number of models in the ensemble
+    b_mbmpo: 32 #model training batch size
+    lr_mbmpo: 0.1 #model learning rate
+    epochs: 2 #number of model training epochs per iteration
+    n_layers: 2 #number of model hidden layers
+    
     #Evaluation
     evaluate: True
     log_ival: 1
@@ -139,6 +146,13 @@ run_mode:
     gamma_svpg: 0.99
     h_svpg: 100
     T_rand_rollout: *T_svpg_run #for UDR
+    
+    #MB-MPO
+    n_models: *n_workers_run #number of models in the ensemble
+    b_mbmpo: 100 #model training batch size
+    lr_mbmpo: 0.001 #model learning rate
+    epochs: 5 #number of model training epochs per iteration
+    n_layers: 3 #number of model hidden layers
     
     #Evaluation
     evaluate: True

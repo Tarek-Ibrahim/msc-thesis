@@ -12,4 +12,4 @@
 module load anaconda
 module load mujoco
 
-python ppo_all_tf.py --dr_type=adr --maml=True
+python ppo_all_tf.py --dr_type=adr --maml

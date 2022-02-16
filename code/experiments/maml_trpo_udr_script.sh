@@ -14,4 +14,4 @@ module load mujoco
 
 # python maml_trpo_udr_tf.py
 
-python trpo_all_tf.py --dr_type=udr --maml=True
+python trpo_all_tf.py --dr_type=udr --maml

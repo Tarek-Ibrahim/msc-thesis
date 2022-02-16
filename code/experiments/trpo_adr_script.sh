@@ -14,4 +14,4 @@ module load mujoco
 
 # python trpo_adr_tf.py
 
-python trpo_all_tf.py --dr_type=adr --maml=False
+python trpo_all_tf.py --dr_type=adr
