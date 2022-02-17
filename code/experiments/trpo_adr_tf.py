@@ -8,7 +8,7 @@ import pandas as pd
 import os
 # os.environ["OMP_NUM_THREADS"] = "1"
 import yaml
-from common import set_seed, progress , parameters_to_vector, PolicyNetwork, ValueNetwork, surrogate_loss, HVP, conjugate_gradients, line_search, adapt, SVPG, Discriminator, collect_rollout_batch, make_vec_envs
+from common import set_seed, progress , parameters_to_vector, PolicyNetwork, ValueNetwork, surrogate_loss, HVP, conjugate_gradients, line_search, SVPG, Discriminator, collect_rollout_batch, make_vec_envs
 
 #env
 import gym
@@ -35,12 +35,12 @@ if __name__ == '__main__':
     #%% Inputs
     
     modes=["debug_mode","run_mode"]
-    mode=modes[0]
+    mode=modes[1]
     
     with open("config.yaml", 'r') as f:
-        config = yaml.load(f, Loader=yaml.FullLoader)
+        config_file = yaml.load(f, Loader=yaml.FullLoader)
     
-    config=config[mode]
+    config=config_file[mode]
     
     #MAML
     h=config["h_maml"]
@@ -74,7 +74,8 @@ if __name__ == '__main__':
     h_svpg=config["h_svpg"]
     
     #Env
-    env_name=config["env_name"]
+    env_key="hopper_friction"
+    env_name=config_file["env_names"][env_key] #config["env_name"]
     n_workers=config["n_workers"] 
     
     #Evaluation
@@ -84,7 +85,7 @@ if __name__ == '__main__':
     
     #general
     tr_eps=config["tr_eps"]
-    file_name=os.path.basename(__file__).split(".")[0]
+    file_name="trpo_adr" #os.path.basename(__file__).split(".")[0]
     common_name = "_"+file_name+"_"+env_name
     verbose=config["verbose"]
     T_rand_rollout=config["T_rand_rollout"]

@@ -39,9 +39,9 @@ if __name__ == '__main__':
     mode=modes[1]
     
     with open("config.yaml", 'r') as f:
-        config = yaml.load(f, Loader=yaml.FullLoader)
+        config_file = yaml.load(f, Loader=yaml.FullLoader)
     
-    config=config[mode]
+    config=config_file[mode]
     
     #MAML
     h=config["h_maml"]
@@ -76,7 +76,8 @@ if __name__ == '__main__':
     h_svpg=config["h_svpg"]
     
     #Env
-    env_name='halfcheetah_custom_rand-v2' #config["env_name"]
+    env_key="hopper_friction"
+    env_name=config_file["env_names"][env_key] #config["env_name"]
     n_workers=config["n_workers"] 
     
     #Evaluation
@@ -86,7 +87,7 @@ if __name__ == '__main__':
     
     #general
     tr_eps=config["tr_eps"]
-    file_name=os.path.basename(__file__).split(".")[0]
+    file_name="maml_trpo_adr" #os.path.basename(__file__).split(".")[0]
     common_name = "_"+file_name+"_"+env_name
     verbose=config["verbose"]
     T_rand_rollout=config["T_rand_rollout"]
