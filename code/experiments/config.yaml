@@ -2,7 +2,7 @@
 
 #available choices
 #env_names: ['halfcheetah_custom_rand-v1', 'halfcheetah_custom_rand-v2', 'lunarlander_custom_default_rand-v0','hopper_custom_rand-v1']
-env_names: {"halfcheetah_sizes": 'halfcheetah_custom_rand-v1', "halfcheetah_friction": 'halfcheetah_custom_rand-v2', "lunarlander": 'lunarlander_custom_default_rand-v0', "hopper_damping": 'hopper_custom_rand-v1', "hopper_friction": 'hopper_custom_rand-v2'}
+env_names: {"halfcheetah_sizes": 'halfcheetah_custom_rand-v1', "halfcheetah_friction": 'halfcheetah_custom_rand-v2', "lunarlander": 'lunarlander_custom_820_rand-v0', "hopper_damping": 'hopper_custom_rand-v1', "hopper_friction": 'hopper_custom_rand-v2'}
 types_particles: ["discrete","continuous"] #???: which one is better?
 
 
