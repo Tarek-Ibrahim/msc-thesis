@@ -63,7 +63,7 @@ if __name__ == '__main__':
     #SVPG
     n_particles=config["n_particles"] 
     temp=config["temp"]
-    type_particles=config["type_particles"] 
+    type_particles="continuous" #config["type_particles"] 
     kld_coeff=config["kld_coeff"] 
     T_svpg_reset=config["T_svpg_reset"] 
     delta_max=config["delta_max"] 
@@ -86,7 +86,7 @@ if __name__ == '__main__':
     
     #general
     tr_eps=config["tr_eps"]
-    file_name="trpo_adr" #os.path.basename(__file__).split(".")[0]
+    file_name="trpo_adr_cont" #os.path.basename(__file__).split(".")[0]
     common_name = "_"+file_name+"_"+env_key
     verbose=config["verbose"]
     T_rand_rollout=config["T_rand_rollout"]

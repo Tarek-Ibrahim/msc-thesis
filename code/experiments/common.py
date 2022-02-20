@@ -770,7 +770,7 @@ old_sample = FixedCategorical.sample
 FixedCategorical.sample = lambda self: tf.expand_dims(old_sample(self), -1)
 
 log_prob_cat = FixedCategorical.log_prob
-FixedCategorical.log_probs = lambda self, actions: tf.expand_dims(tf.reduce_sum(tf.reshape(log_prob_cat(self, tf.squeeze(actions,-1)),shape=(tf.size(actions).numpy()[0], -1)),-1),-1)
+FixedCategorical.log_probs = lambda self, actions: tf.expand_dims(tf.reduce_sum(tf.reshape(log_prob_cat(self, tf.squeeze(actions,-1)),shape=(actions.shape[0], -1)),-1),-1)
 
 FixedCategorical.mode = lambda self: tf.argmax(self.probs,-1)
 
@@ -806,7 +806,7 @@ class AddBias(tf.keras.Model):
         self._bias = tf.Variable(tf.expand_dims(bias,1))
 
     def call(self, x):
-        if tf.size(x).numpy()== 2:
+        if len(x.shape)== 2:
             bias = tf.reshape(tf.transpose(self._bias),(1, -1))
         else:
             bias = tf.reshape(tf.transpose(self._bias),(1, -1, 1, 1))
@@ -816,15 +816,19 @@ class AddBias(tf.keras.Model):
 class DiagGaussian(tf.keras.Model):
     def __init__(self, num_inputs, num_outputs):
         super(DiagGaussian, self).__init__()
+        
+        self.fc_mean=tf.keras.models.Sequential(layers=[
+            tf.keras.layers.Input(num_inputs),
+            tf.keras.layers.Dense(num_outputs,kernel_initializer=tf.keras.initializers.Orthogonal(gain=1))
+            ])
 
-        self.fc_mean = tf.keras.layers.Dense(num_outputs,kernel_initializer=tf.keras.initializers.Orthogonal(gain=1)) 
         self.logstd = AddBias(tf.zeros(num_outputs))
 
     def call(self, x):
         action_mean = self.fc_mean(x)
 
         #  An ugly hack for my KFAC implementation.
-        zeros = tf.zeros(tf.size(action_mean))
+        zeros = tf.zeros(action_mean.shape)
 
         action_logstd = self.logstd(zeros)
         return FixedNormal(action_mean, tf.exp(action_logstd))
@@ -971,12 +975,14 @@ class SVPG:
         action = dist.sample()               
             
         policy.saved_log_probs.append(dist.log_prob(action))
-        policy.saved_klds.append(dist.kl_divergence(prior_dist))
+        policy.saved_klds.append(dist.kl_divergence(prior_dist)) #???: should kl_div be the other way around?
         
-        if self.dr == 1 or self.type_particles=="discrete":
-            action = tf.squeeze(action).numpy()
-        else:
-            action = tf.squeeze(action).numpy()
+        action = tf.squeeze(action).numpy()
+        
+        # if self.dr == 1 or self.type_particles=="discrete":
+        #     action = tf.squeeze(action).numpy()
+        # else:
+        #     action = tf.squeeze(action).numpy()
 
         return action, value
 
@@ -1003,10 +1009,12 @@ class SVPG:
         self.masks = np.ones((self.n_particles, self.T_svpg))
 
         for i in range(self.n_particles):
-            self.particles[i].reset()
-            current_sim_params = self.last_states[i]
+            # self.particles[i].reset()
+            # current_sim_params = self.last_states[i]
 
             with tf.GradientTape(persistent=True) as tape:
+                self.particles[i].reset()
+                current_sim_params = self.last_states[i]
                 for t in range(self.T_svpg):
                     self.simulation_instances[i][t] = current_sim_params
     
@@ -1031,25 +1039,27 @@ class SVPG:
             self.tapes.append(tape)
 
         return np.array(self.simulation_instances)
-
+    
     def train(self, simulator_rewards):
         policy_grads = []
         parameters = []
-        grads_tot=[]
+        # grads_tot=[]
         
         for i in range(self.n_particles):
-            policy_grad_particle = []
+            # policy_grad_particle = []
             
-            with self.tapes[i]:
-                # Calculate the value of last state - for Return Computation
-                _, next_value = self.select_action(i, self.last_states[i]) 
-    
-                particle_rewards = tf.convert_to_tensor(simulator_rewards[i],dtype=tf.float32)
-                masks = tf.convert_to_tensor(self.masks[i],dtype=tf.float32)
-                
-                # Calculate entropy-augmented returns, advantages
-                returns = self.compute_returns(next_value, particle_rewards, masks, self.particles[i].saved_klds)
-                returns = tf.stop_gradient(tf.concat(returns,0))
+            # with self.tapes[i] as tape:
+            policy_grad_particle = []
+            # Calculate the value of last state - for Return Computation
+            _, next_value = self.select_action(i, self.last_states[i]) 
+
+            particle_rewards = tf.convert_to_tensor(simulator_rewards[i],dtype=tf.float32)
+            masks = tf.convert_to_tensor(self.masks[i],dtype=tf.float32)
+            
+            # Calculate entropy-augmented returns, advantages
+            returns = self.compute_returns(next_value, particle_rewards, masks, self.particles[i].saved_klds)
+            returns = tf.stop_gradient(tf.concat(returns,0))
+            with self.tapes[i] as tape:
                 advantages = returns - tf.concat(self.values[i],0)
                 
                 # Compute value loss, update critic
@@ -1060,18 +1070,18 @@ class SVPG:
                     policy_grad_particle.append(log_prob * tf.stop_gradient(advantage))
                 policy_grad = -tf.reduce_mean(tf.concat(policy_grad_particle,0))
                 
-            gradients_c = self.tapes[i].gradient(critic_loss, self.particles[i].trainable_variables) #calculate gradient
+            gradients_c = tape.gradient(critic_loss, self.particles[i].trainable_variables) #calculate gradient
             self.optimizers[i].apply_gradients(zip(gradients_c, self.particles[i].trainable_variables))
                 
-            gradients_p = self.tapes[i].gradient(policy_grad, self.particles[i].trainable_variables) #calculate gradient
+            gradients_p = tape.gradient(policy_grad, self.particles[i].trainable_variables) #calculate gradient #BUG: policy_grad is not a function of the actor params in case of continuous distribution, but is in case of discrete
             
             gradients=[]
             for idx, grad in enumerate(gradients_c):
                 if grad is not None:
-                    gradients.append(grad)
+                    gradients.append(tf.zeros(grad.shape))
                 else:
                     gradients.append(gradients_p[idx])
-            grads_tot.append(gradients)
+            # grads_tot.append(gradients)
             
             # Vectorize parameters and PGs
             vec_param, vec_policy_grad = params2vec(self.particles[i].trainable_variables, gradients)
@@ -1090,8 +1100,72 @@ class SVPG:
 
         # update param gradients
         for i in range(self.n_particles):
-            grads_tot[i]=vec2params(grad_theta[i],grads_tot[i])
-            self.optimizers[i].apply_gradients(zip(grads_tot[i], self.particles[i].trainable_variables))
+            grads=vec2params(grad_theta[i],self.particles[i].trainable_variables)
+            self.optimizers[i].apply_gradients(zip(grads, self.particles[i].trainable_variables))
+            # grads_tot[i]=vec2params(grad_theta[i],grads_tot[i])
+            # self.optimizers[i].apply_gradients(zip(grads_tot[i], self.particles[i].trainable_variables))
+
+
+    # def train(self, simulator_rewards):
+    #     policy_grads = []
+    #     parameters = []
+    #     grads_tot=[]
+        
+    #     for i in range(self.n_particles):
+    #         policy_grad_particle = []
+            
+    #         with self.tapes[i]:
+    #             # Calculate the value of last state - for Return Computation
+    #             _, next_value = self.select_action(i, self.last_states[i]) 
+    
+    #             particle_rewards = tf.convert_to_tensor(simulator_rewards[i],dtype=tf.float32)
+    #             masks = tf.convert_to_tensor(self.masks[i],dtype=tf.float32)
+                
+    #             # Calculate entropy-augmented returns, advantages
+    #             returns = self.compute_returns(next_value, particle_rewards, masks, self.particles[i].saved_klds)
+    #             returns = tf.stop_gradient(tf.concat(returns,0))
+    #             advantages = returns - tf.concat(self.values[i],0)
+                
+    #             # Compute value loss, update critic
+    #             critic_loss = 0.5 * tf.reduce_mean(tf.square(advantages))
+                
+    #             # Store policy gradients for SVPG update
+    #             for log_prob, advantage in zip(self.particles[i].saved_log_probs, advantages):
+    #                 policy_grad_particle.append(log_prob * tf.stop_gradient(advantage))
+    #             policy_grad = -tf.reduce_mean(tf.concat(policy_grad_particle,0))
+                
+    #         gradients_c = self.tapes[i].gradient(critic_loss, self.particles[i].trainable_variables) #calculate gradient
+    #         self.optimizers[i].apply_gradients(zip(gradients_c, self.particles[i].trainable_variables))
+                
+    #         gradients_p = self.tapes[i].gradient(policy_grad, self.particles[i].trainable_variables) #calculate gradient
+            
+    #         gradients=[]
+    #         for idx, grad in enumerate(gradients_c):
+    #             if grad is not None:
+    #                 gradients.append(grad)
+    #             else:
+    #                 gradients.append(gradients_p[idx])
+    #         grads_tot.append(gradients)
+            
+    #         # Vectorize parameters and PGs
+    #         vec_param, vec_policy_grad = params2vec(self.particles[i].trainable_variables, gradients)
+
+    #         policy_grads.append(tf.expand_dims(vec_policy_grad,0))
+    #         parameters.append(tf.expand_dims(vec_param,0))
+
+    #     # calculating the kernel matrix and its gradients
+    #     parameters = tf.concat(parameters,0)
+    #     k, grad_k = self.compute_kernel(parameters)
+
+    #     policy_grads = 1 / self.temp * tf.concat(policy_grads,0)
+    #     grad_logp = tf.linalg.matmul(k, policy_grads)
+
+    #     grad_theta = (grad_logp + grad_k) / self.n_particles
+
+    #     # update param gradients
+    #     for i in range(self.n_particles):
+    #         grads_tot[i]=vec2params(grad_theta[i],grads_tot[i])
+    #         self.optimizers[i].apply_gradients(zip(grads_tot[i], self.particles[i].trainable_variables))
             
     def _process_action(self, action):
         """Transform policy output into environment-action"""
