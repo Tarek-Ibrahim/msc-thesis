@@ -335,3 +335,12 @@ if __name__ == '__main__':
             log_msg="Reward: {:.2f}, Episode: {}".format(mean_rewards, t_eps)
             pbar.update(); pbar.set_description(desc=log_msg); pbar.refresh()
             t_eps+=1
+            
+    #%% Results & Plots
+
+    title="Training Rewards"
+    plt.figure(figsize=(16,8))
+    plt.grid(1)
+    plt.plot(plot_tr_rewards_mean)
+    plt.title(title)
+    plt.show()

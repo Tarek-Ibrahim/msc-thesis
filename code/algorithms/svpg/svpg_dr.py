@@ -331,7 +331,7 @@ if __name__ == '__main__':
     xp_type=xp_types[0]
     T_svpg=10 #50 #svpg rollout length
     delta_max = 0.005 #0.05 #maximum allowable change to svpg states (i.e. upper bound on the svpg action)
-    H_svpg = 25 #50 #svpg horizon (how often the particles are reset)
+    H_svpg = 50 #svpg horizon (how often the particles are reset)
     rewards_scale=1.
     
     env_names=['halfcheetah_custom_norm-v1','halfcheetah_custom_rand-v1','lunarlander_custom_820_rand-v0','cartpole_custom-v1']
@@ -399,3 +399,12 @@ if __name__ == '__main__':
             log_msg="Reward: {:.2f}, Episode: {}".format(mean_rewards, t_eps)
             pbar.update(); pbar.set_description(desc=log_msg); pbar.refresh()
             t_eps+=1
+            
+    #%% Results & Plots
+
+    title="Training Rewards"
+    plt.figure(figsize=(16,8))
+    plt.grid(1)
+    plt.plot(plot_tr_rewards_mean)
+    plt.title(title)
+    plt.show()
