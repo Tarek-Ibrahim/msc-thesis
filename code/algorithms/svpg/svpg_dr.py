@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tqdm
 from scipy.spatial.distance import squareform, pdist
-# import os
 import gym
 #------only for spyder IDE
 for env in gym.envs.registration.registry.env_specs.copy():
@@ -224,6 +223,7 @@ class SVPG:
         self.values = [torch.zeros((self.T_svpg, 1)).float().to(device) for _ in range(self.n_particles)]
         # Store the last states for each particle (calculating rewards)
         self.masks = np.ones((self.n_particles, self.T_svpg))
+        # done=[False]*self.n_particles
 
         for i in range(self.n_particles):
             self.particles[i].saved_log_probs = [] #reset
@@ -237,12 +237,14 @@ class SVPG:
                 
                 clipped_action = self.delta_max * np.array(np.clip(action, -1, 1)) 
                 next_params = np.clip(current_sim_params + clipped_action, 0, 1)
+                # next_params = current_sim_params + clipped_action
+                # done[i]=True if next_params < 0 or next_params > 1 else False 
                 
-                if np.array_equal(next_params, current_sim_params) or self.timesteps[i] + 1 == self.H_svpg:
+                if np.array_equal(next_params, current_sim_params) or self.timesteps[i] + 1 == self.H_svpg: #or done[i]:
                     next_params = np.random.uniform(0, 1, (self.dr,))
                     
                     self.masks[i][t] = 0 # done = True
-                    self.timesteps[i] = -1 #0
+                    self.timesteps[i] = -1
 
                 current_sim_params = next_params
                 self.timesteps[i] += 1
@@ -302,10 +304,7 @@ class SVPG:
         policy_grads = 1.0 / self.temperature * torch.cat(policy_grads)
         grad_logp = torch.mm(k, policy_grads)
 
-        # grad_theta = (grad_logp + grad_k) / self.n_particles #HINT: original implementation
-        # grad_theta = (grad_logp - grad_k) / self.n_particles
-        grad_theta = - (grad_logp + grad_k) / self.n_particles #HINT: from paper (gradient ascent)
-        # grad_theta = - (grad_logp - grad_k) / self.n_particles
+        grad_theta = - (grad_logp + grad_k) / self.n_particles
 
         # # update param gradients
         for i in range(self.n_particles):
@@ -328,9 +327,12 @@ if __name__ == '__main__':
     h_svpg=64 #100
     svpg_modes=[1,2,3] #how to calculate kernel gradient #1: original implementation; 2 & 3: other variants
     svpg_mode=svpg_modes[1]
-    T_svpg=10 #50
-    delta_max = 0.005 #0.05
-    H_svpg = 25 #50
+    xp_types=["peak","valley"] #experiment types
+    xp_type=xp_types[0]
+    T_svpg=10 #50 #svpg rollout length
+    delta_max = 0.005 #0.05 #maximum allowable change to svpg states (i.e. upper bound on the svpg action)
+    H_svpg = 25 #50 #svpg horizon (how often the particles are reset)
+    rewards_scale=1.
     
     env_names=['halfcheetah_custom_norm-v1','halfcheetah_custom_rand-v1','lunarlander_custom_820_rand-v0','cartpole_custom-v1']
     env_name=env_names[-2]
@@ -348,7 +350,7 @@ if __name__ == '__main__':
     T_eps=1000
     plot_tr_rewards_mean=[]
     sampled_regions = [[] for _ in range(dr)]
-    rand_step=0.1
+    rand_step=0.1 #for discretizing the sampled regions plot
     common_name="_svpg_dr"
     t_eps=0
     
@@ -360,9 +362,14 @@ if __name__ == '__main__':
             
             #calculate deterministic reward
             simulation_instances_mask = np.concatenate([simulation_instances[:,1:,0],next_instances],1)
-            rewards = np.ones_like(simulation_instances_mask,dtype=np.float32)
-            rewards[((simulation_instances_mask<=0.40).astype(int) + (simulation_instances_mask>=0.60).astype(int)).astype(bool)]=-10.
-                
+            rewards = np.ones_like(simulation_instances_mask,dtype=np.float32) 
+            if xp_type =="peak":
+                rewards[((simulation_instances_mask<=0.40).astype(int) + (simulation_instances_mask>=0.60).astype(int)).astype(bool)]=-10.
+            elif xp_type=="valley":
+                rewards[((simulation_instances_mask>=0.40).astype(int) * (simulation_instances_mask<=0.60).astype(int)).astype(bool)]=-10.
+            
+            rewards = rewards * rewards_scale
+            
             mean_rewards=rewards.sum(-1).mean()
             plot_tr_rewards_mean.append(mean_rewards)
             

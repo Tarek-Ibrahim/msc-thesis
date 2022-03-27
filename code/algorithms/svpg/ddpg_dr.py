@@ -2,8 +2,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import tqdm
-from scipy.spatial.distance import squareform, pdist
-# import os
 import gym
 #------only for spyder IDE
 for env in gym.envs.registration.registry.env_specs.copy():
@@ -146,7 +144,7 @@ class Critic(nn.Module):
         return x 
 
 class DDPG(object):
-    def __init__(self, dr, h1, h2, T_svpg, H_svpg, gamma, epochs, batch_size, lr, a_max=0.005, tau=0.005):
+    def __init__(self, dr, h1, h2, T_svpg, H_svpg, gamma, epochs, batch_size, lr, xp_type, T_init, a_max=0.005, tau=0.005):
         
         self.T_svpg = T_svpg
         self.dr = dr
@@ -157,6 +155,9 @@ class DDPG(object):
         self.epochs = epochs
         self.batch_size = batch_size
         self.tau=tau
+        self.xp_type=xp_type
+        self.T_init = T_init
+        self.a_max = a_max
         self.RB=ReplayBuffer()
 
         self.actor = Actor(in_size=dr, h1=h1, h2=h2, out_size=dr, max_action=a_max).to(device)
@@ -184,12 +185,16 @@ class DDPG(object):
         for t in range(self.T_svpg):
             self.simulation_instance[t] = current_sim_params
 
-            action = self.select_action(current_sim_params)  
+            action = self.select_action(current_sim_params) if len(self.RB.storage) > self.T_init else self.a_max * np.random.uniform(-1, 1, (self.dr,))
             
             #step
             next_params = current_sim_params + action
-            reward = 1. if next_params <= 0.6 and next_params >= 0.4 else -10. #1./(np.abs(0.5-next_params)+1e-8)
+            if xp_type=="peak":
+                reward = 1. if next_params <= 0.6 and next_params >= 0.4 else -10. #1./(np.abs(0.5-next_params)+1e-8)
+            elif xp_type=="valley":
+                reward = -10. if next_params <= 0.6 and next_params >= 0.4 else 1.
             done=True if next_params < 0 or next_params > 1 else False
+            # next_params = np.clip(next_params,0,1)
             done_bool = 0 if self.timesteps + 1 == self.H_svpg else float(done)
             
             if add_to_buffer:
@@ -209,57 +214,62 @@ class DDPG(object):
         return np.array(self.simulation_instance), self.last_states
 
     def train(self):
-        for _ in range(self.epochs):
-            # Sample replay buffer 
-            x, y, u, r, d = self.RB.sample(self.batch_size)
-            state = torch.FloatTensor(x).to(device)
-            action = torch.FloatTensor(u).to(device)
-            next_state = torch.FloatTensor(y).to(device)
-            done = torch.FloatTensor(1 - d).to(device)
-            reward = torch.FloatTensor(r).to(device)
-
-            # Compute the target Q value
-            target_Q = self.critic_target(next_state, self.actor_target(next_state))
-            target_Q = reward + (done * self.gamma * target_Q).detach()
-
-            # Get current Q estimate
-            current_Q = self.critic(state, action)
-
-            # Compute critic loss
-            critic_loss = F.mse_loss(current_Q, target_Q)
-
-            # Optimize the critic
-            self.critic_optimizer.zero_grad()
-            critic_loss.backward()
-            self.critic_optimizer.step()
-
-            # Compute actor loss
-            actor_loss = -self.critic(state, self.actor(state)).mean()
-            
-            # Optimize the actor 
-            self.actor_optimizer.zero_grad()
-            actor_loss.backward()
-            self.actor_optimizer.step()
-
-            # Update the frozen target models
-            for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
-                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
-
-            for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
-                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+        if len(self.RB.storage) > self.T_init: 
+            for _ in range(self.epochs):
+                # Sample replay buffer 
+                x, y, u, r, d = self.RB.sample(self.batch_size)
+                state = torch.FloatTensor(x).to(device)
+                action = torch.FloatTensor(u).to(device)
+                next_state = torch.FloatTensor(y).to(device)
+                done = torch.FloatTensor(1 - d).to(device)
+                reward = torch.FloatTensor(r).to(device)
+    
+                # Compute the target Q value
+                target_Q = self.critic_target(next_state, self.actor_target(next_state))
+                target_Q = reward + (done * self.gamma * target_Q).detach()
+    
+                # Get current Q estimate
+                current_Q = self.critic(state, action)
+    
+                # Compute critic loss
+                critic_loss = F.mse_loss(current_Q, target_Q)
+    
+                # Optimize the critic
+                self.critic_optimizer.zero_grad()
+                critic_loss.backward()
+                self.critic_optimizer.step()
+    
+                # Compute actor loss
+                actor_loss = -self.critic(state, self.actor(state)).mean()
+                
+                # Optimize the actor 
+                self.actor_optimizer.zero_grad()
+                actor_loss.backward()
+                self.actor_optimizer.step()
+    
+                # Update the frozen target models
+                for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
+                    target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+    
+                for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
+                    target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
 #%% Implementation (ADR algorithm)
 if __name__ == '__main__':
     
     lr_svpg=0.003 #0.0003
     gamma_svpg=0.99
-    h1=100 #100
+    h1=100 #100 #hidden sizes
     h2=64
-    T_svpg=10 #50
-    delta_max = 0.005 #0.05
-    H_svpg = 25 #50
-    batch_size=100
+    T_svpg=10 #50 #ddpg rollout length
+    delta_max = 0.005 #0.05 #maximum allowable change to svpg states (i.e. upper bound on the svpg action)
+    H_svpg = 25 #50 #ddpg rollout horizon
+    batch_size=100 #for batch used for ddpg training 
     epochs=50
+    xp_types=["peak","valley"] #experiment types
+    xp_type=xp_types[0]
+    rewards_scale=1.
+    T_init = 100 #initial steps to take before svpg update or step
     
     env_names=['halfcheetah_custom_norm-v1','halfcheetah_custom_rand-v1','lunarlander_custom_820_rand-v0','cartpole_custom-v1']
     env_name=env_names[-2]
@@ -269,14 +279,14 @@ if __name__ == '__main__':
     da=env.action_space.shape[0] #action dims
     dr=env.unwrapped.randomization_space.shape[0]
         
-    svpg = DDPG(dr, h1, h2, T_svpg, H_svpg, gamma_svpg, epochs, batch_size, lr_svpg, a_max=delta_max)
+    svpg = DDPG(dr, h1, h2, T_svpg, H_svpg, gamma_svpg, epochs, batch_size, lr_svpg, xp_type, T_init, a_max=delta_max)
     
     set_seed(seed)
     
-    T_eps=1000
+    T_eps=1000 #number of training episodes
     plot_tr_rewards_mean=[]
     sampled_regions = [[] for _ in range(dr)]
-    rand_step=0.1
+    rand_step=0.1 #for discretizing the sampled regions plot
     common_name="_svpg_dr"
     t_eps=0
     
@@ -289,7 +299,12 @@ if __name__ == '__main__':
             #calculate deterministic reward
             simulation_instances_mask = np.concatenate([simulation_instances[1:,0],next_instances])
             rewards = np.ones_like(simulation_instances_mask,dtype=np.float32)
-            rewards[((simulation_instances_mask<=0.40).astype(int) + (simulation_instances_mask>=0.60).astype(int)).astype(bool)]=-10.
+            if xp_type =="peak":
+                rewards[((simulation_instances_mask<=0.40).astype(int) + (simulation_instances_mask>=0.60).astype(int)).astype(bool)]=-10.
+            elif xp_type=="valley":
+                rewards[((simulation_instances_mask>=0.40).astype(int) * (simulation_instances_mask<=0.60).astype(int)).astype(bool)]=-10.
+                
+            rewards = rewards * rewards_scale
                 
             mean_rewards=rewards.sum(-1).mean()
             plot_tr_rewards_mean.append(mean_rewards)
