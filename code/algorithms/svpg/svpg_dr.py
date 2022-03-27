@@ -1,8 +1,6 @@
 #%% Imports
 import numpy as np
 import matplotlib.pyplot as plt
-import multiprocessing as mp
-from baselines.common.vec_env import VecEnv, CloudpickleWrapper
 import tqdm
 from scipy.spatial.distance import squareform, pdist
 # import os
@@ -17,9 +15,7 @@ import gym_custom
 import torch
 import torch.nn as nn
 from torch.nn.utils.convert_parameters import parameters_to_vector as params2vec, _check_param_device, vector_to_parameters as vec2params
-from torch.distributions import Normal, Independent , MultivariateNormal
 from torch.optim import Adam
-import queue as Q
 
 
 #%% General
@@ -84,172 +80,6 @@ def vector_to_parameters(vec, parameters, grad=True):
             pointer = pointer + num_param
     else:
         vec2params(vec, parameters)
-        
-
-def collect_rollout_batch(envs, ds, da, policy, T, b, n_workers, queue): # a batch of rollouts
-    rewards = [[] for _ in range(b)]
-    log_probs = [[] for _ in range(b)]
-    vals=[[] for _ in range(b)]
-    next_vals=[[] for _ in range(b)]
-    next_states=[[] for _ in range(b)]
-    
-    for rollout_idx in range(b):
-        queue.put(rollout_idx)
-    for _ in range(n_workers):
-        queue.put(None)
-    
-    #each rollout in the batch is the history of stepping through the environment once till termination
-    s, rollout_idxs=envs.reset()
-    dones=[False]
-    
-    while (not all(dones)) or (not queue.empty()):
-        
-        dists, values=zip(*[policy.select_action(rollout_idxs[i],state) if rollout_idxs[i] is not None else (None,None) for i,state in enumerate(s)])
-        
-        action_tensor = [dist.sample() if dist is not None else None for dist in dists]
-        log_prob=[dist.log_prob(action_tensor[i]) if dist is not None else None for i, dist in enumerate(dists)]
-        a=np.array([at.squeeze(0).cpu().detach().numpy() if at is not None else np.zeros(da) if da>1 else 0. for at in action_tensor])
-        
-        s_dash, r, dones, rollout_idxs_new, _ = envs.step(a)
-        _, next_values=zip(*[policy.select_action(rollout_idxs[i],state) if rollout_idxs[i] is not None else (None,None) for i,state in enumerate(s_dash)])
-        #append to batch
-        for next_state, reward, rollout_idx, lp, value, next_value in zip(s_dash,r,rollout_idxs, log_prob, values, next_values):
-            if rollout_idx is not None:
-                next_states[rollout_idx].append(next_state.astype(np.float32))
-                rewards[rollout_idx].append(reward.astype(np.float32))
-                log_probs[rollout_idx].append(lp)
-                vals[rollout_idx].append(value)
-                next_vals[rollout_idx].append(next_value)
-                
-        #reset
-        s, rollout_idxs = s_dash, rollout_idxs_new
-    
-    #reshape
-    T_max=max(map(len,rewards))
-    rewards_mat=np.zeros((b,T_max),dtype=np.float32)
-    masks_mat=np.zeros((b,T_max),dtype=np.float32)
-    
-    for rollout_idx in range(b):
-        T_rollout=len(rewards[rollout_idx])
-        rewards_mat[rollout_idx,:T_rollout]= np.stack(rewards[rollout_idx])
-        masks_mat[rollout_idx,:T_rollout]=1.0
-    
-    D=[rewards_mat, masks_mat, log_probs, vals, next_vals]
-    
-    return D
-
-        
-#%% Envs
-
-class SubprocVecEnv(gym.Env):
-    def __init__(self,env_funcs,ds,da,queue,lock):
-        
-        self.parent_conns, self.child_conns = zip(*[mp.Pipe() for _ in env_funcs])
-        self.workers = [EnvWorker(child_conn, env_func, queue, lock) for (child_conn, env_func) in zip(self.child_conns, env_funcs)]
-        # self.workers = [mp.Process(target=envworker,args=(child_conn, parent_conn, CloudpickleWrapper(env_func),queue,lock)) for (child_conn, parent_conn, env_func) in zip(self.child_conns, self.parent_conns, env_funcs)]
-        
-        for worker in self.workers:
-            worker.daemon = True #making child processes daemonic to not continue running when master process exists
-            worker.start()
-        for child_conn in self.child_conns:
-            child_conn.close()
-        
-        self.waiting = False
-        self.closed = False
-        
-    def step(self, actions):
-        
-        #step through each env asynchronously
-        for parent_conn, action in zip(self.parent_conns, actions):
-            parent_conn.send(('step',action))
-        self.waiting = True
-        
-        #wait for all envs to finish stepping and then collect results
-        results = [parent_conn.recv() for parent_conn in self.parent_conns]
-        self.waiting = False
-        states, rewards, dones, rollouts_idxs, infos = zip(*results)
-        
-        return np.stack(states), np.stack(rewards), np.stack(dones), rollouts_idxs, infos
-    
-    def reset(self):
-        for parent_conn in self.parent_conns:
-            parent_conn.send(('reset',None))
-        results = [parent_conn.recv() for parent_conn in self.parent_conns]
-        states, rollouts_idxs = zip(*results)
-        return np.stack(states), rollouts_idxs
-    
-    def close(self):
-        if self.closed:
-            return
-        if self.waiting:
-            for parent_conn in self.parent_conns:
-                parent_conn.recv()
-        for parent_conn in self.parent_conns:
-            parent_conn.send(('close',None))
-        for worker in self.workers:
-            worker.join()
-        self.closed = True
-
-
-class EnvWorker(mp.Process):
-    def __init__(self, child_conn, env_func, queue, lock):
-        super().__init__()
-        
-        self.child_conn = child_conn
-        self.env = env_func()
-        self.queue = queue
-        self.lock = lock
-        self.rollout_idx = None
-        self.done = False
-        self.ds = self.env.observation_space.shape
-    
-    def try_reset(self):
-        with self.lock:
-            try:
-                self.rollout_idx = self.queue.get()
-                self.done = (self.rollout_idx is None)
-            except Q.Empty:
-                self.done = True
-        if self.done:
-            state = np.zeros(self.ds, dtype=np.float32)
-        else:
-            state = self.env.reset()
-        return state
-    
-    def run(self):
-        while True:
-            func, arg = self.child_conn.recv()
-            
-            if func == 'step':
-                if self.done:
-                    state, reward, done, info = np.zeros(self.ds, dtype=np.float32), 0.0, True, {}
-                else:
-                    state, reward, done, info = self.env.step(arg)
-                if done and not self.done:
-                    state = self.try_reset()
-                self.child_conn.send((state,reward,done,self.rollout_idx,info))
-                
-            elif func == 'reset':
-                state = self.try_reset()
-                self.child_conn.send((state,self.rollout_idx))
-                
-            elif func == 'close':
-                self.child_conn.close()
-                break
-
-def make_env(env_name,seed=None, rank=None):
-    def _make_env():
-        env = gym.make(env_name)
-        if seed is not None and rank is not None:
-            env.seed(seed+rank)
-        return env
-    return _make_env
-
-
-def make_vec_envs(env_name, seed, n_workers, ds, da, queue, lock):
-    envs=[make_env(env_name,seed,rank) for rank in range(n_workers)]
-    envs=SubprocVecEnv(envs, ds, da, queue, lock)
-    return envs
 
 #%% SVPG 
 
@@ -299,6 +129,7 @@ class SVPGParticle(nn.Module):
 
         self.critic = SVPGParticleCritic(input_dim, hidden_dim)
         self.actor = SVPGParticleActor(input_dim, hidden_dim, output_dim)
+        self.saved_log_probs=[]
 
     def forward(self, x):
         dist = self.actor(x)
@@ -308,18 +139,25 @@ class SVPGParticle(nn.Module):
 
 
 class SVPG:
-    def __init__(self, n_particles, ds, da, hidden_dim, lr, temperature, svpg_mode, gamma):
+    def __init__(self, n_particles, hidden_dim, lr, temperature, svpg_mode, gamma, T_svpg, dr, delta_max, H_svpg):
         self.particles = []
         self.optimizers = []
         self.svpg_mode=svpg_mode
         self.temperature = temperature 
         self.n_particles = n_particles
         self.gamma = gamma
+        self.T_svpg = T_svpg
+        self.dr = dr
+        self.delta_max = delta_max
+        self.H_svpg = H_svpg
+        
+        self.last_states = np.random.uniform(0, 1, (self.n_particles, self.dr))
+        self.timesteps = np.zeros(self.n_particles)
 
         for i in range(self.n_particles):
             # Initialize each of the individual particles
-            policy = SVPGParticle(input_dim=ds,
-                                  output_dim=da,
+            policy = SVPGParticle(input_dim=dr,
+                                  output_dim=dr,
                                   hidden_dim=hidden_dim).to(device)
 
             optimizer = Adam(policy.parameters(), lr=lr)
@@ -361,38 +199,78 @@ class SVPG:
         state = torch.from_numpy(state).float().unsqueeze(0).to(device)
         policy = self.particles[policy_idx]
         dist, value = policy(state)
+        
+        action = dist.sample()               
+            
+        policy.saved_log_probs.append(dist.log_prob(action))
+        
+        action = action.item()
 
-        return dist, value
+        return action, value
 
     def compute_returns(self, next_value, rewards, masks):
-        return_ = 0. #next_value 
+        return_ = next_value  #0.
         returns = []
         for step in reversed(range(len(rewards))):
             return_ = self.gamma * masks[step] * return_ + rewards[step]
             returns.insert(0, return_)
 
         return returns
+    
+    def step(self):
+        self.simulation_instances = np.zeros((self.n_particles, self.T_svpg, self.dr))
 
-    def train(self, D):
+        # Store the values of each state - for advantage estimation
+        self.values = [torch.zeros((self.T_svpg, 1)).float().to(device) for _ in range(self.n_particles)]
+        # Store the last states for each particle (calculating rewards)
+        self.masks = np.ones((self.n_particles, self.T_svpg))
+
+        for i in range(self.n_particles):
+            self.particles[i].saved_log_probs = [] #reset
+            current_sim_params = self.last_states[i]
+
+            for t in range(self.T_svpg):
+                self.simulation_instances[i][t] = current_sim_params
+
+                action, value = self.select_action(i, current_sim_params)  
+                self.values[i][t] = value
+                
+                clipped_action = self.delta_max * np.array(np.clip(action, -1, 1)) 
+                next_params = np.clip(current_sim_params + clipped_action, 0, 1)
+                
+                if np.array_equal(next_params, current_sim_params) or self.timesteps[i] + 1 == self.H_svpg:
+                    next_params = np.random.uniform(0, 1, (self.dr,))
+                    
+                    self.masks[i][t] = 0 # done = True
+                    self.timesteps[i] = -1 #0
+
+                current_sim_params = next_params
+                self.timesteps[i] += 1
+
+            self.last_states[i] = current_sim_params
+
+        return np.array(self.simulation_instances), self.last_states
         
-        rewards, masks_mat, log_probs, values, next_values=D
 
+    def train(self, rewards):
+        
         policy_grads = []
         parameters = []
         critic_losses = []
 
         for i in range(self.n_particles):
+            
+            _, next_value = self.select_action(i, self.last_states[i]) 
 
             particle_rewards = torch.from_numpy(rewards[i]).float().to(device)
-            masks = torch.from_numpy(masks_mat[i]).float().to(device)
+            masks = torch.from_numpy(self.masks[i]).float().to(device)
 
             # Calculate entropy-augmented returns, advantages
-            returns = self.compute_returns(next_values[i][-1], particle_rewards, masks)
-            returns=returns[:len(values[i])]
-            # returns = torch.cat(returns).detach()
-            returns = torch.stack(returns).detach()
+            returns = self.compute_returns(next_value, particle_rewards, masks)
+            returns = torch.cat(returns).detach()
+            # returns = torch.stack(returns).detach()
             # returns = (returns - returns.mean()) / (returns.std() + 1e-8)
-            advantages = returns - torch.cat(values[i])
+            advantages = returns - self.values[i]
             # TODO: normalize advantages
             # advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
             
@@ -407,7 +285,7 @@ class SVPG:
             critic_losses.append(critic_loss)
             
             # policy_grad = (torch.cat(log_probs[i])*advantages.detach()).mean()
-            policy_grad = (torch.cat(log_probs[i])*advantages.detach()).sum()
+            policy_grad = (torch.cat(self.particles[i].saved_log_probs)*advantages.detach()).sum()
             
             policy_grad.backward()
             
@@ -443,9 +321,6 @@ class SVPG:
 #%% Implementation (ADR algorithm)
 if __name__ == '__main__':
     
-    queue = mp.Queue()
-    lock = mp.Lock()
-    
     n_particles=3 #10 
     temp=10. #temperature
     lr_svpg=0.003 #0.0003
@@ -453,60 +328,67 @@ if __name__ == '__main__':
     h_svpg=64 #100
     svpg_modes=[1,2,3] #how to calculate kernel gradient #1: original implementation; 2 & 3: other variants
     svpg_mode=svpg_modes[1]
+    T_svpg=10 #50
+    delta_max = 0.005 #0.05
+    H_svpg = 25 #50
     
     env_names=['halfcheetah_custom_norm-v1','halfcheetah_custom_rand-v1','lunarlander_custom_820_rand-v0','cartpole_custom-v1']
-    env_name=env_names[-1]
+    env_name=env_names[-2]
     env=gym.make(env_name)
     T_env=env._max_episode_steps #task horizon / max env timesteps
     ds=env.observation_space.shape[0] #state dims
     da=env.action_space.shape[0] #action dims
+    dr=env.unwrapped.randomization_space.shape[0]
     n_workers=n_particles
-    b=n_particles #rollout batch size
-    
-    envs=make_vec_envs(env_name, seed, n_workers, ds, da, queue, lock)
-    
-    svpg = SVPG(n_particles, ds, da, h_svpg, lr_svpg, temp, svpg_mode, gamma_svpg)
+        
+    svpg = SVPG(n_particles, h_svpg, lr_svpg, temp, svpg_mode, gamma_svpg, T_svpg, dr, delta_max, H_svpg)
     
     set_seed(seed)
     
-    t_agent=0
-    T_agent=int(1e6) #5000 #max agent timesteps
+    T_eps=1000
     plot_tr_rewards_mean=[]
-    consec=0 #no. of consecutive episodes the reward stays at or above rewards threshold
+    sampled_regions = [[] for _ in range(dr)]
+    rand_step=0.1
+    common_name="_svpg_dr"
+    t_eps=0
     
-    with tqdm.tqdm(total=T_agent) as pbar:
-        while t_agent < T_agent:
+    with tqdm.tqdm(total=T_eps) as pbar:
+        while t_eps < T_eps:
             
             #collect rollout batch with svpg particles (storing values)
-            D=collect_rollout_batch(envs, ds, da, svpg, T_env, b, n_workers, queue)
+            simulation_instances, next_instances = svpg.step()
             
-            rewards, _, _, vals, _ =D
-            for val in vals:
-                t_agent += len(val)
+            #calculate deterministic reward
+            simulation_instances_mask = np.concatenate([simulation_instances[:,1:,0],next_instances],1)
+            rewards = np.ones_like(simulation_instances_mask,dtype=np.float32)
+            rewards[((simulation_instances_mask<=0.40).astype(int) + (simulation_instances_mask>=0.60).astype(int)).astype(bool)]=-10.
                 
             mean_rewards=rewards.sum(-1).mean()
             plot_tr_rewards_mean.append(mean_rewards)
             
             #train svpg 
-            svpg.train(D)
+            svpg.train(rewards)
             
-            if mean_rewards >= env.spec.reward_threshold:
-                consec +=1
-            else:
-                consec = 0
-            if consec >= 5:
-                print(f"Solved at {t_agent} timesteps!")
-                break
+            #plot sampled regions
+            for dim in range(dr):
+                dim_name=env.unwrapped.dimensions[dim].name
+                low=env.unwrapped.dimensions[dim].range_min
+                high=env.unwrapped.dimensions[dim].range_max
+                x=np.arange(low,high+rand_step,rand_step)
+                
+                scaled_instances=low + (high-low) * simulation_instances[:, :, dim]
+                sampled_regions[dim]=np.concatenate([sampled_regions[dim],scaled_instances.flatten()])
+                  
+                title=f"Sampled Regions for Randomization Dim = {dim_name} {env.rand} at Episode = {t_eps}"
+                plt.figure(figsize=(16,8))
+                plt.grid(1)
+                plt.hist(sampled_regions[dim], np.arange(min(x),max(x)+2*rand_step,rand_step), histtype='barstacked')
+                plt.xlim(min(x), max(x)+rand_step)
+                plt.title(title)
+                plt.savefig(f'plots/sampled_regions_dim_{dim_name}_{env.rand}{common_name}.png')
+                plt.close()
             
-            log_msg="Reward: {:.2f}, Timesteps: {}".format(mean_rewards, t_agent)
+            #log episode results
+            log_msg="Reward: {:.2f}, Episode: {}".format(mean_rewards, t_eps)
             pbar.update(); pbar.set_description(desc=log_msg); pbar.refresh()
-
-
-    #%% Results & Plots
-
-    title="Training Rewards"
-    plt.figure(figsize=(16,8))
-    plt.grid(1)
-    plt.plot(plot_tr_rewards_mean)
-    plt.title(title)
-    plt.show()
+            t_eps+=1

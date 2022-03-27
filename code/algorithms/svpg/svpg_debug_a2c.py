@@ -312,6 +312,7 @@ class SVPG:
             # advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
             #zero grad
+            self.optimizer.zero_grad()
             params = self.particles[i].parameters()
             for p in params:
                 if p.grad is None:
