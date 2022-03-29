@@ -5,10 +5,12 @@ import tqdm
 from scipy.spatial.distance import squareform, pdist
 import gym
 #------only for spyder IDE
+"""
 for env in gym.envs.registration.registry.env_specs.copy():
      if 'custom' in env:
          print('Remove {} from registry'.format(env))
          del gym.envs.registration.registry.env_specs[env]
+"""
 #------
 import gym_custom
 import torch
@@ -129,6 +131,14 @@ class SVPGParticle(nn.Module):
         self.critic = SVPGParticleCritic(input_dim, hidden_dim)
         self.actor = SVPGParticleActor(input_dim, hidden_dim, output_dim)
         self.saved_log_probs=[]
+        self.apply(self.init_weights)
+
+    def init_weights(self, m):
+        if isinstance(m, nn.Linear):
+            print(m)
+            torch.nn.init.normal_(m.weight, 0.0, 2.5)
+            torch.nn.init.normal_(m.bias, 0.0, 0.01)
+            #m.bias.data.fill_(0.0)
 
     def forward(self, x):
         dist = self.actor(x)
@@ -320,18 +330,18 @@ class SVPG:
 #%% Implementation (ADR algorithm)
 if __name__ == '__main__':
     
-    n_particles=3 #10 
-    temp=10. #temperature
+    n_particles=10 #10 
+    temp=1. #temperature
     lr_svpg=0.003 #0.0003
     gamma_svpg=0.99
     h_svpg=64 #100
     svpg_modes=[1,2,3] #how to calculate kernel gradient #1: original implementation; 2 & 3: other variants
-    svpg_mode=svpg_modes[1]
+    svpg_mode=svpg_modes[0]
     xp_types=["peak","valley"] #experiment types
     xp_type=xp_types[0]
-    T_svpg=10 #50 #svpg rollout length
-    delta_max = 0.005 #0.05 #maximum allowable change to svpg states (i.e. upper bound on the svpg action)
-    H_svpg = 50 #svpg horizon (how often the particles are reset)
+    T_svpg=50 #50 #svpg rollout length
+    delta_max = 0.05 #0.05 #maximum allowable change to svpg states (i.e. upper bound on the svpg action)
+    H_svpg = 100 #svpg horizon (how often the particles are reset)
     rewards_scale=1.
     
     env_names=['halfcheetah_custom_norm-v1','halfcheetah_custom_rand-v1','lunarlander_custom_820_rand-v0','cartpole_custom-v1']
@@ -377,6 +387,8 @@ if __name__ == '__main__':
             svpg.train(rewards)
             
             #plot sampled regions
+            #if t_eps % 20 == 0:
+            fig, ax = plt.subplots(1, 2, figsize=(16, 8))
             for dim in range(dr):
                 dim_name=env.unwrapped.dimensions[dim].name
                 low=env.unwrapped.dimensions[dim].range_min
@@ -387,13 +399,20 @@ if __name__ == '__main__':
                 sampled_regions[dim]=np.concatenate([sampled_regions[dim],scaled_instances.flatten()])
                   
                 title=f"Sampled Regions for Randomization Dim = {dim_name} {env.rand} at Episode = {t_eps}"
-                plt.figure(figsize=(16,8))
-                plt.grid(1)
-                plt.hist(sampled_regions[dim], np.arange(min(x),max(x)+2*rand_step,rand_step), histtype='barstacked')
-                plt.xlim(min(x), max(x)+rand_step)
-                plt.title(title)
-                plt.savefig(f'plots/sampled_regions_dim_{dim_name}_{env.rand}{common_name}.png')
-                plt.close()
+                ax[0].grid(1)
+                ax[0].hist(sampled_regions[dim][-500:], bins=np.arange(min(x),max(x)+2*rand_step,rand_step), histtype='barstacked')
+                ax[0].set_xlim(min(x), max(x)+rand_step)
+                ax[0].set_title(title)
+                
+                with torch.no_grad():
+                    x = torch.linspace(0, 1.0, 1000).float().unsqueeze(1).to(device)
+                    for i, particle in enumerate(svpg.particles):
+                        _, value = particle(x)
+                        ax[1].plot(x, value.numpy(), label='Particle: {}'.format(i))
+                ax[1].legend()
+                plt.show()
+                #plt.savefig(f'plots/sampled_regions_dim_{dim_name}_{env.rand}{common_name}.png')
+                #plt.close()
             
             #log episode results
             log_msg="Reward: {:.2f}, Episode: {}".format(mean_rewards, t_eps)
