@@ -297,7 +297,7 @@ class SVPG:
             returns = returns.detach()
             # returns = torch.stack(returns).detach()
             # returns = (returns - returns.mean()) / (returns.std() + 1e-8)
-            advantages = returns - self.values[i]
+            advantages = returns - self.values[i].squeeze()
             # TODO: normalize advantages
             # advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
             
