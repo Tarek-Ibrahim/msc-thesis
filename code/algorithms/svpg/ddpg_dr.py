@@ -190,10 +190,12 @@ class DDPG(object):
             #step
             next_params = current_sim_params + action
             if xp_type=="peak":
-                reward = 1. if next_params <= 0.6 and next_params >= 0.4 else -10. #1./(np.abs(0.5-next_params)+1e-8)
+                reward = 1. if next_params <= 0.6 and next_params >= 0.4 else -10.
+                # reward = 1./(np.abs(0.5-next_params)+1e-8)
             elif xp_type=="valley":
                 reward = -10. if next_params <= 0.6 and next_params >= 0.4 else 1.
-            done=True if next_params < 0 or next_params > 1 else False
+                # reward = -1./(np.abs(0.5-next_params)+1e-8)
+            done=True if next_params < 0. or next_params > 1. else False
             # next_params = np.clip(next_params,0,1)
             done_bool = 0 if self.timesteps + 1 == self.H_svpg else float(done)
             
@@ -259,11 +261,11 @@ if __name__ == '__main__':
     
     lr_svpg=0.003 #0.0003
     gamma_svpg=0.99
-    h1=100 #100 #hidden sizes
-    h2=64
-    T_svpg=10 #50 #ddpg rollout length
-    delta_max = 0.005 #0.05 #maximum allowable change to svpg states (i.e. upper bound on the svpg action)
-    H_svpg = 25 #50 #ddpg rollout horizon
+    h1=32 #100 #100 #hidden sizes
+    h2=32 #64
+    T_svpg=20 #10 #50 #ddpg rollout length
+    delta_max = 0.05 #0.005 #0.05 #maximum allowable change to svpg states (i.e. upper bound on the svpg action)
+    H_svpg = 100 #25 #50 #ddpg rollout horizon
     batch_size=100 #for batch used for ddpg training 
     epochs=50
     xp_types=["peak","valley"] #experiment types
@@ -287,7 +289,7 @@ if __name__ == '__main__':
     plot_tr_rewards_mean=[]
     sampled_regions = [[] for _ in range(dr)]
     rand_step=0.1 #for discretizing the sampled regions plot
-    common_name="_svpg_dr"
+    common_name="_ddpg_dr"
     t_eps=0
     
     with tqdm.tqdm(total=T_eps) as pbar:
@@ -301,8 +303,10 @@ if __name__ == '__main__':
             rewards = np.ones_like(simulation_instances_mask,dtype=np.float32)
             if xp_type =="peak":
                 rewards[((simulation_instances_mask<=0.40).astype(int) + (simulation_instances_mask>=0.60).astype(int)).astype(bool)]=-10.
+                # rewards *= 1./(np.abs(0.5-simulation_instances_mask)+1e-8)
             elif xp_type=="valley":
                 rewards[((simulation_instances_mask>=0.40).astype(int) * (simulation_instances_mask<=0.60).astype(int)).astype(bool)]=-10.
+                # rewards *= - 1./(np.abs(0.5-simulation_instances_mask)+1e-8)
                 
             rewards = rewards * rewards_scale
                 
@@ -318,17 +322,30 @@ if __name__ == '__main__':
                 low=env.unwrapped.dimensions[dim].range_min
                 high=env.unwrapped.dimensions[dim].range_max
                 x=np.arange(low,high+rand_step,rand_step)
+                linspace_x=np.arange(min(x),max(x)+2*rand_step,rand_step)
                 
-                scaled_instances=low + (high-low) * simulation_instances[:,dim]
+                scaled_instances=low + (high-low) * simulation_instances[:, dim]
                 sampled_regions[dim]=np.concatenate([sampled_regions[dim],scaled_instances.flatten()])
                   
                 title=f"Sampled Regions for Randomization Dim = {dim_name} {env.rand} at Episode = {t_eps}"
                 plt.figure(figsize=(16,8))
                 plt.grid(1)
-                plt.hist(sampled_regions[dim], np.arange(min(x),max(x)+2*rand_step,rand_step), histtype='barstacked')
+                plt.hist(sampled_regions[dim], linspace_x, histtype='barstacked')
                 plt.xlim(min(x), max(x)+rand_step)
                 plt.title(title)
                 plt.savefig(f'plots/sampled_regions_dim_{dim_name}_{env.rand}{common_name}.png')
+                plt.close()
+                
+                title=f"Value Function for Randomization Dim = {dim_name} {env.rand} at Episode = {t_eps}"
+                plt.figure(figsize=(16,8))
+                plt.grid(1)
+                ls=np.linspace(0,1,len(linspace_x))
+                a=svpg.actor(torch.from_numpy(ls).unsqueeze(1).float().to(device))
+                v=svpg.critic(torch.from_numpy(ls).unsqueeze(1).float().to(device),a)
+                plt.plot(linspace_x,v.detach().cpu().numpy())
+                plt.xlim(min(x), max(x)+rand_step)
+                plt.title(title)
+                plt.savefig(f'plots/value_function_dim_{dim_name}_{env.rand}{common_name}.png')
                 plt.close()
             
             #log episode results

@@ -119,7 +119,7 @@ class SVPGParticleActor(nn.Module):
         
         std=torch.exp(self.logstd) + 1e-6
                 
-        return torch.distributions.Independent(torch.distributions.Normal(mean,std),1) #torch.distributions.Normal(mean, std)
+        return torch.distributions.Normal(mean, std) #torch.distributions.Independent(torch.distributions.Normal(mean,std),1) #torch.distributions.Normal(mean, std)
 
 
 class SVPGParticle(nn.Module):
@@ -324,14 +324,14 @@ if __name__ == '__main__':
     temp=10. #temperature
     lr_svpg=0.003 #0.0003
     gamma_svpg=0.99
-    h_svpg=64 #100
+    h_svpg=32 #64 #100
     svpg_modes=[1,2,3] #how to calculate kernel gradient #1: original implementation; 2 & 3: other variants
     svpg_mode=svpg_modes[1]
     xp_types=["peak","valley"] #experiment types
     xp_type=xp_types[0]
-    T_svpg=10 #50 #svpg rollout length
-    delta_max = 0.005 #0.05 #maximum allowable change to svpg states (i.e. upper bound on the svpg action)
-    H_svpg = 50 #svpg horizon (how often the particles are reset)
+    T_svpg=20 #50 #svpg rollout length
+    delta_max = 0.05 #0.005 #0.05 #maximum allowable change to svpg states (i.e. upper bound on the svpg action)
+    H_svpg = 100 #svpg horizon (how often the particles are reset)
     rewards_scale=1.
     
     env_names=['halfcheetah_custom_norm-v1','halfcheetah_custom_rand-v1','lunarlander_custom_820_rand-v0','cartpole_custom-v1']
@@ -362,11 +362,13 @@ if __name__ == '__main__':
             
             #calculate deterministic reward
             simulation_instances_mask = np.concatenate([simulation_instances[:,1:,0],next_instances],1)
-            rewards = np.ones_like(simulation_instances_mask,dtype=np.float32) 
+            rewards = np.ones_like(simulation_instances_mask,dtype=np.float32)
             if xp_type =="peak":
                 rewards[((simulation_instances_mask<=0.40).astype(int) + (simulation_instances_mask>=0.60).astype(int)).astype(bool)]=-10.
+                # rewards *= 1./(np.abs(0.5-simulation_instances_mask)+1e-8)
             elif xp_type=="valley":
                 rewards[((simulation_instances_mask>=0.40).astype(int) * (simulation_instances_mask<=0.60).astype(int)).astype(bool)]=-10.
+                # rewards *= - 1./(np.abs(0.5-simulation_instances_mask)+1e-8)
             
             rewards = rewards * rewards_scale
             
@@ -382,6 +384,7 @@ if __name__ == '__main__':
                 low=env.unwrapped.dimensions[dim].range_min
                 high=env.unwrapped.dimensions[dim].range_max
                 x=np.arange(low,high+rand_step,rand_step)
+                linspace_x=np.arange(min(x),max(x)+2*rand_step,rand_step)
                 
                 scaled_instances=low + (high-low) * simulation_instances[:, :, dim]
                 sampled_regions[dim]=np.concatenate([sampled_regions[dim],scaled_instances.flatten()])
@@ -389,10 +392,22 @@ if __name__ == '__main__':
                 title=f"Sampled Regions for Randomization Dim = {dim_name} {env.rand} at Episode = {t_eps}"
                 plt.figure(figsize=(16,8))
                 plt.grid(1)
-                plt.hist(sampled_regions[dim], np.arange(min(x),max(x)+2*rand_step,rand_step), histtype='barstacked')
+                plt.hist(sampled_regions[dim], linspace_x, histtype='barstacked')
                 plt.xlim(min(x), max(x)+rand_step)
                 plt.title(title)
                 plt.savefig(f'plots/sampled_regions_dim_{dim_name}_{env.rand}{common_name}.png')
+                plt.close()
+                
+                title=f"Value Function for Randomization Dim = {dim_name} {env.rand} at Episode = {t_eps}"
+                plt.figure(figsize=(16,8))
+                plt.grid(1)
+                ls=np.linspace(0,1,len(linspace_x))
+                for i in range(n_particles):
+                    _,v=svpg.particles[i](torch.from_numpy(ls).unsqueeze(1).float().to(device))
+                    plt.plot(linspace_x,v.detach().cpu().numpy())
+                plt.xlim(min(x), max(x)+rand_step)
+                plt.title(title)
+                plt.savefig(f'plots/value_function_dim_{dim_name}_{env.rand}{common_name}.png')
                 plt.close()
             
             #log episode results
