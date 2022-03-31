@@ -355,7 +355,7 @@ if __name__ == '__main__':
     xp_types=["peak","valley"] #experiment types
     xp_type=xp_types[0]
     T_svpg=5 #50 #svpg rollout length
-    delta_max = 0.05 #0.05 #maximum allowable change to svpg states (i.e. upper bound on the svpg action)
+    delta_max = 0.5 #0.05 #maximum allowable change to svpg states (i.e. upper bound on the svpg action)
     H_svpg = 5 #svpg horizon (how often the particles are reset)
     rewards_scale=1.
 
