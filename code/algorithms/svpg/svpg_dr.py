@@ -110,13 +110,18 @@ class SVPGParticleActor(nn.Module):
             nn.Linear(hidden_dim, hidden_dim),
             nn.Tanh(),
             nn.Linear(hidden_dim, output_dim),
-            # nn.Tanh()
+            nn.Tanh()
         )
         
-        self.logstd=nn.Parameter(torch.zeros((1,output_dim)))
+        self.logstd=nn.Parameter(torch.zeros((1,output_dim))-1)
+
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.normal_(m.weight, std=1e-5)
+                nn.init.constant_(m.bias, 0.)
+
 
     def forward(self, x):
-        
         mean=self.actor_hidden(x)
         
         std=torch.exp(self.logstd) + 1e-6
@@ -134,11 +139,12 @@ class SVPGParticle(nn.Module):
         self.apply(self.init_weights)
 
     def init_weights(self, m):
-        if isinstance(m, nn.Linear):
-            print(m)
-            torch.nn.init.normal_(m.weight, 0.0, 2.5)
-            torch.nn.init.normal_(m.bias, 0.0, 0.01)
-            #m.bias.data.fill_(0.0)
+        pass
+        #if isinstance(m, nn.Linear):
+        #    print(m)
+        #    torch.nn.init.normal_(m.weight, 0.0, 2.5)
+        #    torch.nn.init.normal_(m.bias, 0.0, 0.01)
+        #    #m.bias.data.fill_(0.0)
 
     def forward(self, x):
         dist = self.actor(x)
@@ -247,10 +253,13 @@ class SVPG:
                 
                 clipped_action = self.delta_max * np.array(np.clip(action, -1, 1)) 
                 next_params = np.clip(current_sim_params + clipped_action, 0, 1)
+
+                #next_params = np.array(np.clip(action, -1, 1)) 
                 # next_params = current_sim_params + clipped_action
                 # done[i]=True if next_params < 0 or next_params > 1 else False 
                 
-                if np.array_equal(next_params, current_sim_params) or self.timesteps[i] + 1 == self.H_svpg: #or done[i]:
+                if self.timesteps[i] + 1 == self.H_svpg: #or done[i]:
+                #if np.array_equal(next_params, current_sim_params) or self.timesteps[i] + 1 == self.H_svpg: #or done[i]:
                     next_params = np.random.uniform(0, 1, (self.dr,))
                     
                     self.masks[i][t] = 0 # done = True
@@ -280,6 +289,12 @@ class SVPG:
             # Calculate entropy-augmented returns, advantages
             returns = self.compute_returns(next_value, particle_rewards, masks)
             returns = torch.cat(returns).detach()
+            next_values = torch.zeros_like(self.values[i])
+            next_values[1:] = self.values[i][:-1]
+            next_values[-1] = next_value
+
+            returns = torch.from_numpy(rewards[i]).float() + self.gamma * next_values.squeeze() * masks
+            returns = returns.detach()
             # returns = torch.stack(returns).detach()
             # returns = (returns - returns.mean()) / (returns.std() + 1e-8)
             advantages = returns - self.values[i]
@@ -297,7 +312,7 @@ class SVPG:
             critic_losses.append(critic_loss)
             
             # policy_grad = (torch.cat(log_probs[i])*advantages.detach()).mean()
-            policy_grad = (torch.cat(self.particles[i].saved_log_probs)*advantages.detach()).sum()
+            policy_grad = (torch.cat(self.particles[i].saved_log_probs[:-1])*advantages.detach()).sum()
             
             policy_grad.backward()
             
@@ -330,8 +345,8 @@ class SVPG:
 #%% Implementation (ADR algorithm)
 if __name__ == '__main__':
     
-    n_particles=10 #10 
-    temp=1. #temperature
+    n_particles=3 #10 
+    temp=0.0001 #temperature
     lr_svpg=0.003 #0.0003
     gamma_svpg=0.99
     h_svpg=64 #100
@@ -339,10 +354,12 @@ if __name__ == '__main__':
     svpg_mode=svpg_modes[0]
     xp_types=["peak","valley"] #experiment types
     xp_type=xp_types[0]
-    T_svpg=50 #50 #svpg rollout length
+    T_svpg=5 #50 #svpg rollout length
     delta_max = 0.05 #0.05 #maximum allowable change to svpg states (i.e. upper bound on the svpg action)
-    H_svpg = 100 #svpg horizon (how often the particles are reset)
+    H_svpg = 5 #svpg horizon (how often the particles are reset)
     rewards_scale=1.
+
+    #set_seed(seed)
     
     env_names=['halfcheetah_custom_norm-v1','halfcheetah_custom_rand-v1','lunarlander_custom_820_rand-v0','cartpole_custom-v1']
     env_name=env_names[-2]
@@ -352,16 +369,15 @@ if __name__ == '__main__':
     da=env.action_space.shape[0] #action dims
     dr=env.unwrapped.randomization_space.shape[0]
     n_workers=n_particles
+    
         
     svpg = SVPG(n_particles, h_svpg, lr_svpg, temp, svpg_mode, gamma_svpg, T_svpg, dr, delta_max, H_svpg)
     
-    set_seed(seed)
-    
-    T_eps=1000
+    T_eps=3000
     plot_tr_rewards_mean=[]
     sampled_regions = [[] for _ in range(dr)]
-    rand_step=0.1 #for discretizing the sampled regions plot
-    common_name="_svpg_dr"
+    rand_step=0.02 #for discretizing the sampled regions plot
+    common_name="_svpg_dr_c_"
     t_eps=0
     
     with tqdm.tqdm(total=T_eps) as pbar:
@@ -374,9 +390,9 @@ if __name__ == '__main__':
             simulation_instances_mask = np.concatenate([simulation_instances[:,1:,0],next_instances],1)
             rewards = np.ones_like(simulation_instances_mask,dtype=np.float32) 
             if xp_type =="peak":
-                rewards[((simulation_instances_mask<=0.40).astype(int) + (simulation_instances_mask>=0.60).astype(int)).astype(bool)]=-10.
+                rewards[((simulation_instances_mask<=0.10).astype(int) + (simulation_instances_mask>=0.30).astype(int)).astype(bool)]=-1.
             elif xp_type=="valley":
-                rewards[((simulation_instances_mask>=0.40).astype(int) * (simulation_instances_mask<=0.60).astype(int)).astype(bool)]=-10.
+                rewards[((simulation_instances_mask>=0.10).astype(int) * (simulation_instances_mask<=0.30).astype(int)).astype(bool)]=-1.
             
             rewards = rewards * rewards_scale
             
@@ -387,32 +403,33 @@ if __name__ == '__main__':
             svpg.train(rewards)
             
             #plot sampled regions
-            #if t_eps % 20 == 0:
-            fig, ax = plt.subplots(1, 2, figsize=(16, 8))
-            for dim in range(dr):
-                dim_name=env.unwrapped.dimensions[dim].name
-                low=env.unwrapped.dimensions[dim].range_min
-                high=env.unwrapped.dimensions[dim].range_max
-                x=np.arange(low,high+rand_step,rand_step)
-                
-                scaled_instances=low + (high-low) * simulation_instances[:, :, dim]
-                sampled_regions[dim]=np.concatenate([sampled_regions[dim],scaled_instances.flatten()])
-                  
-                title=f"Sampled Regions for Randomization Dim = {dim_name} {env.rand} at Episode = {t_eps}"
-                ax[0].grid(1)
-                ax[0].hist(sampled_regions[dim][-500:], bins=np.arange(min(x),max(x)+2*rand_step,rand_step), histtype='barstacked')
-                ax[0].set_xlim(min(x), max(x)+rand_step)
-                ax[0].set_title(title)
-                
-                with torch.no_grad():
-                    x = torch.linspace(0, 1.0, 1000).float().unsqueeze(1).to(device)
-                    for i, particle in enumerate(svpg.particles):
-                        _, value = particle(x)
-                        ax[1].plot(x, value.numpy(), label='Particle: {}'.format(i))
-                ax[1].legend()
-                plt.show()
-                #plt.savefig(f'plots/sampled_regions_dim_{dim_name}_{env.rand}{common_name}.png')
-                #plt.close()
+            if t_eps % 50 == 0:
+                fig, ax = plt.subplots(1, 2, figsize=(16, 8))
+                for dim in range(dr):
+                    dim_name=env.unwrapped.dimensions[dim].name
+                    low=0
+                    high=1
+                    x=np.arange(low,high+rand_step,rand_step)
+                    
+                    scaled_instances=low + (high-low) * simulation_instances[:, :, dim]
+                    sampled_regions[dim]=np.concatenate([sampled_regions[dim],scaled_instances.flatten()])
+                      
+                    title=f"Sampled Regions for Randomization Dim = {dim_name} {env.rand} at Episode = {t_eps}"
+                    ax[0].grid(1)
+                    ax[0].hist(sampled_regions[dim][-500:], bins=np.arange(min(x),max(x)+2*rand_step,rand_step), histtype='barstacked')
+                    ax[0].set_xlim(min(x), max(x)+rand_step)
+                    ax[0].set_title(title)
+                    
+                    with torch.no_grad():
+                        x = torch.linspace(0, 1.0, 100).float().unsqueeze(1).to(device)
+                        for i, particle in enumerate(svpg.particles):
+                            _, value = particle(x)
+                            ax[1].plot(x, value.numpy(), label='Particle: {}'.format(i))
+                    ax[1].legend()
+                    #plt.show()
+                    plt.savefig(f'plots/sampled_regions_dim_{dim_name}_{env.rand}{common_name}{T_eps}.png')
+                    plt.clf()
+                    plt.close()
             
             #log episode results
             log_msg="Reward: {:.2f}, Episode: {}".format(mean_rewards, t_eps)
