@@ -10,6 +10,6 @@
 #SBATCH --mail-user=tarek.ibrahim@tuni.fi
 
 module load anaconda
-module load mujoco
+module load mujoco/2.0
 
 python auto_dr.py
