@@ -521,7 +521,7 @@ if __name__ == '__main__':
                 dim_name=env.unwrapped.dimensions[i].name
                 low=env.unwrapped.dimensions[i].range_min
                 high=env.unwrapped.dimensions[i].range_max
-                upper_limit=phis[dim_name]["low"] if phis[dim_name]["low"] > phis[dim_name]["low"] else phis[dim_name]["high"]
+                upper_limit=phis[dim_name]["low"] if phis[dim_name]["low"] > phis[dim_name]["high"] else phis[dim_name]["high"]
                 lambda_vec[i]=np.random.uniform(phis[dim_name]["low"],upper_limit)
                 lambda_norm[i]=(lambda_vec[i]-low)/high
                 
