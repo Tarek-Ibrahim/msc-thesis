@@ -469,7 +469,7 @@ if __name__ == '__main__':
     value_loss_coeff=1.0
     l2_reg_weight=1e-6
     epochs=5 #agnet training epochs
-    adr_delta=0.02
+    adr_delta=0.2
     pb=0.5 #boundary sampling probability
     
     env_names=['halfcheetah_custom_rand-v2','halfcheetah_custom_rand-v1','lunarlander_custom_820_rand-v0','cartpole_custom-v1','hopper_custom_rand-v2']
@@ -505,7 +505,7 @@ if __name__ == '__main__':
     rand_step=0.1 #for discretizing the sampled regions plot
     common_name="_autodr"
     verbose = 1 
-    plot_freq=5 #how often to plot
+    plot_freq=50 #how often to plot
     best_reward=-1e6
     
     episodes=progress(tr_eps) if not verbose else range(tr_eps)
@@ -606,6 +606,15 @@ if __name__ == '__main__':
                 plt.title(title)
                 plt.savefig(f'plots/sampled_regions_dim_{dim_name}_{env.rand}{common_name}.png')
                 plt.close()
+            
+            title="Training Rewards"
+            plt.figure(figsize=(16,8))
+            plt.grid(1)
+            plt.plot(plot_tr_rewards_mean)
+            plt.title(title)
+            # plt.show()
+            plt.savefig(f'plots/tr{common_name}.png')
+            plt.close()
         
         #save best running model [params]
         eval_rewards=np.mean(plot_tr_rewards_mean[-meta_b:])
@@ -621,11 +630,11 @@ if __name__ == '__main__':
             
     #%% Results & Plots
 
-    title="Training Rewards"
-    plt.figure(figsize=(16,8))
-    plt.grid(1)
-    plt.plot(plot_tr_rewards_mean)
-    plt.title(title)
-    # plt.show()
-    plt.savefig(f'plots/tr{common_name}.png')
-    plt.close()
+    # title="Training Rewards"
+    # plt.figure(figsize=(16,8))
+    # plt.grid(1)
+    # plt.plot(plot_tr_rewards_mean)
+    # plt.title(title)
+    # # plt.show()
+    # plt.savefig(f'plots/tr{common_name}.png')
+    # plt.close()
