@@ -111,7 +111,7 @@ class SVPGParticleActor(nn.Module):
             # nn.Tanh()
         )
         
-        self.logstd=nn.Parameter(torch.zeros((1,output_dim)))
+        self.logstd=nn.Parameter(torch.zeros((1,output_dim))-1)
 
     def forward(self, x):
         
@@ -321,7 +321,7 @@ class SVPG:
 if __name__ == '__main__':
     
     n_particles=3 #10 
-    temp=10. #temperature
+    temp=0.0001 #temperature
     lr_svpg=0.003 #0.0003
     gamma_svpg=0.99
     h_svpg=32 #64 #100
@@ -330,8 +330,8 @@ if __name__ == '__main__':
     xp_types=["peak","valley"] #experiment types
     xp_type=xp_types[0]
     T_svpg=20 #50 #svpg rollout length
-    delta_max = 0.05 #0.005 #0.05 #maximum allowable change to svpg states (i.e. upper bound on the svpg action)
-    H_svpg = 100 #svpg horizon (how often the particles are reset)
+    delta_max = 0.5 #0.05 #0.005 #0.05 #maximum allowable change to svpg states (i.e. upper bound on the svpg action)
+    H_svpg = 20 # 100 #svpg horizon (how often the particles are reset)
     rewards_scale=1.
     
     env_names=['halfcheetah_custom_norm-v1','halfcheetah_custom_rand-v1','lunarlander_custom_820_rand-v0','cartpole_custom-v1']
@@ -364,10 +364,10 @@ if __name__ == '__main__':
             simulation_instances_mask = np.concatenate([simulation_instances[:,1:,0],next_instances],1)
             rewards = np.ones_like(simulation_instances_mask,dtype=np.float32)
             if xp_type =="peak":
-                rewards[((simulation_instances_mask<=0.40).astype(int) + (simulation_instances_mask>=0.60).astype(int)).astype(bool)]=-10.
+                rewards[((simulation_instances_mask<=0.40).astype(int) + (simulation_instances_mask>=0.60).astype(int)).astype(bool)]=-1.
                 # rewards *= 1./(np.abs(0.5-simulation_instances_mask)+1e-8)
             elif xp_type=="valley":
-                rewards[((simulation_instances_mask>=0.40).astype(int) * (simulation_instances_mask<=0.60).astype(int)).astype(bool)]=-10.
+                rewards[((simulation_instances_mask>=0.40).astype(int) * (simulation_instances_mask<=0.60).astype(int)).astype(bool)]=-1.
                 # rewards *= - 1./(np.abs(0.5-simulation_instances_mask)+1e-8)
             
             rewards = rewards * rewards_scale
