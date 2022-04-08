@@ -398,7 +398,7 @@ def compute_advantages(states,rewards,critic,gamma,masks):
     return advantages
 
 
-def surrogate_loss(D_dashes,policy,value_net,gamma,clip=0.2):
+def surrogate_loss(D_dashes,policy,value_net,gamma,clip=0.2,ent_coeff=0.):
     
     losses =[] 
         
@@ -418,8 +418,8 @@ def surrogate_loss(D_dashes,policy,value_net,gamma,clip=0.2):
             ratio = ratio.sum(2)
         ratio = torch.exp(ratio)
         surr1= ratio * advantages
-        surr2=torch.clip(ratio,1-clip,1+clip)*advantages
-        actor_loss = - weighted_mean(torch.minimum(surr1,surr2),axis=0,weights=masks) #+ critic_loss - 0.01 * weighted_mean(pi.entropy(),axis=0,weights=masks)
+        surr2=torch.clip(ratio,1.-clip,1.+clip)*advantages
+        actor_loss = - weighted_mean(torch.minimum(surr1,surr2),axis=0,weights=masks) + ent_coeff * weighted_mean(pi.entropy(),axis=0,weights=masks)  #+ critic_loss - 0.01 * weighted_mean(pi.entropy(),axis=0,weights=masks)
         # total_loss = - weighted_mean(tf.exp(ratio)*advantages,axis=0,weights=masks)
         losses.append(actor_loss)
     
@@ -460,20 +460,20 @@ if __name__ == '__main__':
     
     lr=3e-4
     gamma=0.99
-    h=64 #100
+    h=128 #64 #100
     tau=0.95 #GAE lambda
-    thr_high=6 #20 #high threshold for no. of *consecutive* successes
-    thr_low=2 #10 #low threshold for no. of *consecutive* successes
+    thr_high=7 #2 #6 #20 #high threshold for no. of *consecutive* successes
+    thr_low=2 #1 #10 #low threshold for no. of *consecutive* successes
     clip=0.2
-    entropy_reg_coeff=0.01
-    value_loss_coeff=1.0
-    l2_reg_weight=1e-6
-    epochs=5 #agnet training epochs
-    adr_delta=0.2
+    ent_coeff=0. #0.01
+    # vf_coeff=1.0
+    # l2_reg_weight=1e-6
+    # epochs=5 #agnet training epochs
+    adr_delta=0.25
     pb=0.5 #boundary sampling probability
     
     env_names=['halfcheetah_custom_rand-v2','halfcheetah_custom_rand-v1','lunarlander_custom_820_rand-v0','cartpole_custom-v1','hopper_custom_rand-v2']
-    env_name=env_names[0]
+    env_name=env_names[2]
     env=gym.make(env_name)
     T_env=env._max_episode_steps #task horizon / max env timesteps
     ds=env.observation_space.shape[0] #state dims
@@ -481,9 +481,9 @@ if __name__ == '__main__':
     dr=env.unwrapped.randomization_space.shape[0]
     n_workers=10 #3 #W
     b=n_workers
-    thr_r= env.spec.reward_threshold / 8. #define a success in an episode to mean reaching this threshold
-    m=240 #length of performance buffer
-    meta_b= 5
+    thr_r= 200. #env.spec.reward_threshold / 50. #8. #define a success in an episode to mean reaching this threshold
+    m=30 #3 #240 #length of performance buffer
+    meta_b=3 #1 #3 #5
     
     assert thr_low < thr_high < n_workers
     
@@ -497,16 +497,20 @@ if __name__ == '__main__':
     D={str(env.unwrapped.dimensions[dim].name):{"low":[],"high":[]} for dim in range(dr)} #Performance buffers/queues
     
     phis={str(env.unwrapped.dimensions[dim].name):{"low":env.unwrapped.dimensions[dim].default_value,"high":env.unwrapped.dimensions[dim].default_value} for dim in range(dr)}
+    
+    phis_plot={str(env.unwrapped.dimensions[dim].name):{"low":[env.unwrapped.dimensions[dim].default_value],"high":[env.unwrapped.dimensions[dim].default_value]} for dim in range(dr)}
+    
     lambda_vec=np.zeros(dr)
     
     tr_eps=int(1e6) #1000
     plot_tr_rewards_mean=[]
     sampled_regions = [[] for _ in range(dr)]
-    rand_step=0.1 #for discretizing the sampled regions plot
+    rand_step=0.25 #for discretizing the sampled regions plot
     common_name="_autodr"
-    verbose = 1 
-    plot_freq=50 #how often to plot
+    verbose = 1 #0 #1 
+    plot_freq=50 #5 #how often to plot
     best_reward=-1e6
+    p_bar=0.
     
     episodes=progress(tr_eps) if not verbose else range(tr_eps)
     for episode in episodes:
@@ -521,21 +525,27 @@ if __name__ == '__main__':
                 dim_name=env.unwrapped.dimensions[i].name
                 low=env.unwrapped.dimensions[i].range_min
                 high=env.unwrapped.dimensions[i].range_max
-                upper_limit=phis[dim_name]["low"] if phis[dim_name]["low"] > phis[dim_name]["high"] else phis[dim_name]["high"]
-                lambda_vec[i]=np.random.uniform(phis[dim_name]["low"],upper_limit)
-                lambda_norm[i]=(lambda_vec[i]-low)/high
+                # upper_limit=phis[dim_name]["low"] if phis[dim_name]["low"] > phis[dim_name]["high"] else phis[dim_name]["high"]
+                lambda_vec[i]=np.random.uniform(phis[dim_name]["low"],phis[dim_name]["high"])
+                lambda_norm[i]=(lambda_vec[i]-low)/(high-low)
                 
             #execute algorithm 1 (adr eval worker)
             if np.random.rand() < pb: 
                 
                 i = np.random.randint(0,dr)
-                boundary="low" if np.random.rand() < 0.5 else "high"
+                if np.random.rand() < 0.5:
+                    boundary="low"
+                    other_boundary="high"
+                else:
+                    boundary="high"
+                    other_boundary="low"
                 dim_name=env.unwrapped.dimensions[i].name
                 lambda_vec[i]=phis[dim_name][boundary]
                 
                 low=env.unwrapped.dimensions[i].range_min
                 high=env.unwrapped.dimensions[i].range_max
-                lambda_norm[i] = (lambda_vec[i]-low)/high
+                default=env.unwrapped.dimensions[i].default_value
+                lambda_norm[i] = (lambda_vec[i]-low)/(high-low)
                 envs.randomize(np.tile(lambda_norm,(n_workers,1)))
                 
                 trajs=collect_rollout_batch(envs, ds, da, policy, T_env, b, n_workers, queue)
@@ -548,11 +558,21 @@ if __name__ == '__main__':
                 if len(D[dim_name][boundary])>=m:
                     p_bar=np.mean(D[dim_name][boundary])
                     D[dim_name][boundary]=[]
-                    if p_bar>=thr_high:
-                        phis[dim_name][boundary]+=adr_delta
-                    elif p_bar<=thr_low:
-                        phis[dim_name][boundary]-=adr_delta
-                    phis[dim_name][boundary] = np.clip(phis[dim_name][boundary],low,high)
+                    if p_bar>=thr_high: #expand bounds
+                        if boundary=="low": 
+                            phis[dim_name][boundary]=max(phis[dim_name][boundary] - adr_delta, low) #decrease lower bound
+                        else:
+                            phis[dim_name][boundary]=min(phis[dim_name][boundary] + adr_delta, high) #increase upper bound
+                        phis_plot[dim_name][boundary].append(phis[dim_name][boundary])
+                        phis_plot[dim_name][other_boundary].append(phis[dim_name][other_boundary])
+                    elif p_bar<=thr_low: #tighten bounds
+                        if boundary=="high":    
+                            phis[dim_name][boundary]=max(phis[dim_name][boundary] - adr_delta, default) #decrease upper bound
+                        else:
+                            phis[dim_name][boundary]=min(phis[dim_name][boundary] + adr_delta, default) #increase lower bound
+                        phis_plot[dim_name][boundary].append(phis[dim_name][boundary])
+                        phis_plot[dim_name][other_boundary].append(phis[dim_name][other_boundary])
+                    # phis[dim_name][boundary] = np.clip(phis[dim_name][boundary],low,high)
                 
             #execute algorithm 2 (rollout worker)    
             else:
@@ -581,7 +601,7 @@ if __name__ == '__main__':
         
         #optimize RL agent/policy
         #sample from rollout/training buffer
-        loss=surrogate_loss(D_dashes,policy,value_net,gamma,clip)
+        loss=surrogate_loss(D_dashes,policy,value_net,gamma,clip,ent_coeff)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -606,6 +626,16 @@ if __name__ == '__main__':
                 plt.title(title)
                 plt.savefig(f'plots/sampled_regions_dim_{dim_name}_{env.rand}{common_name}.png')
                 plt.close()
+                
+                title=f"Boundaries Change for Randomization Dim = {dim_name} {env.rand} at Episode = {episode}"
+                plt.figure(figsize=(16,8))
+                plt.grid(1)
+                plt.plot(phis_plot[dim_name]["low"],label="Lower Bound")
+                plt.plot(phis_plot[dim_name]["high"],label="Upper Bound")
+                plt.title(title)
+                plt.legend()
+                plt.savefig(f'plots/boundaries_change_dim_{dim_name}_{env.rand}{common_name}.png')
+                plt.close()
             
             title="Training Rewards"
             plt.figure(figsize=(16,8))
@@ -622,7 +652,7 @@ if __name__ == '__main__':
             best_reward=eval_rewards
             torch.save(policy.state_dict(), f"saved_models/model{common_name}.pt")
         
-        log_msg="Rewards Agent: {:.2f}".format(rewards.sum(0).mean())
+        log_msg="Rewards Agent: {:.2f}, Avg Performace: {:.2f}".format(rewards.sum(0).mean(), p_bar)
         if verbose:
             print(log_msg+f" Episode: {episode}")
         else:
