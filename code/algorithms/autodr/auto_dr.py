@@ -14,9 +14,7 @@ for env in gym.envs.registration.registry.env_specs.copy():
 import gym_custom
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from torch.optim import Adam
-from torch.distributions.kl import kl_divergence
 from torch.distributions import Normal, Independent, MultivariateNormal 
 import timeit
 import queue as Q
@@ -462,8 +460,8 @@ if __name__ == '__main__':
     gamma=0.99
     h=128 #64 #100
     tau=0.95 #GAE lambda
-    thr_high=7 #2 #6 #20 #high threshold for no. of *consecutive* successes
-    thr_low=2 #1 #10 #low threshold for no. of *consecutive* successes
+    thr_high=8 #7 #2 #6 #20 #high threshold for no. of *consecutive* successes
+    thr_low=4 #2 #1 #10 #low threshold for no. of *consecutive* successes
     clip=0.2
     ent_coeff=0. #0.01
     # vf_coeff=1.0
@@ -482,10 +480,10 @@ if __name__ == '__main__':
     n_workers=10 #3 #W
     b=n_workers
     thr_r= 200. #env.spec.reward_threshold / 50. #8. #define a success in an episode to mean reaching this threshold
-    m=30 #3 #240 #length of performance buffer
+    m=50 #30 #3 #240 #length of performance buffer
     meta_b=3 #1 #3 #5
     
-    assert thr_low < thr_high < n_workers
+    assert thr_low < thr_high <= n_workers
     
     envs=make_vec_envs(env_name, seed, n_workers, ds, da, queue, lock)
     
@@ -511,6 +509,7 @@ if __name__ == '__main__':
     plot_freq=50 #5 #how often to plot
     best_reward=-1e6
     p_bar=0.
+    bounds_reached={str(env.unwrapped.dimensions[dim].name):{"low":0,"high":0} for dim in range(dr)}
     
     episodes=progress(tr_eps) if not verbose else range(tr_eps)
     for episode in episodes:
@@ -561,10 +560,15 @@ if __name__ == '__main__':
                     if p_bar>=thr_high: #expand bounds
                         if boundary=="low": 
                             phis[dim_name][boundary]=max(phis[dim_name][boundary] - adr_delta, low) #decrease lower bound
+                            if phis[dim_name]["low"] <= low:
+                                bounds_reached[dim_name]["low"]+=1
                         else:
                             phis[dim_name][boundary]=min(phis[dim_name][boundary] + adr_delta, high) #increase upper bound
+                            if phis[dim_name]["high"] >= high:
+                                bounds_reached[dim_name]["high"]+=1
                         phis_plot[dim_name][boundary].append(phis[dim_name][boundary])
                         phis_plot[dim_name][other_boundary].append(phis[dim_name][other_boundary])
+
                     elif p_bar<=thr_low: #tighten bounds
                         if boundary=="high":    
                             phis[dim_name][boundary]=max(phis[dim_name][boundary] - adr_delta, default) #decrease upper bound
@@ -591,9 +595,7 @@ if __name__ == '__main__':
         n_covered_dims=0
         for dim in range(dr):
             dim_name=env.unwrapped.dimensions[i].name
-            low=env.unwrapped.dimensions[i].range_min
-            high=env.unwrapped.dimensions[i].range_max
-            if phis[dim_name]["low"] <= low and phis[dim_name]["high"] >= high:
+            if bounds_reached[dim_name]["low"] > 1 and bounds_reached[dim_name]["high"] > 1:
                 n_covered_dims += 1
         
         if n_covered_dims == dr:
