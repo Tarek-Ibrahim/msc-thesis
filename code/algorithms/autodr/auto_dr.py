@@ -458,7 +458,7 @@ if __name__ == '__main__':
     
     lr=3e-4
     gamma=0.99
-    h=128 #64 #100
+    h=256 #64 #100
     tau=0.95 #GAE lambda
     thr_high=8 #7 #2 #6 #20 #high threshold for no. of *consecutive* successes
     thr_low=4 #2 #1 #10 #low threshold for no. of *consecutive* successes
@@ -481,7 +481,7 @@ if __name__ == '__main__':
     b=n_workers
     thr_r= 200. #env.spec.reward_threshold / 50. #8. #define a success in an episode to mean reaching this threshold
     m=50 #30 #3 #240 #length of performance buffer
-    meta_b=3 #1 #3 #5
+    meta_b=20 #1 #3 #5
     
     assert thr_low < thr_high <= n_workers
     
