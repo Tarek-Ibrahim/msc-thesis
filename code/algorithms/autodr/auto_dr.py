@@ -146,7 +146,8 @@ def collect_rollout_batch(envs, ds, da, policy, T, b, n_workers, queue): # a bat
         rewards_mat[:T_rollout,rollout_idx]= np.stack(rewards[rollout_idx])
         masks_mat[:T_rollout,rollout_idx]=1.0
     
-    D=[torch.from_numpy(states_mat).to(device), torch.from_numpy(actions_mat).to(device), torch.from_numpy(rewards_mat).to(device), torch.from_numpy(masks_mat).to(device)]
+    # D=[torch.from_numpy(states_mat).to(device), torch.from_numpy(actions_mat).to(device), torch.from_numpy(rewards_mat).to(device), torch.from_numpy(masks_mat).to(device)]
+    D=[states_mat, actions_mat, np.expand_dims(rewards_mat,-1), np.expand_dims(masks_mat,-1)]
     
     return D
 
@@ -456,17 +457,18 @@ if __name__ == '__main__':
     seed = 1
     set_seed(seed)
     
-    lr=3e-4
+    lr=0.001 #3e-4
     gamma=0.99
-    h=128 #64 #100
+    h=256 #64 #100
     tau=0.95 #GAE lambda
-    thr_high=8 #7 #2 #6 #20 #high threshold for no. of *consecutive* successes
-    thr_low=4 #2 #1 #10 #low threshold for no. of *consecutive* successes
+    thr_high=7 #8 #7 #2 #6 #20 #high threshold for no. of *consecutive* successes
+    thr_low=3 #4 #2 #1 #10 #low threshold for no. of *consecutive* successes
     clip=0.2
     ent_coeff=0. #0.01
     # vf_coeff=1.0
     # l2_reg_weight=1e-6
-    # epochs=5 #agnet training epochs
+    epochs=10 #agnet training epochs
+    batch_size=128
     adr_delta=0.25
     pb=0.5 #boundary sampling probability
     
@@ -480,8 +482,8 @@ if __name__ == '__main__':
     n_workers=10 #3 #W
     b=n_workers
     thr_r= 200. #env.spec.reward_threshold / 50. #8. #define a success in an episode to mean reaching this threshold
-    m=50 #30 #3 #240 #length of performance buffer
-    meta_b=3 #1 #3 #5
+    m=20 #30 #3 #240 #length of performance buffer
+    meta_b=20 #1 #3 #5
     
     assert thr_low < thr_high <= n_workers
     
@@ -550,7 +552,8 @@ if __name__ == '__main__':
                 trajs=collect_rollout_batch(envs, ds, da, policy, T_env, b, n_workers, queue)
                 _,_,rewards,_=trajs
                 
-                p=(rewards.sum(0).detach().cpu().numpy()>=thr_r).astype(int).sum()
+                # p=(rewards.sum(0).detach().cpu().numpy()>=thr_r).astype(int).sum()
+                p=(rewards.sum(0)>=thr_r).astype(int).sum()
                 # RB.add(trajs) #add trajs to rollout training buffer
                 D[dim_name][boundary].append(p)
                 
@@ -585,7 +588,8 @@ if __name__ == '__main__':
                 trajs=collect_rollout_batch(envs, ds, da, policy, T_env, b, n_workers, queue)
                 _,_,rewards,_=trajs
             
-            plot_tr_rewards_mean.append(rewards.sum(0).mean().detach().cpu().item())
+            # plot_tr_rewards_mean.append(rewards.sum(0).mean().detach().cpu().item())
+            plot_tr_rewards_mean.append(rewards.sum(0).mean())
             D_dashes.append(trajs)
             lambda_norms.append(lambda_norm)
             
@@ -603,10 +607,20 @@ if __name__ == '__main__':
         
         #optimize RL agent/policy
         #sample from rollout/training buffer
-        loss=surrogate_loss(D_dashes,policy,value_net,gamma,clip,ent_coeff)
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+        D_dashes=np.concatenate([np.concatenate(D_dash,-1) for D_dash in D_dashes])
+        for epoch in range(epochs):
+            idxs=np.random.randint(0, D_dashes.shape[0], size=int(D_dashes.shape[0]))
+            n_batches=D_dashes.shape[0] // batch_size
+            for batch_num in range(n_batches): 
+                D_dashes_batch_idxs=idxs[batch_num * batch_size : (batch_num + 1) * batch_size]
+                D_dashes_batch=D_dashes[D_dashes_batch_idxs]
+                sn,an,rn,mn=D_dashes_batch[:,:,:ds],D_dashes_batch[:,:,ds:ds+da],D_dashes_batch[:,:,ds+da:ds+da+1],D_dashes_batch[:,:,ds+da+1:]
+                D_dashes_batch=[[torch.from_numpy(sn).to(device), torch.from_numpy(an).to(device), torch.from_numpy(rn).squeeze().to(device), torch.from_numpy(mn).squeeze().to(device)]]
+                
+                loss=surrogate_loss(D_dashes_batch,policy,value_net,gamma,clip,ent_coeff)
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
         
         #plot sampled regions
         if episode % plot_freq == 0:
