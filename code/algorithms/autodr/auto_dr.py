@@ -552,8 +552,8 @@ if __name__ == '__main__':
                 trajs=collect_rollout_batch(envs, ds, da, policy, T_env, b, n_workers, queue)
                 _,_,rewards,_=trajs
                 
-                # p=(rewards.sum(0).detach().cpu().numpy()>=thr_r).astype(int).sum()
-                p=(rewards.sum(0)>=thr_r).astype(int).sum()
+                p=(rewards.sum(0).detach().cpu().numpy()>=thr_r).astype(int).sum()
+                # p=(rewards.sum(0)>=thr_r).astype(int).sum()
                 # RB.add(trajs) #add trajs to rollout training buffer
                 D[dim_name][boundary].append(p)
                 
@@ -588,8 +588,8 @@ if __name__ == '__main__':
                 trajs=collect_rollout_batch(envs, ds, da, policy, T_env, b, n_workers, queue)
                 _,_,rewards,_=trajs
             
-            # plot_tr_rewards_mean.append(rewards.sum(0).mean().detach().cpu().item())
-            plot_tr_rewards_mean.append(rewards.sum(0).mean())
+            plot_tr_rewards_mean.append(rewards.sum(0).mean().detach().cpu().item())
+            # plot_tr_rewards_mean.append(rewards.sum(0).mean())
             D_dashes.append(trajs)
             lambda_norms.append(lambda_norm)
             
