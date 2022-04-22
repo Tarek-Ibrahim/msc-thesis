@@ -18,6 +18,7 @@ from torch.optim import Adam
 from torch.distributions import Normal, Independent, MultivariateNormal 
 import timeit
 import queue as Q
+import random
 
 
 #%% General
@@ -32,7 +33,6 @@ torch.autograd.set_detect_anomaly(True)
 progress=lambda x: tqdm.trange(x, leave=True) #for visualizing/monitoring training progress
 
 def set_seed(seed):
-    import random
     
     torch.manual_seed(seed)
     np.random.seed(seed)
@@ -146,8 +146,8 @@ def collect_rollout_batch(envs, ds, da, policy, T, b, n_workers, queue): # a bat
         rewards_mat[:T_rollout,rollout_idx]= np.stack(rewards[rollout_idx])
         masks_mat[:T_rollout,rollout_idx]=1.0
     
-    # D=[torch.from_numpy(states_mat).to(device), torch.from_numpy(actions_mat).to(device), torch.from_numpy(rewards_mat).to(device), torch.from_numpy(masks_mat).to(device)]
-    D=[states_mat, actions_mat, np.expand_dims(rewards_mat,-1), np.expand_dims(masks_mat,-1)]
+    D=[torch.from_numpy(states_mat).to(device), torch.from_numpy(actions_mat).to(device), torch.from_numpy(rewards_mat).to(device), torch.from_numpy(masks_mat).to(device)]
+    # D=[states_mat, actions_mat, np.expand_dims(rewards_mat,-1), np.expand_dims(masks_mat,-1)]
     
     return D
 
@@ -467,7 +467,7 @@ if __name__ == '__main__':
     ent_coeff=0. #0.01
     # vf_coeff=1.0
     # l2_reg_weight=1e-6
-    epochs=10 #agnet training epochs
+    epochs=7 #agnet training epochs
     batch_size=128
     adr_delta=0.25
     pb=0.5 #boundary sampling probability
@@ -483,7 +483,7 @@ if __name__ == '__main__':
     b=n_workers
     thr_r= 200. #env.spec.reward_threshold / 50. #8. #define a success in an episode to mean reaching this threshold
     m=20 #30 #3 #240 #length of performance buffer
-    meta_b=20 #1 #3 #5
+    meta_b=15 #1 #3 #5
     
     assert thr_low < thr_high <= n_workers
     
@@ -607,20 +607,27 @@ if __name__ == '__main__':
         
         #optimize RL agent/policy
         #sample from rollout/training buffer
-        D_dashes=np.concatenate([np.concatenate(D_dash,-1) for D_dash in D_dashes])
-        for epoch in range(epochs):
-            idxs=np.random.randint(0, D_dashes.shape[0], size=int(D_dashes.shape[0]))
-            n_batches=D_dashes.shape[0] // batch_size
-            for batch_num in range(n_batches): 
-                D_dashes_batch_idxs=idxs[batch_num * batch_size : (batch_num + 1) * batch_size]
-                D_dashes_batch=D_dashes[D_dashes_batch_idxs]
-                sn,an,rn,mn=D_dashes_batch[:,:,:ds],D_dashes_batch[:,:,ds:ds+da],D_dashes_batch[:,:,ds+da:ds+da+1],D_dashes_batch[:,:,ds+da+1:]
-                D_dashes_batch=[[torch.from_numpy(sn).to(device), torch.from_numpy(an).to(device), torch.from_numpy(rn).squeeze().to(device), torch.from_numpy(mn).squeeze().to(device)]]
+        for epoch in epochs:
+            random.shuffle(D_dashes)
+            loss=surrogate_loss(D_dashes,policy,value_net,gamma,clip,ent_coeff)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+        
+        # D_dashes=np.concatenate([np.concatenate(D_dash,-1) for D_dash in D_dashes])
+        # for epoch in range(epochs):
+        #     idxs=np.random.randint(0, D_dashes.shape[0], size=int(D_dashes.shape[0]))
+        #     n_batches=D_dashes.shape[0] // batch_size
+        #     for batch_num in range(n_batches): 
+        #         D_dashes_batch_idxs=idxs[batch_num * batch_size : (batch_num + 1) * batch_size]
+        #         D_dashes_batch=D_dashes[D_dashes_batch_idxs]
+        #         sn,an,rn,mn=D_dashes_batch[:,:,:ds],D_dashes_batch[:,:,ds:ds+da],D_dashes_batch[:,:,ds+da:ds+da+1],D_dashes_batch[:,:,ds+da+1:]
+        #         D_dashes_batch=[[torch.from_numpy(sn).to(device), torch.from_numpy(an).to(device), torch.from_numpy(rn).squeeze().to(device), torch.from_numpy(mn).squeeze().to(device)]]
                 
-                loss=surrogate_loss(D_dashes_batch,policy,value_net,gamma,clip,ent_coeff)
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
+        #         loss=surrogate_loss(D_dashes_batch,policy,value_net,gamma,clip,ent_coeff)
+        #         optimizer.zero_grad()
+        #         loss.backward()
+        #         optimizer.step()
         
         #plot sampled regions
         if episode % plot_freq == 0:
