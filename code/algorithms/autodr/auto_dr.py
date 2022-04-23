@@ -461,19 +461,19 @@ if __name__ == '__main__':
     gamma=0.99
     h=256 #64 #100
     tau=0.95 #GAE lambda
-    thr_high=7 #8 #7 #2 #6 #20 #high threshold for no. of *consecutive* successes
-    thr_low=3 #4 #2 #1 #10 #low threshold for no. of *consecutive* successes
+    thr_high=6 #7 #8 #7 #2 #6 #20 #high threshold for no. of *consecutive* successes
+    thr_low=2 #3 #4 #2 #1 #10 #low threshold for no. of *consecutive* successes
     clip=0.2
     ent_coeff=0. #0.01
     # vf_coeff=1.0
     # l2_reg_weight=1e-6
-    epochs=7 #agnet training epochs
-    batch_size=128
+    # epochs=7 #agnet training epochs
+    # batch_size=128
     adr_delta=0.25
     pb=0.5 #boundary sampling probability
     
     env_names=['halfcheetah_custom_rand-v2','halfcheetah_custom_rand-v1','lunarlander_custom_820_rand-v0','cartpole_custom-v1','hopper_custom_rand-v2']
-    env_name=env_names[2]
+    env_name=env_names[0]
     env=gym.make(env_name)
     T_env=env._max_episode_steps #task horizon / max env timesteps
     ds=env.observation_space.shape[0] #state dims
@@ -481,9 +481,9 @@ if __name__ == '__main__':
     dr=env.unwrapped.randomization_space.shape[0]
     n_workers=10 #3 #W
     b=n_workers
-    thr_r= 200. #env.spec.reward_threshold / 50. #8. #define a success in an episode to mean reaching this threshold
+    thr_r= 300. #1200. #200. #env.spec.reward_threshold / 50. #8. #define a success in an episode to mean reaching this threshold
     m=20 #30 #3 #240 #length of performance buffer
-    meta_b=15 #1 #3 #5
+    meta_b=20 #1 #3 #5
     
     assert thr_low < thr_high <= n_workers
     
@@ -607,12 +607,17 @@ if __name__ == '__main__':
         
         #optimize RL agent/policy
         #sample from rollout/training buffer
-        for epoch in epochs:
-            random.shuffle(D_dashes)
-            loss=surrogate_loss(D_dashes,policy,value_net,gamma,clip,ent_coeff)
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+        loss=surrogate_loss(D_dashes,policy,value_net,gamma,clip,ent_coeff)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        
+        # for epoch in epochs:
+        #     random.shuffle(D_dashes)
+        #     loss=surrogate_loss(D_dashes,policy,value_net,gamma,clip,ent_coeff)
+        #     optimizer.zero_grad()
+        #     loss.backward()
+        #     optimizer.step()
         
         # D_dashes=np.concatenate([np.concatenate(D_dash,-1) for D_dash in D_dashes])
         # for epoch in range(epochs):
