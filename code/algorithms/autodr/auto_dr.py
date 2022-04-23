@@ -469,7 +469,7 @@ if __name__ == '__main__':
     # l2_reg_weight=1e-6
     # epochs=7 #agnet training epochs
     # batch_size=128
-    adr_delta=0.25
+    adr_delta=0.15
     pb=0.5 #boundary sampling probability
     
     env_names=['halfcheetah_custom_rand-v2','halfcheetah_custom_rand-v1','lunarlander_custom_820_rand-v0','cartpole_custom-v1','hopper_custom_rand-v2']
@@ -481,7 +481,7 @@ if __name__ == '__main__':
     dr=env.unwrapped.randomization_space.shape[0]
     n_workers=10 #3 #W
     b=n_workers
-    thr_r= 1200. #200. #env.spec.reward_threshold / 50. #8. #define a success in an episode to mean reaching this threshold
+    thr_r= 400. #1200. #200. #env.spec.reward_threshold / 50. #8. #define a success in an episode to mean reaching this threshold
     m=20 #30 #3 #240 #length of performance buffer
     meta_b=20 #1 #3 #5
     
@@ -502,10 +502,10 @@ if __name__ == '__main__':
     
     lambda_vec=np.zeros(dr)
     
-    tr_eps=int(1e6) #1000
+    tr_eps=250 #int(1e6) #1000
     plot_tr_rewards_mean=[]
     sampled_regions = [[] for _ in range(dr)]
-    rand_step=0.25 #for discretizing the sampled regions plot
+    rand_step=0.15 #for discretizing the sampled regions plot
     common_name="_autodr"
     verbose = 1 #0 #1 
     plot_freq=5 #5 #how often to plot
