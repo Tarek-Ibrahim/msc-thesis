@@ -481,9 +481,9 @@ if __name__ == '__main__':
     dr=env.unwrapped.randomization_space.shape[0]
     n_workers=10 #3 #W
     b=n_workers
-    thr_r= 400. #1200. #200. #env.spec.reward_threshold / 50. #8. #define a success in an episode to mean reaching this threshold
+    thr_r= 300. #1200. #200. #env.spec.reward_threshold / 50. #8. #define a success in an episode to mean reaching this threshold
     m=20 #30 #3 #240 #length of performance buffer
-    meta_b=20 #1 #3 #5
+    meta_b=15 #1 #3 #5
     
     assert thr_low < thr_high <= n_workers
     
