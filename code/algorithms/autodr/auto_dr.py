@@ -481,7 +481,7 @@ if __name__ == '__main__':
     dr=env.unwrapped.randomization_space.shape[0]
     n_workers=10 #3 #W
     b=n_workers
-    thr_r= 300. #1200. #200. #env.spec.reward_threshold / 50. #8. #define a success in an episode to mean reaching this threshold
+    thr_r= 1200. #200. #env.spec.reward_threshold / 50. #8. #define a success in an episode to mean reaching this threshold
     m=20 #30 #3 #240 #length of performance buffer
     meta_b=20 #1 #3 #5
     
@@ -508,7 +508,7 @@ if __name__ == '__main__':
     rand_step=0.25 #for discretizing the sampled regions plot
     common_name="_autodr"
     verbose = 1 #0 #1 
-    plot_freq=50 #5 #how often to plot
+    plot_freq=5 #5 #how often to plot
     best_reward=-1e6
     p_bar=0.
     bounds_reached={str(env.unwrapped.dimensions[dim].name):{"low":0,"high":0} for dim in range(dr)}
