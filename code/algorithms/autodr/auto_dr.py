@@ -457,17 +457,17 @@ if __name__ == '__main__':
     seed = 1
     set_seed(seed)
     
-    lr=0.001 #3e-4
+    lr=3e-4 #0.001 #3e-4
     gamma=0.99
     h=256 #64 #100
-    tau=0.95 #GAE lambda
+    # tau=0.95 #GAE lambda
     thr_high=6 #7 #8 #7 #2 #6 #20 #high threshold for no. of *consecutive* successes
     thr_low=2 #3 #4 #2 #1 #10 #low threshold for no. of *consecutive* successes
     clip=0.2
     ent_coeff=0. #0.01
     # vf_coeff=1.0
     # l2_reg_weight=1e-6
-    # epochs=7 #agnet training epochs
+    epochs=1 #5 #7 #agnet training epochs
     # batch_size=128
     adr_delta=0.15
     pb=0.5 #boundary sampling probability
@@ -483,7 +483,7 @@ if __name__ == '__main__':
     b=n_workers
     thr_r= 300. #1200. #200. #env.spec.reward_threshold / 50. #8. #define a success in an episode to mean reaching this threshold
     m=20 #30 #3 #240 #length of performance buffer
-    meta_b=40 #1 #3 #5
+    meta_b=20 #1 #3 #5
     
     assert thr_low < thr_high <= n_workers
     
@@ -510,7 +510,7 @@ if __name__ == '__main__':
     verbose = 1 #0 #1 
     plot_freq=1 #50 #how often to plot
     best_reward=-1e6
-    p_bar=0.
+    # p_bar=0.
     bounds_reached={str(env.unwrapped.dimensions[dim].name):{"low":0,"high":0} for dim in range(dr)}
     
     episodes=progress(tr_eps) if not verbose else range(tr_eps)
@@ -607,10 +607,11 @@ if __name__ == '__main__':
         
         #optimize RL agent/policy
         #sample from rollout/training buffer
-        loss=surrogate_loss(D_dashes,policy,value_net,gamma,clip,ent_coeff)
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+        for epoch in epochs:
+            loss=surrogate_loss(D_dashes,policy,value_net,gamma,clip,ent_coeff)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
         
         # for epoch in epochs:
         #     random.shuffle(D_dashes)
