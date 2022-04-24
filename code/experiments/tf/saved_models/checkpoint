@@ -1,0 +1,2 @@
+model_checkpoint_path: "model_maml_trpo_active_dr_disc_svpg_a2c_hopper_friction"
+all_model_checkpoint_paths: "model_maml_trpo_active_dr_disc_svpg_a2c_hopper_friction"

@@ -1,0 +1,201 @@
+---
+
+#Envs
+env_names: {"halfcheetah_sizes": 'halfcheetah_custom_rand-v1', "halfcheetah_friction": 'halfcheetah_custom_rand-v2', "lunarlander": 'lunarlander_custom_820_rand-v0', "hopper_damping": 'hopper_custom_rand-v1', "hopper_friction": 'hopper_custom_rand-v2'}
+
+#Dirs
+plots_tr_dir: "results/plots/train/"
+plots_ts_dir: "results/plots/test/"
+models_dir: "saved_models/"
+
+#Misc
+figsize: [22,11]
+
+#============================================
+#============================================
+
+#parameters
+debug_mode:
+
+    #General
+    tr_eps: 7
+    te_eps: 3
+    
+    #Evaluation
+    evaluate: True
+    log_ival: 1
+    eval_eps: 2
+    
+    #Seed
+    seeds: [1,2]
+    
+    #Env
+    n_workers: &n_workers_debug 3 #n_envs
+    
+    #Common
+    gamma: &gamma 0.99
+    
+    #Agent
+    h_agent: &h_agent_debug 64
+    lr_agent: &lr_agent_debug 0.1 #(for maml: adaptation step size / inner learning rate)
+    
+    #DR
+    h_dr: &h_dr_debug 16
+    lr_dr: &lr_dr_debug 0.3
+    T_dr_init: 10
+    T_dr: &T_dr_debug 2
+    H_dr: &H_dr_debug 5
+    b_dr: 256 #batch size
+    epochs_dr: 30
+    
+    #MAML
+    # n: 2 #no. of NN layers
+    b_maml: *n_workers_debug #batch size: Number of trajectories (rollouts) to sample from each task
+    meta_b: 3
+    
+    #TRPO
+    max_grad_kl: 1.0e-2
+    max_backtracks: 15
+    accept_ratio: 0.1
+    zeta: 0.8 #0.5
+    rdotr_tol: 1.0e-10
+    nsteps: 10
+    damping: 1.0e-5 #0.01
+    
+    #PPO
+    clip: 0.2
+    
+    #Discriminator
+    r_disc_scale: 1.0 #reward scale
+    r_map_scale: 0.01
+    h_disc: 32
+    lr_disc: 0.2 
+    b_disc: 32
+    
+    #SVPG
+    n_particles: *n_workers_debug
+    temp_svpg: 0.0001 #10.0 #temperature
+    delta_max: 0.5 #maximum allowable change to env randomization params caused by svpg particles (If discrete, this is fixed, If continuous, this is max)
+    svpg_kernel_mode: &svpg_kernel_mode 2
+    T_svpg_init: 0 #number of svpg steps to take before updates
+    #SVPG_A2C
+    H_svpg: *H_dr_debug #how often to fully reset svpg particles
+    T_svpg: *T_dr_debug #length of one svpg particle rollout
+    T_rand_rollout: *T_dr_debug #for UDR and Auto DR
+    
+    #SAC
+    temp_min: 0.0001
+    temp_discount: 0.1
+    T_temp_init: 10
+    temp_sac: 1.0
+    
+    #AutoDR
+    thr_high: 2 #high threshold for no. of *consecutive* successes
+    thr_low: 1 #low threshold for no. of *consecutive* successes
+    delta: 0.2
+    perf_buff_len: 3 #length of performance buffer
+    
+    #MB-MPO
+    n_models: *n_workers_debug #number of models in the ensemble
+    b_mbmpo: 32 #model training batch size
+    lr_mbmpo: *lr_agent_debug #model learning rate
+    epochs_mbmpo: 2 #number of model training epochs per iteration
+    n_mbmpo: 2 #number of model hidden layers
+    h_models: 64
+    h_mbmpo: 16
+
+#============================================
+#============================================
+
+run_mode:
+
+    #General
+    tr_eps: 250 #500
+    te_eps: 20
+    
+    #Evaluation
+    evaluate: True
+    log_ival: 1 #logging interval
+    eval_eps: 5
+    
+    #Seed
+    seeds: [1] #[1,2,3]
+    
+    #Env
+    n_workers: &n_workers_run 10 #n_particles #mp.cpu_count() - 1 #:n_envs
+    
+    #Common
+    gamma: *gamma
+    
+    #Agent
+    h_agent: &h_agent_run 256
+    lr_agent: &lr_agent_run 0.001 #(for maml: adaptation step size / inner learning rate)
+    
+    #DR
+    h_dr: &h_dr_run 64
+    lr_dr: &lr_dr_run 0.003
+    T_dr_init: 100
+    T_dr: &T_dr_run 20
+    H_dr: &H_dr_run 20
+    b_dr: 256 #batch size
+    epochs_dr: 30
+    
+    #MAML
+    # n: 2 #no. of NN layers
+    h_maml: &h_agent 256 #100 #size of hidden layers
+    lr_maml: &lr_agent 0.001
+    b_maml: *n_workers_run #batch size: Number of trajectories (rollouts) to sample from each task
+    meta_b: 40
+    
+    #TRPO
+    max_grad_kl: 1.0e-2 #*lr_agent / 10. #beta=0.001 (meta step size / outer learning rate)
+    max_backtracks: 15
+    accept_ratio: 0.1
+    zeta: 0.8 #0.5
+    rdotr_tol: 1.0e-10
+    nsteps: 10
+    damping: 1.0e-5 #0.01
+    
+    #PPO
+    clip: 0.2
+    
+    #Discriminator
+    r_disc_scale: 1.0 #reward scale
+    r_map_scale: 0.01
+    h_disc: 128
+    lr_disc: 0.0002 
+    b_disc: 128
+    
+    #SVPG
+    n_particles: *n_workers_run
+    temp_svpg: 0.0001 #10.0 #temperature
+    delta_max: 0.5 #maximum allowable change to env randomization params caused by svpg particles (If discrete, this is fixed, If continuous, this is max)
+    T_svpg_init: 0 #40 #50 #100 #1000 #number of svpg steps to take before updates
+    svpg_kernel_mode: *svpg_kernel_mode #1: implementation from original repo; 2: implementation from a github svpg and official svgd
+    #SVPG_A2C
+    H_svpg: *H_dr_run #25 #how often to fully reset svpg particles
+    T_svpg: *T_dr_run #&T_svpg_run 5 #length of one svpg particle rollout
+    T_rand_rollout: *T_dr_run #*T_svpg_run #for UDR
+        
+    #SAC
+    temp_min: 0.0001
+    temp_discount: 0.1
+    T_temp_init: 1000
+    temp_sac: 1.0
+    
+    #AutoDR
+    thr_high: 6 #7 #8 #high threshold for no. of *consecutive* successes
+    thr_low: 2 #3 #4 #low threshold for no. of *consecutive* successes
+    delta: 0.2
+    perf_buff_len: 20 #50 #length of performance buffer
+    
+    #MB-MPO
+    n_models: 5 #*n_workers_run #number of models in the ensemble
+    b_mbmpo: 500 #model training batch size
+    lr_mbmpo: *lr_agent_run #model learning rate
+    epochs_mbmpo: 5 #number of model training epochs per iteration
+    n_mbmpo: 2 #number of model hidden layers
+    h_models: 512
+    h_mbmpo: 32
+    
+...

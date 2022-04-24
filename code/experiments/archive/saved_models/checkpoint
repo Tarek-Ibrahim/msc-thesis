@@ -1,0 +1,2 @@
+model_checkpoint_path: "model_mbmpo_trpo_udr_tf3_halfcheetah_custom_rand-v2"
+all_model_checkpoint_paths: "model_mbmpo_trpo_udr_tf3_halfcheetah_custom_rand-v2"
