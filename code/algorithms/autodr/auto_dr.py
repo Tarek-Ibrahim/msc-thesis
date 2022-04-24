@@ -457,7 +457,7 @@ if __name__ == '__main__':
     seed = 1
     set_seed(seed)
     
-    lr=3e-4 #0.001 #3e-4
+    lr=0.001 #3e-4
     gamma=0.99
     h=256 #64 #100
     # tau=0.95 #GAE lambda
@@ -467,7 +467,7 @@ if __name__ == '__main__':
     ent_coeff=0. #0.01
     # vf_coeff=1.0
     # l2_reg_weight=1e-6
-    epochs=5 #7 #agnet training epochs
+    epochs=1 #7 #agnet training epochs
     # batch_size=128
     adr_delta=0.15
     pb=0.5 #boundary sampling probability
