@@ -467,7 +467,7 @@ if __name__ == '__main__':
     ent_coeff=0. #0.01
     # vf_coeff=1.0
     # l2_reg_weight=1e-6
-    epochs=1 #5 #7 #agnet training epochs
+    epochs=5 #7 #agnet training epochs
     # batch_size=128
     adr_delta=0.15
     pb=0.5 #boundary sampling probability
