@@ -607,7 +607,7 @@ if __name__ == '__main__':
         
         #optimize RL agent/policy
         #sample from rollout/training buffer
-        for epoch in epochs:
+        for epoch in range(epochs):
             loss=surrogate_loss(D_dashes,policy,value_net,gamma,clip,ent_coeff)
             optimizer.zero_grad()
             loss.backward()
