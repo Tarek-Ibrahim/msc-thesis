@@ -510,7 +510,7 @@ if __name__ == '__main__':
     verbose = 1 #0 #1 
     plot_freq=1 #50 #how often to plot
     best_reward=-1e6
-    # p_bar=0.
+    p_bar=0.
     bounds_reached={str(env.unwrapped.dimensions[dim].name):{"low":0,"high":0} for dim in range(dr)}
     
     episodes=progress(tr_eps) if not verbose else range(tr_eps)
