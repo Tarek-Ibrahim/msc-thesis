@@ -392,7 +392,7 @@ class DDPG(object):
         self.critic_optimizer = Adam(self.critic.parameters(),lr=lr_agent*10.)
     
     def select_action(self, state):
-        state = torch.from_numpy(state,dtype=torch.float32).to(device)
+        state = torch.from_numpy(state).float().to(device)
         return self.actor(state).cpu().data.numpy()
     
     def step(self,RB, T_svpg, T_init, H_svpg):

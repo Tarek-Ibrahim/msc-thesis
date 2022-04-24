@@ -1,7 +1,6 @@
 # %% TODOs
 
 # TODO: add to comparison: disc between pre and post adaptation maml (instead of post adaptation ref and rand)
-# TODO: investigate problem with cuda (and multiprocessing) on start of second seed in active_dr mode
 # TODO: accomodate dr>1 in oracle
 
 # %% Imports
