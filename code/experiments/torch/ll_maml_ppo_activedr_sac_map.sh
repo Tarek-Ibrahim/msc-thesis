@@ -1,7 +1,7 @@
 #!/bin/bash -l
 
-#SBATCH --time=04-00
-#SBATCH --mem=128G
+#SBATCH --time=01-00
+#SBATCH --mem=80G
 #SBATCH --cpus-per-task=10
 #SBATCH --gres=gpu
 #SBATCH --job-name=maml_ppo_activedr_sac_map_torch
