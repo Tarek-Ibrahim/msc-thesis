@@ -33,8 +33,9 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 parser = argparse.ArgumentParser()
 parser.add_argument("--agent_alg", "-a", type=str, default="trpo", help="RL algorithm of the agent", choices=["trpo","ppo"])
 # parser.add_argument("--test_eps", "-t", type=int, default=20, help="Number of testing episodes per randomization value")
-parser.add_argument("--mode", "-m", type=int, default=0, help="0: debug mode; 1: run mode")
+parser.add_argument("--mode", "-m", type=int, default=1, help="0: debug mode; 1: run mode")
 parser.add_argument("--env_key", "-e", type=str, default="hopper_friction", help="Environment key")
+parser.add_argument("--xp_name", "-x", type=str, default="", help="Custom experiment name")
 parser.add_argument("--plot_tr_results", "-r", action='store_true', help="Whether to plot training results")
 parser.add_argument("--plot_ts_results", "-p", action='store_true', help="Whether to plot test results")
 parser.add_argument("--plot_sample_eff", "-E", action='store_true', help="Whether to plot sampling effeciency")
@@ -44,6 +45,7 @@ parser.add_argument("--save_results", "-s", action='store_true', help="Whether t
 parser.add_argument("--visualize", "-v", action='store_true', help="Whether to render the env")
 parser.add_argument("--verbose", "-V", action='store_true', help="Whether to print log")
 parser.add_argument("--test_random", "-R", action='store_true', help="Whether to use randomized envs in testing vs default/reference env")
+parser.add_argument("--include_oracle", "-o", action='store_true', help="Whether to include oracle")
 args = parser.parse_args()
 
 modes=["debug_mode","run_mode"]
@@ -89,21 +91,22 @@ value_net = ValueNetwork(in_size,gamma).to(device)
 #General
 tr_eps=config["tr_eps"]
 figsize=tuple(config_file["figsize"])
+xp_name=f"_{args.xp_name}" if args.xp_name else ""
 
 keys=['Rewards_Tr','Rewards_Val','Rewards_Eval','Rewards_Disc']
 
 plot_tr_results=args.plot_tr_results
 plot_sample_eff=args.plot_sample_eff
-plot_sampled_regs=args.plot_sample_eff
+plot_sampled_regs=args.plot_sampled_regs
 plot_control_acs=args.plot_control_acs
 plot_ts_results=args.plot_ts_results
 save_results=args.save_results
 
 includes_maml=[True,False]
 dr_types=["","uniform_dr","active_dr","auto_dr"]
-active_dr_rewarders=["disc","map_neg","map_delta"]
+active_dr_rewarders=["disc","map_delta"] #["disc","map_neg","map_delta"]
 active_dr_opts=["svpg_a2c","svpg_ddpg","ddpg","sac"]
-sac_entropy_tuning_methods=["","learn","anneal"]
+sac_entropy_tuning_methods=[""] #["","learn","anneal"]
 
 current_dir=os.path.dirname(os.path.abspath(__file__))
 plots_tr_dir=config_file["plots_tr_dir"] #os.path.join(current_dir,config_file["plots_tr_dir"])
@@ -132,6 +135,44 @@ for include_maml in includes_maml:
                         if plot_sampled_regs and ("active_dr" in common_name or "auto_dr" in common_name):
                             dfs_sr.append(pd.read_pickle(f"{plots_tr_dir}sampled_regions{common_name}.pkl"))
                             filenames_sr.append(common_name)
+if args.include_oracle:
+    for rv in [0.0,0.25,0.5,0.75,1.0]:
+        filename=f'model_{alg}_oracle_{str(rv)}_{env_key}'
+        filenames=filenames+[filename]
+        labels=labels+["Oracle"]
+        policy=PolicyNetwork(in_size,h,out_size).to(device)
+        policy.load_state_dict(torch.load(filename+".pt",map_location=device))
+        policy.eval()
+        policies=policies+[policy]
+
+
+# filenames_sr, labels_sr,dfs, dfs_sr=[],[],[],[]
+# filenames=["model_maml_trpo_active_dr_map_delta_svpg_ddpg_hopper_friction",
+#             "model_trpo_auto_dr_hopper_friction",
+#             "model_maml_trpo_uniform_dr_hopper_friction",
+#             "model_trpo_hopper_friction",
+#             "model_trpo_oracle_0.0_hopper_friction",
+#             "model_trpo_oracle_0.25_hopper_friction",
+#             "model_trpo_oracle_0.5_hopper_friction",
+#             "model_trpo_oracle_0.75_hopper_friction",
+#             "model_trpo_oracle_1.0_hopper_friction"]
+# labels=["MAML + Active DR (svpg_ddpg/map_delta)",
+#         "TRPO + Auto DR",
+#         "MAML + UDR",
+#         "Baseline",
+#         "Oracle",
+#         "Oracle",
+#         "Oracle",
+#         "Oracle",
+#         "Oracle"]
+
+# policies=[]
+# for filename in filenames:
+#     policy=PolicyNetwork(in_size,h,out_size).to(device)
+#     policy.load_state_dict(torch.load(f"{models_dir}{filename}"+".pt",map_location=device))
+#     policy.eval()
+#     policies.append(policy)
+
 
 rand_step = 0.1
     
@@ -144,6 +185,8 @@ test_step=0.1 if not visualize else 0.25
 test_rewards=[[] for _ in range(len(policies))]
 test_rewards_var=[[] for _ in range(len(policies))]
 control_actions=[[] for _ in range(len(policies))]
+oracle_rewards=[]
+oracle_rewards_var=[]
 
 #%% Training Results
 
@@ -170,7 +213,7 @@ if plot_tr_results:
         plt.legend(loc="upper right")
         plt_name=key.split("_")[-1]
         if save_results:
-            plt.savefig(f'{plots_ts_dir}{plt_name}_{env_key}.png')
+            plt.savefig(f'{plots_ts_dir}{plt_name}_{env_key}{xp_name}.png')
             plt.close()
         else:
             plt.show()
@@ -190,7 +233,7 @@ if plot_sample_eff:
     plt.title(title)
     plt.legend(loc="upper right")
     if save_results:
-        plt.savefig(f'{plots_ts_dir}sample_effeciency_{env_key}.png')
+        plt.savefig(f'{plots_ts_dir}sample_effeciency_{env_key}{xp_name}.png')
         plt.close()
     else:
         plt.show()
@@ -235,6 +278,7 @@ if plot_sampled_regs:
 
 if plot_control_acs or plot_ts_results or visualize:
     rand_range=np.arange(0.0,1.1,test_step,dtype=np.float32) if test_random else range(1)
+    oracle_rand_range=np.array([0.0,0.2,0.3,0.5,0.7,0.8,1.0],dtype=np.float32)
     
     for i, policy in enumerate(policies):
         if args.verbose: print(f"For {labels[i]}: \n")
@@ -243,63 +287,69 @@ if plot_control_acs or plot_ts_results or visualize:
             low=env.unwrapped.dimensions[dim].range_min
             high=env.unwrapped.dimensions[dim].range_max
             scaled_values=low + (high-low) * rand_range
+            oracle_scaled_values=low + (high-low) * oracle_rand_range
             values=["default"]*dr
             default_value_idx = list(scaled_values).index(min(scaled_values, key=lambda x:abs(x-env.unwrapped.dimensions[dim].default_value)) if test_random else 0)
             if args.verbose: print(f"For Dim: {dim_name}: \n")
             for j, rand_value in enumerate(rand_range):
-                rand_value_rewards=[]
-                values[dim]=rand_value #randomizing current dim while fixing rest to their default values
-                if test_random and args.verbose: print(f"For Rand Value = {scaled_values[j]}: \n")
-                for test_ep in range(test_eps):
-                    if test_random: env.randomize(values)
-                    
-                    s=env.reset()
-                    
-                    if "maml" in filenames[i]:
-                        state=torch.from_numpy(s).float().unsqueeze(0).to(device)
-                        dist=policy(state,params=None)
-                        a=dist.sample().squeeze(0).cpu().numpy()
-                        s, r, done, _ = env.step(a)
-                        R = r
-                        if test_ep == 0 and rand_value==rand_range[default_value_idx] and plot_control_acs:
-                            act=a[0] if a.ndim >1 else a
-                            act=np.clip(act,-1.0, 1.0)
-                            control_actions[i].append(act)
-                    else:
-                        done=False
-                        R=0
-                    
-                    while not done:
+                if "oracle" not in filenames[i] or (rand_value <= float(filenames[i].split("_")[3])+0.06 and rand_value >= float(filenames[i].split("_")[3])-0.06):
+                    rand_value_rewards=[]
+                    values[dim]=rand_value #randomizing current dim while fixing rest to their default values
+                    if test_random and args.verbose: print(f"For Rand Value = {scaled_values[j]}: \n")
+                    for test_ep in range(test_eps):
+                        if test_random: env.randomize(values)
                         
-                        state=torch.from_numpy(s).float().unsqueeze(0).to(device)
+                        s=env.reset()
                         
                         if "maml" in filenames[i]:
-                            states=state.unsqueeze(0)
-                            actions=torch.from_numpy(a).unsqueeze(0).unsqueeze(0).to(device)
-                            rewards=torch.from_numpy(np.array(r)).float().unsqueeze(0).unsqueeze(0).to(device)
-                            masks=torch.from_numpy(np.array(1.0)).float().unsqueeze(0).unsqueeze(0).to(device)
-                            D=[states, actions, rewards, masks]
-                                                
-                            theta_dash=adapt(D,value_net,policy,alpha)
+                            state=torch.from_numpy(s).float().unsqueeze(0).to(device)
+                            dist=policy(state,params=None)
+                            a=dist.sample().squeeze(0).cpu().numpy()
+                            s, r, done, _ = env.step(a)
+                            R = r
+                            if test_ep == 0 and rand_value==rand_range[default_value_idx] and plot_control_acs:
+                                act=a[0] if a.ndim >1 else a
+                                act=np.clip(act,-1.0, 1.0)
+                                control_actions[i].append(act)
                         else:
-                            theta_dash=None
+                            done=False
+                            R=0
+                        
+                        while not done:
                             
-                        dist=policy(state,params=theta_dash)
-                        a=dist.sample().squeeze(0).cpu().numpy()
-                        
-                        if test_ep == 0 and rand_value==rand_range[default_value_idx] and plot_control_acs:
-                            act=a[0] if a.ndim >1 else a
-                            act=np.clip(act,-1.0, 1.0)
-                            control_actions[i].append(act)
+                            state=torch.from_numpy(s).float().unsqueeze(0).to(device)
                             
-                        s, r, done, _ = env.step(a)
-                        
-                        if visualize: env.render()
-                        
-                        R+=r
-                    rand_value_rewards.append(R)
-                test_rewards[i].append(np.array(rand_value_rewards).mean())
-                test_rewards_var[i].append(np.array(rand_value_rewards).std())
+                            if "maml" in filenames[i]:
+                                states=state.unsqueeze(0)
+                                actions=torch.from_numpy(a).unsqueeze(0).unsqueeze(0).to(device)
+                                rewards=torch.from_numpy(np.array(r)).float().unsqueeze(0).unsqueeze(0).to(device)
+                                masks=torch.from_numpy(np.array(1.0)).float().unsqueeze(0).unsqueeze(0).to(device)
+                                D=[states, actions, rewards, masks]
+                                                    
+                                theta_dash=adapt(D,value_net,policy,alpha)
+                            else:
+                                theta_dash=None
+                                
+                            dist=policy(state,params=theta_dash)
+                            a=dist.sample().squeeze(0).cpu().numpy()
+                            
+                            if test_ep == 0 and rand_value==rand_range[default_value_idx] and plot_control_acs:
+                                act=a[0] if a.ndim >1 else a
+                                act=np.clip(act,-1.0, 1.0)
+                                control_actions[i].append(act)
+                                
+                            s, r, done, _ = env.step(a)
+                            
+                            if visualize: env.render()
+                            
+                            R+=r
+                        rand_value_rewards.append(R)
+                    if "oracle" not in filenames[i]:
+                        test_rewards[i].append(np.array(rand_value_rewards).mean())
+                        test_rewards_var[i].append(np.array(rand_value_rewards).std())
+                    else:
+                        oracle_rewards.append(np.array(rand_value_rewards).mean())
+                        oracle_rewards_var.append(np.array(rand_value_rewards).std())
                     
         env.close()
 
@@ -310,15 +360,21 @@ if plot_ts_results:
     plt.figure(figsize=figsize)
     plt.grid(1)
     for i, test_reward in enumerate(test_rewards):
-        plt.plot(scaled_values,test_reward,label=labels[i])
-        plt.fill_between(scaled_values, np.array(test_reward) + np.array(test_rewards_var[i]), np.array(test_reward) - np.array(test_rewards_var[i]), alpha=0.2)
+        if "oracle" not in filenames[i]:
+            plt.plot(scaled_values,test_reward,label=labels[i])
+            plt.fill_between(scaled_values, np.array(test_reward) + np.array(test_rewards_var[i]), np.array(test_reward) - np.array(test_rewards_var[i]), alpha=0.2)
+        else:
+            plt.plot(oracle_scaled_values,oracle_rewards,label=labels[i])
+            plt.fill_between(oracle_scaled_values, np.array(oracle_rewards) + np.array(oracle_rewards_var), np.array(oracle_rewards) - np.array(oracle_rewards_var), alpha=0.2)
+            break
+    
     plt.axhline(y = thr_r, color = 'r', linestyle = '--',label='Solved')
     plt.xlabel("Randomization Range")
     plt.ylabel("Rewards")
     plt.title(title)
     plt.legend(loc="upper right")
     if save_results:
-        plt.savefig(f'{plots_ts_dir}ts_{test_eps}_episodes_{env_key}.png')
+        plt.savefig(f'{plots_ts_dir}ts_{test_eps}_episodes_{env_key}{xp_name}.png')
         plt.close()
     else:
         plt.show()

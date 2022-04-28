@@ -532,10 +532,10 @@ if __name__ == '__main__':
                 best_reward=eval_rewards_mean
                 torch.save(policy.state_dict(), f"{models_dir}model{common_name}"+".pt")
                 
-            # #save best running model [params]
-            # if running_reward>best_running_reward: 
-            #     best_running_reward=running_reward
-            #     policy.save_weights(f"saved_models/model_running{common_name}")
+            #save best running model [params]
+            if running_reward>best_running_reward: 
+                best_running_reward=running_reward
+                policy.save_weights(f"saved_models/model_running{common_name}")
             
             #log iteration results & statistics
             total_timesteps.append(t_agent)

@@ -120,7 +120,7 @@ run_mode:
     eval_eps: 5
     
     #Seed
-    seeds: [1,2,3] #[1] #[1,2,3]
+    seeds: [1] #[1,2,3]
     
     #Env
     n_workers: &n_workers_run 10 #n_particles #mp.cpu_count() - 1 #:n_envs
