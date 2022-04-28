@@ -535,7 +535,7 @@ if __name__ == '__main__':
             #save best running model [params]
             if running_reward>best_running_reward: 
                 best_running_reward=running_reward
-                policy.save_weights(f"saved_models/model_running{common_name}")
+                torch.save(policy.state_dict(), f"{models_dir}model_running{common_name}"+".pt")
             
             #log iteration results & statistics
             total_timesteps.append(t_agent)
