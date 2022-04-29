@@ -1,0 +1,404 @@
+For Seed: 1 
+
+Rewards Tr: -1334.24, Rewards Eval: -891.25, Total Timesteps: 30020 episode:0 
+
+Rewards Tr: -877.31, Rewards Eval: -727.63, Total Timesteps: 63330 episode:1 
+
+Rewards Tr: -622.87, Rewards Eval: -517.97, Total Timesteps: 91500 episode:2 
+
+Rewards Tr: -530.69, Rewards Eval: -395.58, Total Timesteps: 120500 episode:3 
+
+Rewards Tr: -509.74, Rewards Eval: -347.24, Total Timesteps: 154310 episode:4 
+
+Rewards Tr: -437.51, Rewards Eval: -469.17, Total Timesteps: 195540 episode:5 
+
+Rewards Tr: -375.07, Rewards Eval: -305.72, Total Timesteps: 235630 episode:6 
+
+Rewards Tr: -315.69, Rewards Eval: -292.73, Total Timesteps: 276860 episode:7 
+
+Rewards Tr: -314.26, Rewards Eval: -292.04, Total Timesteps: 337320 episode:8 
+
+Rewards Tr: -424.59, Rewards Eval: -314.13, Total Timesteps: 411990 episode:9 
+
+Rewards Tr: -304.29, Rewards Eval: -259.18, Total Timesteps: 468500 episode:10 
+
+Rewards Tr: -288.52, Rewards Eval: -152.65, Total Timesteps: 532490 episode:11 
+
+Rewards Tr: -268.22, Rewards Eval: -199.42, Total Timesteps: 606940 episode:12 
+
+Rewards Tr: -208.62, Rewards Eval: -154.90, Total Timesteps: 693160 episode:13 
+
+Rewards Tr: -216.75, Rewards Eval: -59.27, Total Timesteps: 792280 episode:14 
+
+Rewards Tr: -160.39, Rewards Eval: -108.41, Total Timesteps: 888240 episode:15 
+
+Rewards Tr: -116.18, Rewards Eval: -70.20, Total Timesteps: 964960 episode:16 
+
+Rewards Tr: -137.45, Rewards Eval: -55.19, Total Timesteps: 1078330 episode:17 
+
+Rewards Tr: -99.89, Rewards Eval: -102.36, Total Timesteps: 1177230 episode:18 
+
+Rewards Tr: -77.73, Rewards Eval: -88.24, Total Timesteps: 1271010 episode:19 
+
+Rewards Tr: -75.93, Rewards Eval: -61.02, Total Timesteps: 1367130 episode:20 
+
+Rewards Tr: -63.35, Rewards Eval: -52.83, Total Timesteps: 1467650 episode:21 
+
+Rewards Tr: -80.75, Rewards Eval: -73.43, Total Timesteps: 1591480 episode:22 
+
+Rewards Tr: -65.31, Rewards Eval: -74.50, Total Timesteps: 1703350 episode:23 
+
+Rewards Tr: -47.10, Rewards Eval: -35.12, Total Timesteps: 1835310 episode:24 
+
+Rewards Tr: -45.26, Rewards Eval: -59.10, Total Timesteps: 1907730 episode:25 
+
+Rewards Tr: -59.25, Rewards Eval: -47.42, Total Timesteps: 2019710 episode:26 
+
+Rewards Tr: -36.21, Rewards Eval: -19.51, Total Timesteps: 2126670 episode:27 
+
+Rewards Tr: -34.68, Rewards Eval: -67.78, Total Timesteps: 2221370 episode:28 
+
+Rewards Tr: -45.07, Rewards Eval: -80.20, Total Timesteps: 2311960 episode:29 
+
+Rewards Tr: -43.50, Rewards Eval: -47.58, Total Timesteps: 2421120 episode:30 
+
+Rewards Tr: -33.81, Rewards Eval: -41.18, Total Timesteps: 2549030 episode:31 
+
+Rewards Tr: -40.48, Rewards Eval: -1.28, Total Timesteps: 2644330 episode:32 
+
+Rewards Tr: -38.19, Rewards Eval: -60.28, Total Timesteps: 2771380 episode:33 
+
+Rewards Tr: -20.89, Rewards Eval: -60.10, Total Timesteps: 2908530 episode:34 
+
+Rewards Tr: -18.88, Rewards Eval: 0.67, Total Timesteps: 3022850 episode:35 
+
+Rewards Tr: -40.18, Rewards Eval: -34.76, Total Timesteps: 3175070 episode:36 
+
+Rewards Tr: -45.66, Rewards Eval: -31.96, Total Timesteps: 3316840 episode:37 
+
+Rewards Tr: -21.17, Rewards Eval: 7.38, Total Timesteps: 3444490 episode:38 
+
+Rewards Tr: -27.48, Rewards Eval: -65.94, Total Timesteps: 3590600 episode:39 
+
+Rewards Tr: -36.01, Rewards Eval: -46.48, Total Timesteps: 3721270 episode:40 
+
+Rewards Tr: -15.79, Rewards Eval: -26.38, Total Timesteps: 3857690 episode:41 
+
+Rewards Tr: -37.89, Rewards Eval: -59.17, Total Timesteps: 4011860 episode:42 
+
+Rewards Tr: -35.64, Rewards Eval: -36.51, Total Timesteps: 4139360 episode:43 
+
+Rewards Tr: -23.50, Rewards Eval: 0.60, Total Timesteps: 4275570 episode:44 
+
+Rewards Tr: -36.04, Rewards Eval: -41.33, Total Timesteps: 4417570 episode:45 
+
+Rewards Tr: -13.03, Rewards Eval: -20.81, Total Timesteps: 4543220 episode:46 
+
+Rewards Tr: -14.77, Rewards Eval: -18.66, Total Timesteps: 4646730 episode:47 
+
+Rewards Tr: -29.31, Rewards Eval: 1.20, Total Timesteps: 4809940 episode:48 
+
+Rewards Tr: -19.00, Rewards Eval: -18.07, Total Timesteps: 4969510 episode:49 
+
+Rewards Tr: -15.79, Rewards Eval: -11.42, Total Timesteps: 5103650 episode:50 
+
+Rewards Tr: -21.12, Rewards Eval: -36.59, Total Timesteps: 5253400 episode:51 
+
+Rewards Tr: -23.88, Rewards Eval: -52.32, Total Timesteps: 5416550 episode:52 
+
+Rewards Tr: -10.40, Rewards Eval: 30.15, Total Timesteps: 5568900 episode:53 
+
+Rewards Tr: -7.65, Rewards Eval: 11.85, Total Timesteps: 5712460 episode:54 
+
+Rewards Tr: -18.58, Rewards Eval: 8.66, Total Timesteps: 5846150 episode:55 
+
+Rewards Tr: -0.20, Rewards Eval: -16.91, Total Timesteps: 6005250 episode:56 
+
+Rewards Tr: -2.80, Rewards Eval: -36.75, Total Timesteps: 6164750 episode:57 
+
+Rewards Tr: 1.56, Rewards Eval: -3.94, Total Timesteps: 6315010 episode:58 
+
+Rewards Tr: -1.48, Rewards Eval: 45.41, Total Timesteps: 6482490 episode:59 
+
+Rewards Tr: -6.39, Rewards Eval: 17.19, Total Timesteps: 6628940 episode:60 
+
+Rewards Tr: 5.43, Rewards Eval: 31.63, Total Timesteps: 6787280 episode:61 
+
+Rewards Tr: 3.84, Rewards Eval: 36.46, Total Timesteps: 6957970 episode:62 
+
+Rewards Tr: 6.65, Rewards Eval: -1.77, Total Timesteps: 7108710 episode:63 
+
+Rewards Tr: 3.25, Rewards Eval: 38.69, Total Timesteps: 7275780 episode:64 
+
+Rewards Tr: 10.86, Rewards Eval: 24.74, Total Timesteps: 7467270 episode:65 
+
+Rewards Tr: 8.42, Rewards Eval: 11.28, Total Timesteps: 7614900 episode:66 
+
+Rewards Tr: 4.64, Rewards Eval: 16.07, Total Timesteps: 7790030 episode:67 
+
+Rewards Tr: 0.52, Rewards Eval: 33.00, Total Timesteps: 7938590 episode:68 
+
+Rewards Tr: 14.16, Rewards Eval: -19.66, Total Timesteps: 8105540 episode:69 
+
+Rewards Tr: 12.31, Rewards Eval: 31.85, Total Timesteps: 8263430 episode:70 
+
+Rewards Tr: 12.99, Rewards Eval: 16.44, Total Timesteps: 8429410 episode:71 
+
+Rewards Tr: 12.01, Rewards Eval: 25.95, Total Timesteps: 8579100 episode:72 
+
+Rewards Tr: 19.24, Rewards Eval: 37.15, Total Timesteps: 8744940 episode:73 
+
+Rewards Tr: 20.74, Rewards Eval: 57.11, Total Timesteps: 8924930 episode:74 
+
+Rewards Tr: 20.85, Rewards Eval: 36.02, Total Timesteps: 9081120 episode:75 
+
+Rewards Tr: 25.52, Rewards Eval: 18.83, Total Timesteps: 9223140 episode:76 
+
+Rewards Tr: 17.12, Rewards Eval: 33.10, Total Timesteps: 9389410 episode:77 
+
+Rewards Tr: 26.24, Rewards Eval: 12.56, Total Timesteps: 9539920 episode:78 
+
+Rewards Tr: 25.84, Rewards Eval: 7.80, Total Timesteps: 9723560 episode:79 
+
+Rewards Tr: 21.97, Rewards Eval: 42.25, Total Timesteps: 9873410 episode:80 
+
+Rewards Tr: 28.99, Rewards Eval: 19.83, Total Timesteps: 10065180 episode:81 
+
+Rewards Tr: 26.75, Rewards Eval: 34.70, Total Timesteps: 10247860 episode:82 
+
+Rewards Tr: 32.04, Rewards Eval: 28.13, Total Timesteps: 10439810 episode:83 
+
+Rewards Tr: 25.85, Rewards Eval: 23.24, Total Timesteps: 10597460 episode:84 
+
+Rewards Tr: 36.83, Rewards Eval: 44.43, Total Timesteps: 10772400 episode:85 
+
+Rewards Tr: 32.30, Rewards Eval: 7.27, Total Timesteps: 10963980 episode:86 
+
+Rewards Tr: 31.04, Rewards Eval: 30.14, Total Timesteps: 11122830 episode:87 
+
+Rewards Tr: 37.38, Rewards Eval: 41.93, Total Timesteps: 11297560 episode:88 
+
+Rewards Tr: 39.71, Rewards Eval: 14.34, Total Timesteps: 11489320 episode:89 
+
+Rewards Tr: 43.51, Rewards Eval: 43.52, Total Timesteps: 11681040 episode:90 
+
+Rewards Tr: 34.49, Rewards Eval: 62.52, Total Timesteps: 11855560 episode:91 
+
+Rewards Tr: 43.22, Rewards Eval: 58.02, Total Timesteps: 12030450 episode:92 
+
+Rewards Tr: 49.57, Rewards Eval: 95.17, Total Timesteps: 12230450 episode:93 
+
+Rewards Tr: 41.92, Rewards Eval: 51.85, Total Timesteps: 12397130 episode:94 
+
+Rewards Tr: 43.82, Rewards Eval: 45.34, Total Timesteps: 12571610 episode:95 
+
+Rewards Tr: 46.50, Rewards Eval: 68.64, Total Timesteps: 12762930 episode:96 
+
+Rewards Tr: 48.61, Rewards Eval: 41.76, Total Timesteps: 12937650 episode:97 
+
+Rewards Tr: 51.95, Rewards Eval: 45.79, Total Timesteps: 13103990 episode:98 
+
+Rewards Tr: 51.32, Rewards Eval: 60.56, Total Timesteps: 13278630 episode:99 
+
+Rewards Tr: 53.24, Rewards Eval: 24.36, Total Timesteps: 13470370 episode:100 
+
+Rewards Tr: 53.46, Rewards Eval: 47.41, Total Timesteps: 13661640 episode:101 
+
+Rewards Tr: 57.19, Rewards Eval: 67.38, Total Timesteps: 13853600 episode:102 
+
+Rewards Tr: 54.73, Rewards Eval: 51.64, Total Timesteps: 14028160 episode:103 
+
+Rewards Tr: 62.22, Rewards Eval: 70.41, Total Timesteps: 14219820 episode:104 
+
+Rewards Tr: 55.75, Rewards Eval: 71.77, Total Timesteps: 14419820 episode:105 
+
+Rewards Tr: 60.85, Rewards Eval: 48.89, Total Timesteps: 14602770 episode:106 
+
+Rewards Tr: 60.01, Rewards Eval: 81.21, Total Timesteps: 14785800 episode:107 
+
+Rewards Tr: 57.29, Rewards Eval: 69.74, Total Timesteps: 14960870 episode:108 
+
+Rewards Tr: 62.79, Rewards Eval: 57.67, Total Timesteps: 15144050 episode:109 
+
+Rewards Tr: 69.31, Rewards Eval: 68.16, Total Timesteps: 15335620 episode:110 
+
+Rewards Tr: 62.48, Rewards Eval: 56.36, Total Timesteps: 15510660 episode:111 
+
+Rewards Tr: 71.30, Rewards Eval: 76.20, Total Timesteps: 15702240 episode:112 
+
+Rewards Tr: 75.43, Rewards Eval: 42.21, Total Timesteps: 15902240 episode:113 
+
+Rewards Tr: 79.15, Rewards Eval: 90.69, Total Timesteps: 16093770 episode:114 
+
+Rewards Tr: 83.18, Rewards Eval: 85.55, Total Timesteps: 16293770 episode:115 
+
+Rewards Tr: 76.82, Rewards Eval: 78.35, Total Timesteps: 16460280 episode:116 
+
+Rewards Tr: 87.08, Rewards Eval: 93.03, Total Timesteps: 16651790 episode:117 
+
+Rewards Tr: 86.07, Rewards Eval: 70.08, Total Timesteps: 16827160 episode:118 
+
+Rewards Tr: 84.68, Rewards Eval: 86.23, Total Timesteps: 16976220 episode:119 
+
+Rewards Tr: 99.15, Rewards Eval: 114.23, Total Timesteps: 17159530 episode:120 
+
+Rewards Tr: 89.02, Rewards Eval: 100.89, Total Timesteps: 17309300 episode:121 
+
+Rewards Tr: 96.64, Rewards Eval: 134.38, Total Timesteps: 17500650 episode:122 
+
+Rewards Tr: 109.18, Rewards Eval: 99.27, Total Timesteps: 17683670 episode:123 
+
+Rewards Tr: 101.86, Rewards Eval: 136.87, Total Timesteps: 17867250 episode:124 
+
+Rewards Tr: 113.37, Rewards Eval: 106.36, Total Timesteps: 18050820 episode:125 
+
+Rewards Tr: 104.89, Rewards Eval: 137.45, Total Timesteps: 18234070 episode:126 
+
+Rewards Tr: 113.75, Rewards Eval: 116.34, Total Timesteps: 18417590 episode:127 
+
+Rewards Tr: 95.39, Rewards Eval: 140.83, Total Timesteps: 18567950 episode:128 
+
+Rewards Tr: 116.10, Rewards Eval: 116.63, Total Timesteps: 18742620 episode:129 
+
+Rewards Tr: 114.99, Rewards Eval: 123.33, Total Timesteps: 18934430 episode:130 
+
+Rewards Tr: 125.57, Rewards Eval: 104.15, Total Timesteps: 19134430 episode:131 
+
+Rewards Tr: 115.52, Rewards Eval: 126.75, Total Timesteps: 19326110 episode:132 
+
+Rewards Tr: 123.62, Rewards Eval: 96.95, Total Timesteps: 19517970 episode:133 
+
+Rewards Tr: 128.47, Rewards Eval: 95.03, Total Timesteps: 19709740 episode:134 
+
+Rewards Tr: 142.83, Rewards Eval: 95.80, Total Timesteps: 19909740 episode:135 
+
+Rewards Tr: 126.03, Rewards Eval: 141.40, Total Timesteps: 20085160 episode:136 
+
+Rewards Tr: 119.71, Rewards Eval: 131.80, Total Timesteps: 20253780 episode:137 
+
+Rewards Tr: 129.67, Rewards Eval: 79.35, Total Timesteps: 20453780 episode:138 
+
+Rewards Tr: 122.08, Rewards Eval: 94.59, Total Timesteps: 20636980 episode:139 
+
+Rewards Tr: 118.68, Rewards Eval: 146.01, Total Timesteps: 20804450 episode:140 
+
+Rewards Tr: 125.55, Rewards Eval: 102.49, Total Timesteps: 20996200 episode:141 
+
+Rewards Tr: 126.80, Rewards Eval: 128.20, Total Timesteps: 21171520 episode:142 
+
+Rewards Tr: 139.94, Rewards Eval: 138.79, Total Timesteps: 21371520 episode:143 
+
+Rewards Tr: 128.29, Rewards Eval: 119.29, Total Timesteps: 21547460 episode:144 
+
+Rewards Tr: 133.83, Rewards Eval: 114.68, Total Timesteps: 21729310 episode:145 
+
+Rewards Tr: 138.44, Rewards Eval: 142.21, Total Timesteps: 21921070 episode:146 
+
+Rewards Tr: 124.68, Rewards Eval: 175.91, Total Timesteps: 22089280 episode:147 
+
+Rewards Tr: 149.49, Rewards Eval: 151.42, Total Timesteps: 22289280 episode:148 
+
+Rewards Tr: 148.56, Rewards Eval: 161.36, Total Timesteps: 22489280 episode:149 
+
+Rewards Tr: 133.58, Rewards Eval: 134.23, Total Timesteps: 22664320 episode:150 
+
+Rewards Tr: 142.02, Rewards Eval: 150.38, Total Timesteps: 22864320 episode:151 
+
+Rewards Tr: 139.77, Rewards Eval: 139.85, Total Timesteps: 23047850 episode:152 
+
+Rewards Tr: 141.43, Rewards Eval: 143.43, Total Timesteps: 23247850 episode:153 
+
+Rewards Tr: 141.17, Rewards Eval: 167.73, Total Timesteps: 23439720 episode:154 
+
+Rewards Tr: 144.74, Rewards Eval: 181.94, Total Timesteps: 23639720 episode:155 
+
+Rewards Tr: 132.81, Rewards Eval: 184.23, Total Timesteps: 23815180 episode:156 
+
+Rewards Tr: 140.67, Rewards Eval: 127.16, Total Timesteps: 24006840 episode:157 
+
+Rewards Tr: 144.46, Rewards Eval: 170.85, Total Timesteps: 24198730 episode:158 
+
+Rewards Tr: 140.18, Rewards Eval: 130.32, Total Timesteps: 24390570 episode:159 
+
+Rewards Tr: 147.43, Rewards Eval: 137.33, Total Timesteps: 24590570 episode:160 
+
+Rewards Tr: 137.65, Rewards Eval: 152.13, Total Timesteps: 24774040 episode:161 
+
+Rewards Tr: 153.01, Rewards Eval: 168.86, Total Timesteps: 24974040 episode:162 
+
+Rewards Tr: 142.57, Rewards Eval: 138.04, Total Timesteps: 25165990 episode:163 
+
+Rewards Tr: 149.74, Rewards Eval: 133.44, Total Timesteps: 25365990 episode:164 
+
+Rewards Tr: 153.24, Rewards Eval: 162.40, Total Timesteps: 25557760 episode:165 
+
+Rewards Tr: 147.58, Rewards Eval: 133.79, Total Timesteps: 25757760 episode:166 
+
+Rewards Tr: 160.44, Rewards Eval: 149.41, Total Timesteps: 25957760 episode:167 
+
+Rewards Tr: 137.84, Rewards Eval: 142.75, Total Timesteps: 26149370 episode:168 
+
+Rewards Tr: 139.36, Rewards Eval: 117.95, Total Timesteps: 26341400 episode:169 
+
+Rewards Tr: 157.47, Rewards Eval: 158.92, Total Timesteps: 26541400 episode:170 
+
+Rewards Tr: 158.19, Rewards Eval: 167.55, Total Timesteps: 26741400 episode:171 
+
+Rewards Tr: 155.01, Rewards Eval: 154.13, Total Timesteps: 26941400 episode:172 
+
+Rewards Tr: 153.58, Rewards Eval: 160.39, Total Timesteps: 27141400 episode:173 
+
+Rewards Tr: 160.25, Rewards Eval: 175.13, Total Timesteps: 27341400 episode:174 
+
+Rewards Tr: 151.39, Rewards Eval: 180.26, Total Timesteps: 27541400 episode:175 
+
+Rewards Tr: 140.56, Rewards Eval: 145.99, Total Timesteps: 27733090 episode:176 
+
+Rewards Tr: 147.58, Rewards Eval: 154.79, Total Timesteps: 27924830 episode:177 
+
+Rewards Tr: 133.51, Rewards Eval: 174.62, Total Timesteps: 28100160 episode:178 
+
+Rewards Tr: 152.00, Rewards Eval: 155.08, Total Timesteps: 28291690 episode:179 
+
+Rewards Tr: 156.47, Rewards Eval: 171.82, Total Timesteps: 28483170 episode:180 
+
+Rewards Tr: 145.63, Rewards Eval: 160.13, Total Timesteps: 28674910 episode:181 
+
+Rewards Tr: 155.21, Rewards Eval: 141.37, Total Timesteps: 28874910 episode:182 
+
+Rewards Tr: 145.80, Rewards Eval: 162.06, Total Timesteps: 29074910 episode:183 
+
+Rewards Tr: 149.32, Rewards Eval: 153.76, Total Timesteps: 29274910 episode:184 
+
+Rewards Tr: 146.94, Rewards Eval: 159.13, Total Timesteps: 29466400 episode:185 
+
+Rewards Tr: 153.75, Rewards Eval: 182.28, Total Timesteps: 29658040 episode:186 
+
+Rewards Tr: 149.91, Rewards Eval: 141.95, Total Timesteps: 29858040 episode:187 
+
+Rewards Tr: 159.17, Rewards Eval: 159.80, Total Timesteps: 30058040 episode:188 
+
+Rewards Tr: 157.82, Rewards Eval: 146.40, Total Timesteps: 30258040 episode:189 
+
+Rewards Tr: 159.94, Rewards Eval: 148.49, Total Timesteps: 30458040 episode:190 
+
+Rewards Tr: 157.20, Rewards Eval: 178.79, Total Timesteps: 30658040 episode:191 
+
+Rewards Tr: 172.58, Rewards Eval: 166.45, Total Timesteps: 30858040 episode:192 
+
+Rewards Tr: 149.98, Rewards Eval: 127.33, Total Timesteps: 31049660 episode:193 
+
+Rewards Tr: 173.35, Rewards Eval: 148.60, Total Timesteps: 31249660 episode:194 
+
+Rewards Tr: 160.25, Rewards Eval: 155.56, Total Timesteps: 31449660 episode:195 
+
+Rewards Tr: 152.73, Rewards Eval: 121.71, Total Timesteps: 31649660 episode:196 
+
+Rewards Tr: 148.55, Rewards Eval: 148.08, Total Timesteps: 31841480 episode:197 
+
+Rewards Tr: 141.12, Rewards Eval: 160.03, Total Timesteps: 32016090 episode:198 
+
+Rewards Tr: 154.75, Rewards Eval: 138.96, Total Timesteps: 32216090 episode:199 
+
+Elapsed Time: 285.9 minutes 
+
