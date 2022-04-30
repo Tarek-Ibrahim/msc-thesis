@@ -1,11 +1,11 @@
 #!/bin/bash -l
 
-#SBATCH --time=02-00
+#SBATCH --time=01-00
 #SBATCH --mem=48G
 #SBATCH --cpus-per-task=10
 #SBATCH --gres=gpu
 #SBATCH --job-name=ppo_oracle_torch
-#SBATCH --output=results/logs/ppo_oracle_%a.out
+#SBATCH --output=results/logs/hc_ppo_oracle_%a.out
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=tarek.ibrahim@tuni.fi
 #SBATCH --array=0-4

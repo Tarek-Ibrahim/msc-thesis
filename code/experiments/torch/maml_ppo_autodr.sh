@@ -5,7 +5,7 @@
 #SBATCH --cpus-per-task=10
 #SBATCH --gres=gpu
 #SBATCH --job-name=maml_ppo_autodr_torch
-#SBATCH --output=results/logs/maml_ppo_autodr.out
+#SBATCH --output=results/logs/hc_maml_ppo_autodr.out
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=tarek.ibrahim@tuni.fi
 
