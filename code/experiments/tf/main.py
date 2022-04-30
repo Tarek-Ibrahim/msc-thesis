@@ -1,7 +1,7 @@
 # %% TODOs
 
 # TODO: add to comparison: disc between pre and post adaptation maml (instead of post adaptation ref and rand)
-# TODO: investigate problem with cuda (and multiprocessing) on start of second seed in active_dr mode
+# TODO: accomodate dr>1 in oracle
 
 # %% Imports
 #general
@@ -87,7 +87,7 @@ if __name__ == '__main__':
     damping=config["damping"]
     #PPO
     clip=config["clip"]
-    lr=config["lr_agent"]
+    lr=config["lr_ppo"]
     
     if args.dr_type=="active_dr":
         if args.active_dr_rewarder=="disc":
@@ -206,6 +206,7 @@ if __name__ == '__main__':
             lambda_vec=np.zeros(dr)
             # p_bar=0.
             bounds_reached={str(env.unwrapped.dimensions[dim].name):{"low":0,"high":0} for dim in range(dr)}
+            all_dims_covered=False
             
         env_rand=make_vec_envs(env_name, seed, n_workers, ds, da, queue, lock)
 
@@ -284,15 +285,21 @@ if __name__ == '__main__':
                             lambda_norm[i]=(lambda_vec[i]-low)/(high-low)
                         
                         pb_ep=np.random.rand()
-                        if pb_ep < pb:
+                        if pb_ep < pb and not all_dims_covered:
                             i = np.random.randint(0,dr)
-                            if np.random.rand() < 0.5:
+                            dim_name=env.unwrapped.dimensions[i].name
+                            if bounds_reached[dim_name]["low"] > 1:
+                                boundary="high"
+                                other_boundary="low"
+                            elif bounds_reached[dim_name]["high"] > 1:
+                                boundary="low"
+                                other_boundary="high"
+                            elif np.random.rand() < 0.5:
                                 boundary="low"
                                 other_boundary="high"
                             else:
                                 boundary="high"
                                 other_boundary="low"
-                            dim_name=env.unwrapped.dimensions[i].name
                             lambda_vec[i]=phis[dim_name][boundary]
                             
                             low=env.unwrapped.dimensions[i].range_min
@@ -340,7 +347,7 @@ if __name__ == '__main__':
                 else:
                     rewards_tr_ep.append(rewards)
                     
-                if args.dr_type=="auto_dr" and pb_ep < pb:
+                if args.dr_type=="auto_dr" and pb_ep < pb and not all_dims_covered:
                     p=(rewards.sum(0)>=thr_r).astype(int).sum()
                     D_autodr[dim_name][boundary].append(p)
                     
@@ -435,7 +442,8 @@ if __name__ == '__main__':
                         n_covered_dims += 1
                 
                 if n_covered_dims == dr:
-                    break
+                    all_dims_covered=True
+                    # break
             
             #outer loop: update meta-params (via: TRPO) #!!!: since MAML uses TRPO it is on-policy, so care should be taken that order of associated transitions is preserved
             if args.agent_alg=="trpo":

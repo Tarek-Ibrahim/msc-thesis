@@ -64,6 +64,7 @@ debug_mode:
     
     #PPO
     clip: 0.2
+    lr_ppo: 0.1
     
     #Discriminator
     r_disc_scale: 1.0 #reward scale
@@ -110,7 +111,7 @@ debug_mode:
 run_mode:
 
     #General
-    tr_eps: 250 #500
+    tr_eps: 350 #500
     te_eps: 20
     
     #Evaluation
@@ -119,7 +120,7 @@ run_mode:
     eval_eps: 5
     
     #Seed
-    seeds: [1] #[1,2,3]
+    seeds: [3] #[1,2,3]
     
     #Env
     n_workers: &n_workers_run 10 #n_particles #mp.cpu_count() - 1 #:n_envs
@@ -158,6 +159,7 @@ run_mode:
     
     #PPO
     clip: 0.2
+    lr_ppo: 3.0e-4
     
     #Discriminator
     r_disc_scale: 1.0 #reward scale
