@@ -5,7 +5,7 @@
 #SBATCH --cpus-per-task=10
 #SBATCH --gres=gpu
 #SBATCH --job-name=ppo_torch
-#SBATCH --output=results/logs/ppo.out
+#SBATCH --output=results/logs/hc_ppo.out
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=tarek.ibrahim@tuni.fi
 
