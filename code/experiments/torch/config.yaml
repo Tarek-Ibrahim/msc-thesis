@@ -111,7 +111,7 @@ debug_mode:
 run_mode:
 
     #General
-    tr_eps: 200 #500
+    tr_eps: 350 #500
     te_eps: 20
     
     #Evaluation
@@ -120,7 +120,7 @@ run_mode:
     eval_eps: 5
     
     #Seed
-    seeds: [1] #[1,2,3]
+    seeds: [3] #[1,2,3]
     
     #Env
     n_workers: &n_workers_run 10 #n_particles #mp.cpu_count() - 1 #:n_envs

@@ -102,10 +102,10 @@ plot_control_acs=args.plot_control_acs
 plot_ts_results=args.plot_ts_results
 save_results=args.save_results
 
-includes_maml=[True,False]
-dr_types=["","uniform_dr","active_dr","auto_dr"]
-active_dr_rewarders=["disc","map_delta"] #["disc","map_neg","map_delta"]
-active_dr_opts=["svpg_a2c","svpg_ddpg","ddpg","sac"]
+includes_maml=[True,False] #[True,False]
+dr_types=["active_dr","auto_dr"] #["","uniform_dr","active_dr","auto_dr"]
+active_dr_rewarders=["map_delta"] #["disc","map_delta"] #["disc","map_neg","map_delta"]
+active_dr_opts=["svpg_ddpg","sac"] #["svpg_a2c","svpg_ddpg","ddpg","sac"]
 sac_entropy_tuning_methods=[""] #["","learn","anneal"]
 
 current_dir=os.path.dirname(os.path.abspath(__file__))
@@ -210,7 +210,7 @@ if plot_tr_results:
         plt.xlabel("Training Episodes")
         plt.ylabel("Rewards")
         plt.title(title)
-        plt.legend(loc="upper right")
+        plt.legend()
         plt_name=key.split("_")[-1]
         if save_results:
             plt.savefig(f'{plots_ts_dir}{plt_name}_{env_key}{xp_name}.png')
@@ -231,7 +231,7 @@ if plot_sample_eff:
     plt.xlabel("Training Timesteps")
     plt.ylabel("Evalutaion Rewards")
     plt.title(title)
-    plt.legend(loc="upper right")
+    plt.legend()
     if save_results:
         plt.savefig(f'{plots_ts_dir}sample_effeciency_{env_key}{xp_name}.png')
         plt.close()
@@ -372,7 +372,7 @@ if plot_ts_results:
     plt.xlabel("Randomization Range")
     plt.ylabel("Rewards")
     plt.title(title)
-    plt.legend(loc="upper right")
+    plt.legend()
     if save_results:
         plt.savefig(f'{plots_ts_dir}ts_{test_eps}_episodes_{env_key}{xp_name}.png')
         plt.close()
@@ -390,7 +390,7 @@ if plot_control_acs:
         plt.xlabel("Timesteps for First Test Episode and Default Environment")
         plt.ylabel("Control Action")
         plt.title(title)
-        plt.legend(loc="upper right")
+        plt.legend()
         if save_results:
             plt.savefig(f'{plots_ts_dir}control_actions{filenames[i]}.png')
             plt.close()
