@@ -10,7 +10,7 @@ import pandas as pd
 # import os
 # os.environ["OMP_NUM_THREADS"] = "1"
 import yaml
-from utils import set_seed, progress, parameters_to_vector, PolicyNetwork, ValueNetwork, SVPG, Discriminator, make_vec_envs, collect_rollout_batch, adapt, surrogate_loss, HVP, conjugate_gradients, line_search, map_rewards, ReplayBuffer, DDPG, SAC
+from utils import set_seed, progress, parameters_to_vector, PolicyNetwork, ValueNetwork, SVPG, Discriminator, make_vec_envs, collect_rollout_batch, adapt, surrogate_loss, HVP, conjugate_gradients, line_search, map_rewards, ReplayBuffer, DDPG, SAC, detach_dist
 
 #env
 import gym
@@ -47,8 +47,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--load_policy", "-l", action='store_true', help="Whether to start training from saved policy")
     parser.add_argument("--dr_type", "-t", type=str, default="", help="Type of domain randomization (default: baseline)", choices=["","uniform_dr","active_dr","auto_dr","oracle"])
-    parser.add_argument("--active_dr_opt", "-o", type=str, default="svpg_a2c", help="Type of randomization space optimization method (in case of active_dr)", choices=["svpg_a2c","svpg_ddpg","ddpg","sac"])
-    parser.add_argument("--active_dr_rewarder", "-r", type=str, default="disc", help="Type of reward to randomization space optimization method (in case of active_dr)", choices=["disc","map_neg","map_delta"])
+    parser.add_argument("--active_dr_opt", "-o", type=str, default="svpg_a2c", help="Type of randomization space optimization method (in case of active_dr)", choices=["svpg_a2c","svpg_ppo","svpg_ddpg","ddpg","sac"])
+    parser.add_argument("--active_dr_rewarder", "-r", type=str, default="disc", help="Type of reward to randomization space optimization method (in case of active_dr)", choices=["disc","map_neg","map_delta","map_thr"])
     parser.add_argument("--sac_entropy_tuning_method", "-s", type=str, default="", help="(In case --active_dr_opt=sac) Which entropy tuning method to use, if any", choices=["","learn","anneal"])
     parser.add_argument("--agent_alg", "-a", type=str, default="trpo", help="RL algorithm of the agent", choices=["trpo","ppo"])
     parser.add_argument("--maml", "-M", action='store_true', help="Whether to use MAML algorithm (defaults to base RL algorithm)")
@@ -79,7 +79,7 @@ if __name__ == '__main__':
     else:
         alpha = None
     
-    #TRPO / PPO
+    #Agent
     h=config["h_agent"]
     b = config["b_maml"]
     gamma = config["gamma"]
@@ -93,6 +93,7 @@ if __name__ == '__main__':
     #PPO
     clip=config["clip"]
     lr=config["lr_ppo"]
+    epochs_agent=config["epochs_agent"]
     
     if args.dr_type=="active_dr":
         if args.active_dr_rewarder=="disc":
@@ -108,11 +109,11 @@ if __name__ == '__main__':
         
         #SVPG
         n_particles=config["n_particles"] 
-        H_svpg=config["H_svpg"] if "a2c" in args.active_dr_opt else config["H_dr"]
+        H_svpg=config["H_dr"]
         delta_max=config["delta_max"] 
         T_svpg_init=config["T_svpg_init"]
         T_dr_init=config["T_dr_init"]
-        T_svpg=config["T_svpg"] if "a2c" in args.active_dr_opt else config["T_dr"]
+        T_svpg=config["T_dr"]
         T_rollout=copy(T_svpg)
         lr_svpg=config["lr_dr"] 
         gamma_svpg=config["gamma"]
@@ -120,7 +121,7 @@ if __name__ == '__main__':
         if "svpg" in args.active_dr_opt:
             svpg_kernel_mode=config["svpg_kernel_mode"]
             temp=config["temp_svpg"]
-            svpg_base_alg = "a2c" if "a2c" in args.active_dr_opt else "ddpg"
+            svpg_base_alg = args.active_dr_opt.split("_")[1]
         elif "sac" in args.active_dr_opt:
             temp=config["temp_sac"] if args.sac_entropy_tuning_method else config["temp_min"]
             temp_min=config["temp_min"]
@@ -155,7 +156,7 @@ if __name__ == '__main__':
     plots_tr_dir=config_file["plots_tr_dir"]
     models_dir=config_file["models_dir"]
     verbose=args.verbose
-    add_noise=True if args.dr_type else False
+    add_noise=True if args.dr_type and "oracle" not in args.dr_type else False
     figsize=tuple(config_file["figsize"])
     
     #Seed
@@ -193,14 +194,14 @@ if __name__ == '__main__':
             elif "map" in args.active_dr_rewarder:
                 default_solved=False
             if "svpg" in args.active_dr_opt:
-                svpg = SVPG(n_particles, dr, h_svpg, delta_max, T_svpg, H_svpg, temp, lr_svpg, svpg_kernel_mode, gamma_svpg, epochs=epochs_svpg, batch_size=b_svpg, T_init=T_dr_init,base_alg=svpg_base_alg)
+                svpg = SVPG(n_particles, dr, h_svpg, delta_max, T_svpg, H_svpg, temp, lr_svpg, svpg_kernel_mode, gamma_svpg, epochs=epochs_svpg, batch_size=b_svpg, T_init=T_dr_init,base_alg=svpg_base_alg,clip=clip)
             elif "ddpg" in args.active_dr_opt:
-                svpg=DDPG(dr, dr, h_svpg, h_svpg, lr_svpg, b_svpg, epochs_svpg, a_max=delta_max, gamma=gamma_svpg)
+                svpg=DDPG(n_particles, dr, dr, h_svpg, h_svpg, lr_svpg, b_svpg, epochs_svpg, a_max=delta_max, gamma=gamma_svpg)
             elif "sac" in args.active_dr_opt:
-                svpg=SAC(dr, dr,h_svpg, lr_svpg,b_svpg,epochs_svpg,temp,delta_max,args.sac_entropy_tuning_method, T_temp_init, gamma=gamma_svpg, alpha_min=temp_min, alpha_discount=temp_discount)
+                svpg=SAC(n_particles, dr, dr,h_svpg, lr_svpg,b_svpg,epochs_svpg,temp,delta_max,args.sac_entropy_tuning_method, T_temp_init, gamma=gamma_svpg, alpha_min=temp_min, alpha_discount=temp_discount)
             plot_disc_rewards=[]
             sampled_regions = [[] for _ in range(dr)]
-            RB=ReplayBuffer() if "a2c" not in args.active_dr_opt else None
+            RB=ReplayBuffer(T_rollout*n_workers) if "a2c" not in args.active_dr_opt and "ppo" not in args.active_dr_opt else None
             RB_samples=None
         elif args.dr_type=="auto_dr":
             D_autodr={str(env.unwrapped.dimensions[dim].name):{"low":[],"high":[]} for dim in range(dr)} #Performance buffers/queues
@@ -251,14 +252,13 @@ if __name__ == '__main__':
                     elif episode >= T_svpg_init:
                         simulation_instances, RB_samples = svpg.step(RB) if "svpg" in args.active_dr_opt else svpg.step(RB,T_svpg,T_dr_init,H_svpg)
                         simulation_instances = np.clip(simulation_instances,0,1)
-                        if "svpg" not in args.active_dr_opt: simulation_instances = np.tile(simulation_instances,(n_particles,1,1))
                     else:
                         simulation_instances = -1 * np.ones((n_particles,T_svpg,dr))
                         
                     rewards_disc = np.zeros(simulation_instances.shape[:2])
                     scores_disc=np.zeros(simulation_instances.shape[:2])
                     D_dashes_ref, D_dashes_rand=[], []
-                    if "map" in args.active_dr_rewarder: rewards_ref=[]
+                    if "delta" in args.active_dr_rewarder: rewards_ref=[]
                 else:
                     simulation_instances = -1 * np.ones((n_workers,T_rand_rollout,dr))
                             
@@ -337,7 +337,7 @@ if __name__ == '__main__':
                     #collect post-adaptaion rollout batch in ref envs
                     D_ref,ref_traj=collect_rollout_batch(env_ref, ds, da, policy, T_env, b, n_workers, queue, params=theta_dash)
                     D_dashes_ref.append(ref_traj)
-                    if "map" in args.active_dr_rewarder:
+                    if "delta" in args.active_dr_rewarder:
                         _, _, rewards,_ = D_ref
                         rewards_ref.append(rewards.cpu().numpy())
                 
@@ -393,20 +393,16 @@ if __name__ == '__main__':
                         elif "map" in args.active_dr_rewarder:
                             randomized_rewards = deepcopy(rewards_val_ep) if args.maml else deepcopy(rewards_tr_ep)
                             randomized_reward = np.sum(randomized_rewards[t][:,i])
-                            reference_reward = np.sum(rewards_ref[t][:,i])
+                            reference_reward = np.sum(rewards_ref[t][:,i]) if "delta" in args.active_dr_rewarder else thr_r
                             r_disc = map_rewards(args.active_dr_rewarder,r_map_scale,randomized_reward,reference_reward)
                             score_disc = deepcopy(r_disc)
                         
                         rewards_disc[i][t]= r_disc
                         scores_disc[i][t]=score_disc
                         
-                        if args.active_dr_opt=="svpg_ddpg" and RB_samples is not None:
+                        if "a2c" not in args.active_dr_opt and "ppo" not in args.active_dr_opt and RB_samples is not None:
                             RB_samples[i][t][3]=r_disc
-                            RB.add(RB_samples[i][t])
-                            
-                    if "svpg" not in args.active_dr_opt and RB_samples is not None:
-                        RB_samples[t][3]=rewards_disc[:,t].mean()
-                        RB.add(RB_samples[t])
+                            RB.add(RB_samples[i][t])     
                     
                     if args.active_dr_rewarder=="disc":
                         #train discriminator
@@ -417,9 +413,9 @@ if __name__ == '__main__':
                 plot_disc_rewards.append(scores_disc.mean())
                 
                 #update svpg particles' params (ie. train their policies)
-                if episode >= T_svpg_init and ("map" not in args.active_dr_rewarder and ("a2c" in args.active_dr_opt or len(RB.storage) > T_dr_init) or "map" in args.active_dr_rewarder and default_solved):
+                if episode >= T_svpg_init and (("map" not in args.active_dr_rewarder and ("a2c" in args.active_dr_opt or "ppo" in args.active_dr_opt or len(RB.storage) > T_dr_init)) or ("map" in args.active_dr_rewarder and default_solved and ("a2c" in args.active_dr_opt or "ppo" in args.active_dr_opt or len(RB.storage) > T_dr_init))):
                     # arg= deepcopy(rewards_disc) if "a2c" in args.active_dr_opt else deepcopy(RB)
-                    svpg.train(rewards_disc if "a2c" in args.active_dr_opt else RB)
+                    svpg.train(rewards_disc if "a2c" in args.active_dr_opt or "ppo" in args.active_dr_opt else RB)
                     
                     #log sampled regions only once svpg particles start training (i.e. once active_dr starts)
                     for dim in range(dr):
@@ -451,7 +447,7 @@ if __name__ == '__main__':
                     all_dims_covered=True
                     # break
             
-            #outer loop: update meta-params (via: TRPO) #!!!: since MAML uses TRPO it is on-policy, so care should be taken that order of associated transitions is preserved
+            #outer loop: update meta-params #!!!: since MAML uses an on-policy algorithm, so care should be taken that order of associated transitions is preserved
             if args.agent_alg=="trpo":
                 prev_loss, _, prev_pis = surrogate_loss(D_dashes,policy,value_net,gamma,alpha=alpha,Ds=Ds,alg="trpo")
                 grads = parameters_to_vector(torch.autograd.grad(prev_loss, policy.parameters()))
@@ -462,10 +458,15 @@ if __name__ == '__main__':
                 prev_params = parameters_to_vector(policy.parameters())
                 line_search(policy, prev_loss, prev_pis, value_net, gamma, b, D_dashes, full_step, prev_params, max_grad_kl, max_backtracks, zeta, alpha=alpha, Ds=Ds)
             elif args.agent_alg=="ppo":
-                loss,_,_ = surrogate_loss(D_dashes,policy,value_net,gamma,clip=clip,alpha=alpha,Ds=Ds,alg="ppo")
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
+                if epochs_agent>1:
+                    _,_,prev_pis = surrogate_loss(D_dashes,policy,value_net,gamma,clip=clip,alpha=alpha,Ds=Ds,alg="ppo")
+                else:
+                    prev_pis=[None for _ in range(len(D_dashes))]
+                for epoch in range(epochs_agent):
+                    loss,_,_ = surrogate_loss(D_dashes,policy,value_net,gamma,clip=clip,alpha=alpha,Ds=Ds,alg="ppo",prev_pis=prev_pis)
+                    optimizer.zero_grad()
+                    loss.backward()
+                    optimizer.step()
             
             #evaluation
             if evaluate and t_eval>eval_freq:
@@ -658,9 +659,11 @@ if __name__ == '__main__':
                 
             eps_step=int((tr_eps-T_svpg_init)/4)
             rand_step = 0.1
-            region_step=eps_step*T_rollout*n_workers
+            # region_step=eps_step*T_rollout*n_workers
             df2=pd.DataFrame()
             for dim, regions in enumerate(sampled_regions):
+                
+                region_step=int(len(regions)/4.)
                 
                 low=env.unwrapped.dimensions[dim].range_min
                 high=env.unwrapped.dimensions[dim].range_max

@@ -369,8 +369,9 @@ class Critic(nn.Module):
         return x
                 
 class DDPG(object):
-    def __init__(self, in_size, out_size, h1, h2, lr_agent, batch_size, epochs, a_max=1., tau=0.005, gamma=0.99):
+    def __init__(self, n_particles,in_size, out_size, h1, h2, lr_agent, batch_size, epochs, a_max=1., tau=0.005, gamma=0.99):
         
+        self.n_particles = n_particles
         self.gamma = gamma
         self.epochs = epochs
         self.batch_size = batch_size
@@ -378,104 +379,118 @@ class DDPG(object):
         self.a_max = a_max
         
         self.dr=in_size
-        self.last_states = np.random.uniform(0, 1, (self.dr,))
-        self.timesteps = 0
+        self.last_states = np.random.uniform(0, 1, (self.n_particles, self.dr))
+        self.timesteps = np.zeros(self.n_particles)
         
-        self.actor = Actor(in_size=in_size, h1=h1, h2=h2, out_size=out_size, max_action=a_max).to(device)
-        self.actor_target = Actor(in_size=in_size, h1=h1, h2=h2, out_size=out_size, max_action=a_max).to(device)
-        self.actor_target.load_state_dict(self.actor.state_dict())
-        self.actor_optimizer = Adam(self.actor.parameters(),lr=lr_agent)
-
-        self.critic = Critic(in_size=in_size+out_size, h1=h1, h2=h2).to(device)
-        self.critic_target = Critic(in_size=in_size+out_size, h1=h1, h2=h2).to(device) 
-        self.critic_target.load_state_dict(self.critic.state_dict())
-        self.critic_optimizer = Adam(self.critic.parameters(),lr=lr_agent*10.)
+        self.particles_actor = []
+        self.particles_actor_target = []
+        self.particles_critic = []
+        self.particles_critic_target = []
+        self.optimizers_actor = []
+        self.optimizers_critic = []
+        
+        for i in range(self.n_particles):
+            # Initialize each of the individual particles
+            actor = Actor(in_size=in_size, h1=h1, h2=h2, out_size=out_size, max_action=a_max).to(device)
+            actor_target = Actor(in_size=in_size, h1=h1, h2=h2, out_size=out_size, max_action=a_max).to(device)
+            actor_target.load_state_dict(actor.state_dict())
+            actor_optimizer = Adam(actor.parameters(),lr=lr_agent)
     
-    def select_action(self, state):
+            critic = Critic(in_size=in_size+out_size, h1=h1, h2=h2).to(device)
+            critic_target = Critic(in_size=in_size+out_size,h1=h1, h2=h2).to(device)
+            critic_target.load_state_dict(critic.state_dict())
+            critic_optimizer = Adam(critic.parameters(),lr=lr_agent*10.)
+
+            self.particles_actor.append(actor)
+            self.particles_actor_target.append(actor_target)
+            self.particles_critic.append(critic)
+            self.particles_critic_target.append(critic_target)
+            self.optimizers_actor.append(actor_optimizer)
+            self.optimizers_critic.append(critic_optimizer)
+        
+    def select_action(self, policy_idx, state):
         state = torch.from_numpy(state).float().to(device)
-        return self.actor(state).cpu().data.numpy()
+        return self.particles_actor[policy_idx](state).cpu().data.numpy()
     
     def step(self,RB, T_svpg, T_init, H_svpg):
         
-        self.simulation_instance = np.zeros((T_svpg, self.dr))
-        RB_samples=[]
-        #reset
-        current_sim_params = self.last_states
-        done=False
-        # add_to_buffer=True
-
-        for t in range(T_svpg):
-            self.simulation_instance[t] = current_sim_params
-
-            if len(RB.storage) > T_init:
-                action = self.select_action(current_sim_params)
-            elif self.a_max > 0:
-                action = self.a_max * np.random.uniform(-1, 1, (self.dr,))
-            else:
-                action = np.random.uniform(-1, 1, (self.dr,))
-            
-            #step
-            next_params = current_sim_params + action
-            reward = 1.
-            done=True if next_params < 0 or next_params > 1 else False
-            # next_params = np.clip(next_params,0,1)
-            done_bool = 0 if self.timesteps + 1 == H_svpg else float(done)
-            
-            # if add_to_buffer:
-            RB_samples.append([current_sim_params, next_params, action, reward, done_bool])
-            
-            if done_bool:
-                current_sim_params = np.random.uniform(0, 1, (self.dr,))                
-                self.timesteps = 0
-                # add_to_buffer=False
-                # break
-            else:
-                current_sim_params = next_params
-                self.timesteps += 1
-
-        self.last_states = current_sim_params
+        self.simulation_instance = np.zeros((self.n_particles,T_svpg, self.dr))
+        RB_samples=[[] for i in range(self.n_particles)]
+        
+        for i in range(self.n_particles):
+            #reset
+            current_sim_params = self.last_states[i]
+    
+            for t in range(T_svpg):
+                self.simulation_instance[i][t] = current_sim_params
+    
+                if len(RB.storage) > T_init:
+                    action = self.select_action(i,current_sim_params)
+                elif self.a_max > 0:
+                    action = self.a_max * np.random.uniform(-1, 1, (self.dr,))
+                else:
+                    action = np.random.uniform(-1, 1, (self.dr,))
+                
+                #step
+                next_params = current_sim_params + action
+                reward = 1.
+                done=True if next_params < 0. or next_params > 1. else False
+                # next_params = np.clip(next_params,0,1)
+                done_bool = 0 if self.timesteps[i] + 1 == H_svpg else float(done)
+                
+                # if add_to_buffer:
+                RB_samples[i].append([current_sim_params, next_params, action, reward, done_bool])
+                
+                if done_bool:
+                    current_sim_params = np.random.uniform(0, 1, (self.dr,))                
+                    self.timesteps[i] = 0
+                else:
+                    current_sim_params = next_params
+                    self.timesteps[i] += 1
+    
+            self.last_states[i] = current_sim_params
 
         return np.array(self.simulation_instance), RB_samples
 
     def train(self, RB):
         for epoch in range(self.epochs):
-            # Sample replay buffer 
-            x, y, u, r, d = RB.sample(self.batch_size)
-            state = torch.FloatTensor(x).to(device) 
-            action = torch.FloatTensor(u).to(device) 
-            next_state = torch.FloatTensor(y).to(device) 
-            done = torch.FloatTensor(1-d).to(device) 
-            reward = torch.FloatTensor(r).to(device)  
-
-            # Compute the target Q value
-            target_Q = self.critic_target(next_state, self.actor_target(next_state))
-            target_Q = reward + (done * self.gamma * target_Q).detach()
-
-            # Get current Q estimate
-            current_Q = self.critic(state, action)
-
-            # Compute critic loss
-            critic_loss = F.mse_loss(current_Q, target_Q)
-
-            # Optimize the critic
-            self.critic_optimizer.zero_grad()
-            critic_loss.backward()
-            self.critic_optimizer.step()
-
-            # Compute actor loss
-            actor_loss = -self.critic(state, self.actor(state)).mean()
             
-            # Optimize the actor 
-            self.actor_optimizer.zero_grad()
-            actor_loss.backward()
-            self.actor_optimizer.step()
-
-            # Update the frozen target models
-            for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
-                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
-
-            for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
-                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+            for i in range(self.n_particles):
+                # Sample replay buffer 
+                x, y, u, r, d = RB.sample(self.batch_size)
+                state = torch.FloatTensor(x).to(device)
+                action = torch.FloatTensor(u).to(device)
+                next_state = torch.FloatTensor(y).to(device)
+                done = torch.FloatTensor(1 - d).to(device)
+                reward = torch.FloatTensor(r).to(device)
+                
+                # Compute the target Q value
+                target_Q = self.particles_critic_target[i](next_state, self.particles_actor_target[i](next_state))
+                target_Q = reward + (done * self.gamma * target_Q).detach()
+    
+                # Get current Q estimate
+                current_Q = self.particles_critic[i](state, action)
+    
+                # Compute critic loss
+                critic_loss = F.mse_loss(current_Q, target_Q)
+                
+                self.optimizers_critic[i].zero_grad()
+                critic_loss.backward()
+                self.optimizers_critic[i].step()
+                
+                policy_grad = - self.particles_critic[i](state, self.particles_actor[i](state)).mean()
+                
+                # Optimize the actor 
+                self.optimizers_actor[i].zero_grad()
+                policy_grad.backward()
+                self.optimizers_actor[i].step()
+                
+                # Update the frozen target models
+                for param, target_param in zip(self.particles_critic[i].parameters(), self.particles_critic_target[i].parameters()):
+                    target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+    
+                for param, target_param in zip(self.particles_actor[i].parameters(), self.particles_actor_target[i].parameters()):
+                    target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
 
 #%% Discriminator
@@ -543,7 +558,7 @@ def map_rewards(map_type,reward_scale,rand_reward,ref_reward):
     
     if "neg" in map_type:
         simulator_reward = -rand_reward
-    elif "delta" in map_type:
+    else:
         simulator_reward = ref_reward-rand_reward #assumes thr_r >0.
     
     return reward_scale * simulator_reward
@@ -762,14 +777,15 @@ def surrogate_loss(D_dashes,policy,value_net,gamma,alpha=None,prev_pis=None, Ds=
         if len(ratio.shape) > 2:
             ratio = torch.sum(ratio, dim=2)
         ratio = torch.exp(ratio)
-        surr1= ratio * advantages
         if alg=="trpo":
-            loss = surr1
+            loss = ratio * advantages
         elif alg=="ppo":
-            surr2=torch.clip(ratio,1-clip,1+clip)*advantages
+            surr1= ratio * advantages.detach()
+            surr2=torch.clip(ratio,1-clip,1+clip)*advantages.detach()
             loss = torch.minimum(surr1,surr2)
             
         loss = - weighted_mean(loss,axis=0,weights=masks)
+        # loss = - weighted_mean(loss,weights=masks)
         losses.append(loss)
         
         if len(actions.shape) > 2:
@@ -892,7 +908,7 @@ class SAC_Policy(SAC_MLP):
 
 
 class SAC(object):
-    def __init__(self,in_size, out_size,h, lr,batch_size,epochs,alpha,delta_max,entropy_tuning_method, T_alpha_init,tau=0.005, gamma=0.99, alpha_min=0.0001, alpha_discount=0.1):
+    def __init__(self,n_particles, in_size, out_size,h, lr,batch_size,epochs,alpha,delta_max,entropy_tuning_method, T_alpha_init,tau=0.005, gamma=0.99, alpha_min=0.0001, alpha_discount=0.1):
         
         self.batch_size=batch_size
         self.epochs=epochs
@@ -900,80 +916,111 @@ class SAC(object):
         self.gamma=gamma
         self.delta_max=delta_max
         self.dr = in_size
+        self.n_particles=n_particles
         
-        self.alpha=alpha
+        self.particles_alpha=[alpha]*n_particles
         self.entropy_tuning_method=entropy_tuning_method
         self.alpha_min=alpha_min
         self.alpha_discount=alpha_discount
         self.T_alpha_init=T_alpha_init
         
-        self.last_states = np.random.uniform(0, 1, (self.dr,))
-        self.timesteps = 0
+        self.last_states = np.random.uniform(0, 1, (self.n_particles, self.dr))
+        self.timesteps = np.zeros(self.n_particles)
         
         a_max=np.array([delta_max])
         a_min=np.array([-delta_max])
         
-        #Q-Functions
-        self.q1=SAC_MLP(in_size=in_size+out_size,h=h,out_size=1).to(device)
-        self.q2=SAC_MLP(in_size=in_size+out_size,h=h,out_size=1).to(device)
+        self.particles_pi = []
         
-        self.q1_target=SAC_MLP(in_size=in_size+out_size,h=h,out_size=1).to(device)
-        self.q2_target=SAC_MLP(in_size=in_size+out_size,h=h,out_size=1).to(device)
+        self.particles_q1 = []
+        self.particles_q1_target = []
+        self.particles_q2 = []
+        self.particles_q2_target = []
         
-        self.q1_target.load_state_dict(self.q1.state_dict())
-        self.q2_target.load_state_dict(self.q2.state_dict())
+        self.particles_entropy_target=[]
+        self.particles_log_alpha=[]
         
-        self.q1_optimizer = Adam(self.q1.parameters(),lr=lr*10.)
-        self.q2_optimizer = Adam(self.q2.parameters(),lr=lr*10.)
+        self.optimizers_alpha=[] 
+        self.optimizers_pi = []
+        self.optimizers_q1 = []
+        self.optimizers_q2 = []
         
-        #Policy
-        self.pi=SAC_Policy(in_size, h, 2*out_size, a_max, a_min).to(device)
-        self.pi_optimizer=Adam(self.pi.parameters(),lr=lr)
+        for i in range(self.n_particles):
+            
+            #Q-Functions
+            q1=SAC_MLP(in_size=in_size+out_size,h=h,out_size=1).to(device)
+            q2=SAC_MLP(in_size=in_size+out_size,h=h,out_size=1).to(device)
+            
+            q1_target=SAC_MLP(in_size=in_size+out_size,h=h,out_size=1).to(device)
+            q2_target=SAC_MLP(in_size=in_size+out_size,h=h,out_size=1).to(device)
+            
+            q1_target.load_state_dict(q1.state_dict())
+            q2_target.load_state_dict(q2.state_dict())
+            
+            q1_optimizer = Adam(q1.parameters(),lr=lr*10.)
+            q2_optimizer = Adam(q2.parameters(),lr=lr*10.)
+            
+            #Policy
+            pi=SAC_Policy(in_size, h, 2*out_size, a_max, a_min).to(device)
+            pi_optimizer=Adam(pi.parameters(), lr=lr)
+            
+            self.particles_pi.append(pi)
+            self.particles_q1.append(q1)
+            self.particles_q1_target.append(q1_target)
+            self.particles_q2.append(q2)
+            self.particles_q2_target.append(q2_target)
+            self.optimizers_pi.append(pi_optimizer)
+            self.optimizers_q1.append(q1_optimizer)
+            self.optimizers_q2.append(q2_optimizer)
+            
+            #Temperature / Entropy (Automatic Tuning)
+            if self.entropy_tuning_method=="learn":
+                target_entropy = -torch.prod(torch.Tensor(in_size).to(device)).item()
+                log_alpha = torch.zeros(1, requires_grad=True, device=device)
+                alpha_optimizer = Adam([log_alpha], lr=lr)
+                self.particles_entropy_target.append(target_entropy)
+                self.particles_log_alpha.append(log_alpha)
+                self.optimizers_alpha.append(alpha_optimizer)
         
-        #Temperature / Entropy (Automatic Tuning)
-        if self.entropy_tuning_method=="learn":
-            self.target_entropy = -torch.prod(torch.Tensor(self.dr).to(device)).item()
-            self.log_alpha = torch.zeros(1, requires_grad=True, device=device)
-            self.alpha_optimizer = Adam(self.log_alpha.parameters(),lr=lr)
-        
-    def select_action(self, state):
+    def select_action(self, idx, state):
         state = torch.FloatTensor(state).to(device).unsqueeze(0)
-        action, _, _ = self.pi(state)
+        action, _, _ = self.particles_pi[idx](state)
         return action.detach().cpu().numpy()[0]
     
     def step(self,RB,T_svpg,T_init,H_svpg):
         
-        self.simulation_instance = np.zeros((T_svpg, self.dr))
-        #reset
-        current_sim_params = self.last_states
-        # done=False
-        # add_to_buffer=True
-        RB_samples=[]
+        self.simulation_instance = np.zeros((self.n_particles,T_svpg, self.dr))
+        all_next_params=np.zeros_like(self.last_states)
+        RB_samples=[[] for i in range(self.n_particles)]
+        
+        for i in range(self.n_particles):
+            current_sim_params = self.last_states[i]
 
-        for t in range(T_svpg):
-            self.simulation_instance[t] = current_sim_params
-
-            action = self.select_action(current_sim_params) if len(RB.storage) > T_init else self.delta_max * np.random.uniform(-1, 1, (self.dr,))
-            
-            #step
-            next_params = current_sim_params + action
-            reward = 1.
-            done=True if next_params < 0. or next_params > 1. else False
-            # next_params = np.clip(next_params,0,1)
-            done_bool = 0 if self.timesteps + 1 == H_svpg else float(done)
-            
-            RB_samples.append([current_sim_params, next_params, action, reward, done_bool])
-            
-            if done_bool:
-                current_sim_params = np.random.uniform(0, 1, (self.dr,))                
-                self.timesteps = 0
-                # add_to_buffer=False
-                # break
-            else:
-                current_sim_params = next_params
-                self.timesteps += 1
-
-        self.last_states = current_sim_params
+            for t in range(T_svpg):
+                self.simulation_instance[i][t] = current_sim_params
+    
+                action = self.select_action(i,current_sim_params) if len(RB.storage) > T_init else self.delta_max * np.random.uniform(-1, 1, (self.dr,))
+                
+                #step
+                next_params = current_sim_params + action
+                reward = 1.
+                done=True if next_params < 0. or next_params > 1. else False
+                # next_params = np.clip(next_params,0,1)
+                done_bool = 0 if self.timesteps[i] + 1 == H_svpg else float(done)
+                
+                RB_samples[i].append([current_sim_params, next_params, action, reward, done_bool])
+                
+                if done_bool:
+                    current_sim_params = np.random.uniform(0, 1, (self.dr,))                
+                    self.timesteps[i] = 0
+                    # add_to_buffer=False
+                    # break
+                else:
+                    current_sim_params = next_params
+                    self.timesteps[i] += 1
+    
+            self.last_states[i] = current_sim_params
+            all_next_params[i] = next_params
 
         return np.array(self.simulation_instance), RB_samples
     
@@ -981,64 +1028,67 @@ class SAC(object):
     def train(self,RB):
         
         if len(RB.storage) > self.T_alpha_init and self.entropy_tuning_method=="anneal":
-            self.alpha *= self.alpha_discount
-            if self.alpha < self.alpha_min:
-                self.alpha = self.alpha_min
+            for i in range(self.n_particles):
+                self.particles_alpha[i] *= self.alpha_discount
+                if self.particles_alpha[i] < self.alpha_min:
+                    self.particles_alpha[i] = self.alpha_min
                     
         for epoch in range(self.epochs):
+            
+            for i in range(self.n_particles):
            
-            # Sample replay buffer 
-            x, y, u, r, d = RB.sample(self.batch_size)
-            state = torch.FloatTensor(x).to(device)
-            action = torch.FloatTensor(u).to(device)
-            next_state = torch.FloatTensor(y).to(device)
-            done = torch.FloatTensor(1 - d).to(device)
-            reward = torch.FloatTensor(r).to(device)
-            
-            with torch.no_grad():
-                next_state_action, next_state_log_pi, _ = self.pi(next_state)
-                q1_next_target = self.q1_target(next_state, next_state_action)
-                q2_next_target = self.q2_target(next_state, next_state_action)
-                min_q_next_target = torch.min(q1_next_target, q2_next_target) - self.alpha * next_state_log_pi
-                next_q_value = reward + done * self.gamma * (min_q_next_target)
-            
-            q1_value=self.q1(state,action)
-            q1_loss = F.mse_loss(q1_value, next_q_value)
+                # Sample replay buffer 
+                x, y, u, r, d = RB.sample(self.batch_size)
+                state = torch.FloatTensor(x).to(device)
+                action = torch.FloatTensor(u).to(device)
+                next_state = torch.FloatTensor(y).to(device)
+                done = torch.FloatTensor(1 - d).to(device)
+                reward = torch.FloatTensor(r).to(device)
                 
-            self.q1_optimizer.zero_grad()
-            q1_loss.backward()
-            self.q1_optimizer.step()
-            
-            q2_value=self.q2(state,action)
-            q2_loss = F.mse_loss(q2_value, next_q_value)
-            
-            self.q2_optimizer.zero_grad()
-            q2_loss.backward()
-            self.q2_optimizer.step()
-            
-            actions_new, log_pi, _ = self.pi(state)
-            q_actions_new = torch.min(self.q1(state,actions_new),self.q2(state,actions_new))
-            policy_loss = ((self.alpha* log_pi) - q_actions_new).mean()
+                with torch.no_grad():
+                    next_state_action, next_state_log_pi, _ = self.particles_pi[i](next_state)
+                    q1_next_target = self.particles_q1_target[i](next_state, next_state_action)
+                    q2_next_target = self.particles_q2_target[i](next_state, next_state_action)
+                    min_q_next_target = torch.min(q1_next_target, q2_next_target) - self.particles_alpha[i] * next_state_log_pi
+                    next_q_value = reward + done * self.gamma * (min_q_next_target)
+                    
+                q1_value=self.particles_q1[i](state,action)
+                q2_value=self.particles_q2[i](state,action)
+                
+                q1_loss = F.mse_loss(q1_value, next_q_value)
+                q2_loss = F.mse_loss(q2_value, next_q_value)
+                
+                self.optimizers_q1[i].zero_grad()
+                q1_loss.backward()
+                self.optimizers_q1[i].step()
+        
+                self.optimizers_q2[i].zero_grad()
+                q2_loss.backward()
+                self.optimizers_q2[i].step()
+                
+                actions_new, log_pi, _ = self.particles_pi[i](state)
+                q_actions_new = torch.min(self.particles_q1[i](state,actions_new),self.particles_q2[i](state,actions_new))
+                policy_loss = ((self.particles_alpha[i]* log_pi) - q_actions_new).mean()
+        
+                self.optimizers_pi[i].zero_grad()
+                policy_loss.backward()
+                self.optimizers_pi[i].step()
+                
+                if self.entropy_tuning_method=="learn":
+                    alpha_loss = -(self.particles_log_alpha[i] * (log_pi + self.particles_entropy_target[i]).detach()).mean()
     
-            self.pi_optimizer.zero_grad()
-            policy_loss.backward()
-            self.pi_optimizer.step()
-            
-            if self.entropy_tuning_method=="learn":
-                alpha_loss = -(self.log_alpha * (log_pi + self.target_entropy).detach()).mean()
+                    self.optimizers_alpha[i].zero_grad()
+                    alpha_loss.backward()
+                    self.optimizers_alpha[i].step()
+        
+                    self.particles_alpha[i] = self.particles_log_alpha[i].exp()
+                
+                # Update the frozen target models
+                for param, target_param in zip(self.particles_q1[i].parameters(), self.particles_q1_target[i].parameters()):
+                    target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
     
-                self.alpha_optimizer.zero_grad()
-                alpha_loss.backward()
-                self.alpha_optimizer.step()
-    
-                self.alpha = self.log_alpha.exp()
-            
-            # Update the frozen target models
-            for param, target_param in zip(self.q1.parameters(), self.q1_target.parameters()):
-                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
-
-            for param, target_param in zip(self.q2.parameters(), self.q2_target.parameters()):
-                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+                for param, target_param in zip(self.particles_q2[i].parameters(), self.particles_q2_target[i].parameters()):
+                    target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
 #%% SVPG (A2C- & DDPG-based)
 
@@ -1081,7 +1131,32 @@ class SVPGParticleActor(nn.Module):
         
         dist=Normal(mean,std)
         
-        return dist     
+        return dist
+
+        
+class PPO_Actor(nn.Module):
+    def __init__(self, in_size, h,out_size):
+        super(PPO_Actor, self).__init__()
+        
+        self.actor_base = nn.Sequential(
+            nn.Linear(in_size, h),
+            nn.ReLU(),
+            nn.Linear(h, h),
+            nn.ReLU(),
+            nn.Linear(h, out_size),
+        )
+        
+        # self.logstd=nn.Parameter(torch.zeros((1,output_dim)))
+        self.logstd=nn.Parameter(np.log(1.0)*torch.ones((out_size,1))-1.)
+        
+    def forward(self, x):
+        mean= self.actor_base(x)
+        
+        std= torch.exp(torch.maximum(self.logstd, torch.from_numpy(np.log(np.array([1e-6]))).to(device)))
+        
+        dist=Normal(mean,std)
+        
+        return dist
     
 
 class SVPG:
@@ -1089,7 +1164,7 @@ class SVPG:
     Input: current randomization settings
     Output: either a direction to move in (Discrete - for 1D/2D) or a delta across all parameters (Continuous)
     """
-    def __init__(self, n_particles, dr, h, delta_max, T_svpg, H_svpg, temperature, lr_svpg, svpg_kernel_mode,gamma_svpg=0.99, tau=0.005, epochs=30, batch_size=256, T_init=100,base_alg="a2c"):
+    def __init__(self, n_particles, dr, h, delta_max, T_svpg, H_svpg, temperature, lr_svpg, svpg_kernel_mode,gamma_svpg=0.99, tau=0.005, epochs=30, batch_size=256, T_init=100,clip=0.2,base_alg="a2c"):
         
         self.svpg_kernel_mode=svpg_kernel_mode
         self.temperature = temperature 
@@ -1101,6 +1176,7 @@ class SVPG:
         self.gamma = gamma_svpg
         self.tau=tau
         self.base_alg=base_alg
+        self.clip=clip
         
         self.last_states = np.random.uniform(0, 1, (self.n_particles, self.dr))
         self.timesteps = np.zeros(self.n_particles)
@@ -1119,21 +1195,40 @@ class SVPG:
         self.optimizers_actor = []
         self.optimizers_critic = []
         
-
+        
         for i in range(self.n_particles):
             
-            # Initialize each of the individual particles
-            actor = SVPGParticleActor(in_size=dr, h=h,out_size=dr).to(device) if base_alg=="a2c" else Actor(in_size=dr, h1=h, h2=h, out_size=dr, max_action=delta_max).to(device)
-            actor_optimizer = Adam(actor.parameters(),lr=lr_svpg)
-            critic = SVPGParticleCritic(in_size=dr, h=h).to(device) if base_alg=="a2c" else Critic(in_size=2*dr, h1=h, h2=h).to(device)
-            critic_optimizer = Adam(critic.parameters(),lr=lr_svpg*10.)
-            
-            self.particles_actor.append(actor)
-            self.particles_critic.append(critic)
-            self.optimizers_actor.append(actor_optimizer)
-            self.optimizers_critic.append(critic_optimizer)
-            
-            if base_alg=="ddpg":
+            if "ppo" in base_alg:
+                actor = PPO_Actor(in_size=dr, h=h,out_size=dr).to(device)
+                critic = ValueNetwork(dr,self.gamma).to(device)
+                actor_optimizer = Adam(actor.parameters(),lr=lr_svpg)
+                
+                self.particles_actor.append(actor)
+                self.optimizers_actor.append(actor_optimizer)
+                self.particles_critic.append(critic)
+                
+            elif "a2c" in base_alg:
+                actor = SVPGParticleActor(in_size=dr, h=h,out_size=dr).to(device) 
+                critic = SVPGParticleCritic(in_size=dr, h=h).to(device)
+                critic_optimizer = Adam(critic.parameters(),lr=lr_svpg*10.)
+                actor_optimizer = Adam(actor.parameters(),lr=lr_svpg)
+                
+                self.particles_critic.append(critic)
+                self.optimizers_critic.append(critic_optimizer)
+                self.particles_actor.append(actor)
+                self.optimizers_actor.append(actor_optimizer)
+                
+            else:
+                actor=Actor(in_size=dr, h1=h, h2=h, out_size=dr, max_action=delta_max).to(device)
+                critic = Critic(in_size=2*dr, h1=h, h2=h).to(device)
+                critic_optimizer = Adam(critic.parameters(),lr=lr_svpg*10.)
+                actor_optimizer = Adam(actor.parameters(),lr=lr_svpg)
+                
+                self.particles_actor.append(actor)
+                self.optimizers_actor.append(actor_optimizer)
+                self.particles_critic.append(critic)
+                self.optimizers_critic.append(critic_optimizer)
+                
                 actor_target = Actor(in_size=dr, h1=h, h2=h, out_size=dr, max_action=delta_max).to(device)
                 actor_target.load_state_dict(actor.state_dict())
                 critic_target = Critic(in_size=2*dr, h1=h, h2=h).to(device) 
@@ -1141,6 +1236,7 @@ class SVPG:
                 
                 self.particles_actor_target.append(actor_target)
                 self.particles_critic_target.append(critic_target)
+                
 
     def compute_kernel(self, X):
         """
@@ -1180,25 +1276,24 @@ class SVPG:
 
     def select_action(self, policy_idx, state):
         
-        if self.base_alg=="a2c":
+        if self.base_alg=="ddpg":
+            state=torch.FloatTensor(state).to(device)
+            action=self.particles_actor[policy_idx](state).cpu().data.numpy()
+            
+        else:
             state = torch.from_numpy(state).float().unsqueeze(0).to(device)
             dist = self.particles_actor[policy_idx](state)
-        
-        
-            value = self.particles_critic[policy_idx](state)
-    
+            
             action = dist.sample()
             self.particles_log_probs[policy_idx].append(dist.log_prob(action))
         
-            action = action.item() if self.dr==1 else action.squeeze().cpu().detach().numpy()
-            
-            return action, value
-            
-        elif self.base_alg=="ddpg":
-            state=torch.FloatTensor(state).to(device)
-            action=self.particles_actor[policy_idx](state).cpu().data.numpy()
+            if self.base_alg=="a2c":
+                value = self.particles_critic[policy_idx](state)
+                action = action.item() if self.dr==1 else action.squeeze().cpu().detach().numpy()
+                return action, value
+        
+        return action
 
-            return action
 
     def compute_returns(self, next_value, rewards, masks):
         return_ = next_value 
@@ -1215,12 +1310,13 @@ class SVPG:
         Then, send it to agent for further training and reward calculation
         """
         self.simulation_instances = np.zeros((self.n_particles, self.T_svpg, self.dr))
-
+        self.actions=[[] for _ in range(self.n_particles)]
         # Store the values of each state - for advantage estimation
         self.values=[torch.zeros((self.T_svpg, 1)).float().to(device) for _ in range(self.n_particles)]
         RB_samples=[[] for i in range(self.n_particles)] if RB is not None else None
         # Store the last states for each particle (calculating rewards)
         self.masks = np.ones((self.n_particles, self.T_svpg))
+        self.all_next_params=np.zeros((self.n_particles,self.dr))
 
         for i in range(self.n_particles):
                 
@@ -1230,16 +1326,7 @@ class SVPG:
             for t in range(self.T_svpg):
                 self.simulation_instances[i][t] = current_sim_params
                 
-                if self.base_alg=="a2c":
-                    action, value = self.select_action(i, current_sim_params)
-                    action = self.delta_max * np.array(np.clip(action, -1, 1))
-                    next_params = np.clip(current_sim_params + action, 0, 1) #step
-                    
-                    self.values[i][t] = value
-                    
-                    done_bool = True if np.array_equal(next_params, current_sim_params) or self.timesteps[i] + 1 == self.H_svpg else False
-                    
-                elif self.base_alg=="ddpg":
+                if self.base_alg=="ddpg":
                     if len(RB.storage) > self.T_init:
                         action = self.select_action(i, current_sim_params)
                     elif self.delta_max > 0:
@@ -1254,15 +1341,37 @@ class SVPG:
                     done_bool = 0 if self.timesteps[i] + 1 == self.H_svpg else float(done)
                     
                     RB_samples[i].append([current_sim_params, next_params, action, reward, done_bool])
+                
+                else:
+                    if self.base_alg=="a2c":
+                        action, value = self.select_action(i, current_sim_params)                        
+                        self.values[i][t] = value
+                    
+                    elif self.base_alg=="ppo":
+                        with torch.no_grad():
+                            action = self.select_action(i, current_sim_params)
+                            self.actions[i].append(action)
+                        action = action.item()
+                    
+                    action = self.delta_max * np.array(np.clip(action, -1., 1.))
+                    next_params = current_sim_params + action
+                    
+                    done=True if next_params < 0. or next_params > 1. else False
+                
+                    # done_bool = 0 if self.timesteps[i] + 1 == self.H_svpg else float(done)
+                    done_bool=(done or self.timesteps[i] + 1 == self.H_svpg)
+                    
 
                 if done_bool:
-                    current_sim_params = np.random.uniform(0, 1, (self.dr,))                
+                    current_sim_params = np.random.uniform(0, 1, (self.dr,))
+                    self.masks[i][t] = 0
                     self.timesteps[i] = 0
                 else:
                     current_sim_params = next_params
                     self.timesteps[i] += 1
 
             self.last_states[i] = current_sim_params
+            self.all_next_params[i]=next_params
 
         return np.array(self.simulation_instances), RB_samples
     
@@ -1270,6 +1379,8 @@ class SVPG:
     def train(self,arg):
         if self.base_alg=="a2c":
             return self._train_a2c(arg)
+        elif self.base_alg=="ppo":
+            return self._train_ppo(arg)
         elif self.base_alg=="ddpg":
             return self._train_ddpg(arg)
     
@@ -1283,7 +1394,7 @@ class SVPG:
             # policy_grad_particle = []
             
             # Calculate the value of last state - for Return Computation
-            _, next_value = self.select_action(i, self.last_states[i]) 
+            _, next_value = self.select_action(i, self.all_next_params[i]) 
 
             particle_rewards = torch.from_numpy(simulator_rewards[i]).float().to(device)
             masks = torch.from_numpy(self.masks[i]).float().to(device)
@@ -1326,7 +1437,77 @@ class SVPG:
         for i in range(self.n_particles):
             vector_to_parameters(grad_theta[i], list(self.particles_actor[i].parameters()), grad=True)
             self.optimizers_actor[i].step()
+    
+    
+    def _train_ppo(self, simulator_rewards):
+        
+        advs_ls=[]
+        
+        for i in range(self.n_particles):
+            states=torch.from_numpy(self.simulation_instances[i]).float().unsqueeze(2).to(device)
+    
+            particle_rewards = torch.from_numpy(simulator_rewards[i]).float().unsqueeze(1).to(device)
+            masks = torch.from_numpy(self.masks[i]).float().unsqueeze(1).to(device)
+            
+            self.particles_critic[i].fit_params(states, particle_rewards, masks)
+            
+            values=self.particles_critic[i](states,masks)
+            values = values.squeeze(2).detach() if values.dim()>2 else values.detach()
+            # values = values * masks
+            values = F.pad(values*masks,(0,0,0,1))
+            
+            deltas = particle_rewards+ self.gamma * values[1:] - values[:-1]
+            advantages = torch.zeros_like(deltas, dtype=torch.float32)
+            advantage = torch.zeros_like(deltas[0], dtype=torch.float32)
+            for t in range(self.T_svpg - 1, -1, -1): #reversed(range(-1,T -1 )):
+    
+                advantage = advantage * self.gamma + deltas[t]
+                advantages[t] = advantage
+                        
+            #Normalize advantages to improve: learning, numerical stability & convergence
+            advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+            
+            advs_ls.append(advantages)
+        
+        for epoch in range(self.epochs):
+        
+            policy_grads = []
+            parameters = []
+    
+            for i in range(self.n_particles):
+                
+                log_probs=torch.cat([self.particles_actor[i](torch.from_numpy(self.simulation_instances[i][t]).float().unsqueeze(0).to(device)).log_prob(self.actions[i][t]) for t in range(self.T_svpg)])
 
+                ratio = torch.exp(log_probs - torch.cat(self.particles_log_probs[i]))
+
+                surr1= ratio * advs_ls[i].detach()
+                surr2=torch.clip(ratio,1.-self.clip,1.+self.clip)*advs_ls[i].detach()
+                policy_grad = torch.minimum(surr1,surr2).mean()
+
+                self.optimizers_actor[i].zero_grad()
+                policy_grad.backward()
+                
+                # Vectorize parameters and PGs
+                vec_param, vec_policy_grad = parameters_to_vector(list(self.particles_actor[i].parameters()), both=True)
+    
+                policy_grads.append(vec_policy_grad.unsqueeze(0))
+                parameters.append(vec_param.unsqueeze(0))
+    
+            # calculating the kernel matrix and its gradients
+            parameters = torch.cat(parameters)
+            k, grad_k = self.compute_kernel(parameters)
+    
+            policy_grads = 1.0 / self.temperature * torch.cat(policy_grads)
+            grad_logp = torch.mm(k, policy_grads)
+    
+            grad_theta = - (grad_logp + grad_k) / self.n_particles
+    
+            # # update param gradients
+            for i in range(self.n_particles):
+                vector_to_parameters(grad_theta[i], list(self.particles_actor[i].parameters()), grad=True)
+                self.optimizers_actor[i].step() 
+
+    
     def _train_ddpg(self, RB):
         
         for _ in range(self.epochs):

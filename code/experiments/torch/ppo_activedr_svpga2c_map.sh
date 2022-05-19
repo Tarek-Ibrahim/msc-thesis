@@ -12,4 +12,4 @@
 module load anaconda
 module load mujoco/2.0
 
-python main.py --mode=1 --verbose=1 --dr_type=active_dr --agent_alg=ppo --env_key=halfcheetah_friction --active_dr_opt=svpg_a2c --active_dr_rewarder=map_delta
+python main.py --mode=1 --verbose=1 --dr_type=active_dr --agent_alg=ppo --env_key=halfcheetah_friction --active_dr_opt=svpg_a2c --active_dr_rewarder=map_thr

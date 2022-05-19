@@ -38,6 +38,7 @@ debug_mode:
     #Agent
     h_agent: &h_agent_debug 64
     lr_agent: &lr_agent_debug 0.1 #(for maml: adaptation step size / inner learning rate)
+    epochs_agent: 1 #2
     
     #DR
     h_dr: &h_dr_debug 16
@@ -46,7 +47,7 @@ debug_mode:
     T_dr: &T_dr_debug 2
     H_dr: &H_dr_debug 5
     b_dr: 256 #batch size
-    epochs_dr: 30
+    epochs_dr: 2
     
     #MAML
     # n: 2 #no. of NN layers
@@ -75,7 +76,7 @@ debug_mode:
     
     #SVPG
     n_particles: *n_workers_debug
-    temp_svpg: 0.0001 #10.0 #temperature
+    temp_svpg: &temp_debug 0.001 #0.0001 #10.0 #temperature
     delta_max: 0.5 #maximum allowable change to env randomization params caused by svpg particles (If discrete, this is fixed, If continuous, this is max)
     svpg_kernel_mode: &svpg_kernel_mode 2
     T_svpg_init: 0 #number of svpg steps to take before updates
@@ -85,10 +86,10 @@ debug_mode:
     T_rand_rollout: *T_dr_debug #for UDR and Auto DR
     
     #SAC
-    temp_min: 0.0001
+    temp_min: *temp_debug #0.0001
     temp_discount: 0.1
     T_temp_init: 10
-    temp_sac: 1.0
+    temp_sac: 0.1 #1.0
     
     #AutoDR
     thr_high: 2 #high threshold for no. of *consecutive* successes
@@ -131,13 +132,14 @@ run_mode:
     #Agent
     h_agent: &h_agent_run 256
     lr_agent: &lr_agent_run 0.001 #(for maml: adaptation step size / inner learning rate)
+    epochs_agent: 1 #10
     
     #DR
-    h_dr: &h_dr_run 64
-    lr_dr: &lr_dr_run 0.003
+    h_dr: &h_dr_run 128
+    lr_dr: &lr_dr_run 3.0e-4
     T_dr_init: 100
-    T_dr: &T_dr_run 20
-    H_dr: &H_dr_run 20
+    T_dr: &T_dr_run 25
+    H_dr: &H_dr_run 25
     b_dr: 256 #batch size
     epochs_dr: 30
     
@@ -146,7 +148,7 @@ run_mode:
     h_maml: &h_agent 256 #100 #size of hidden layers
     lr_maml: &lr_agent 0.001
     b_maml: *n_workers_run #batch size: Number of trajectories (rollouts) to sample from each task
-    meta_b: 40
+    #meta_b: 40
     
     #TRPO
     max_grad_kl: 1.0e-2 #*lr_agent / 10. #beta=0.001 (meta step size / outer learning rate)
@@ -162,7 +164,7 @@ run_mode:
     lr_ppo: 3.0e-4
     
     #Discriminator
-    r_disc_scale: 1.0 #reward scale
+    r_disc_scale: 0.01 #1.0 #reward scale
     r_map_scale: 0.01
     h_disc: 128
     lr_disc: 0.0002 
@@ -170,8 +172,8 @@ run_mode:
     
     #SVPG
     n_particles: *n_workers_run
-    temp_svpg: 0.0001 #10.0 #temperature
-    delta_max: 0.5 #maximum allowable change to env randomization params caused by svpg particles (If discrete, this is fixed, If continuous, this is max)
+    temp_svpg: &temp_run 0.001 #0.0001 #10.0 #temperature
+    delta_max: 0.5 #1.0 #maximum allowable change to env randomization params caused by svpg particles (If discrete, this is fixed, If continuous, this is max)
     T_svpg_init: 0 #40 #50 #100 #1000 #number of svpg steps to take before updates
     svpg_kernel_mode: *svpg_kernel_mode #1: implementation from original repo; 2: implementation from a github svpg and official svgd
     #SVPG_A2C
@@ -180,10 +182,10 @@ run_mode:
     T_rand_rollout: *T_dr_run #*T_svpg_run #for UDR
         
     #SAC
-    temp_min: 0.0001
+    temp_min: *temp_run
     temp_discount: 0.1
     T_temp_init: 1000
-    temp_sac: 1.0
+    temp_sac: 0.1 #1.0
     
     #AutoDR
     thr_high: 6 #7 #8 #high threshold for no. of *consecutive* successes

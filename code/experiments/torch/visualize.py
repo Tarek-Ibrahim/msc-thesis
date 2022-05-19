@@ -103,7 +103,7 @@ plot_ts_results=args.plot_ts_results
 save_results=args.save_results
 
 includes_maml=[True,False] #[True,False]
-dr_types=["active_dr","auto_dr"] #["","uniform_dr","active_dr","auto_dr"]
+dr_types=["","uniform_dr","auto_dr"] #["","uniform_dr","active_dr","auto_dr"]
 active_dr_rewarders=["map_delta"] #["disc","map_delta"] #["disc","map_neg","map_delta"]
 active_dr_opts=["svpg_ddpg","sac"] #["svpg_a2c","svpg_ddpg","ddpg","sac"]
 sac_entropy_tuning_methods=[""] #["","learn","anneal"]
@@ -141,7 +141,7 @@ if args.include_oracle:
         filenames=filenames+[filename]
         labels=labels+["Oracle"]
         policy=PolicyNetwork(in_size,h,out_size).to(device)
-        policy.load_state_dict(torch.load(filename+".pt",map_location=device))
+        policy.load_state_dict(torch.load(models_dir + filename+".pt",map_location=device))
         policy.eval()
         policies=policies+[policy]
 
@@ -248,14 +248,12 @@ if plot_sampled_regs:
         sampled_regions=[list(df_sr.values[:,i]) for i in range(df_sr.values.shape[-1])]
         for dim, regions in enumerate(sampled_regions):
             
+            region_step=int(len(regions)/4.)
+            
             low=env.unwrapped.dimensions[dim].range_min
             high=env.unwrapped.dimensions[dim].range_max
             
             dim_name=env.unwrapped.dimensions[dim].name
-            
-            # d = decimal.Decimal(str(low))
-            # step_exp=d.as_tuple().exponent-1
-            # step=10**step_exp
         
             x=np.arange(low,high+rand_step,rand_step)
             
@@ -369,6 +367,7 @@ if plot_ts_results:
             break
     
     plt.axhline(y = thr_r, color = 'r', linestyle = '--',label='Solved')
+    plt.axvline(x = env.unwrapped.dimensions[0].default_value, color = 'b', linestyle = '--',label='Default Value')
     plt.xlabel("Randomization Range")
     plt.ylabel("Rewards")
     plt.title(title)
