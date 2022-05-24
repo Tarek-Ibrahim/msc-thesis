@@ -1,3 +1,4 @@
-For Seed: 1 
+For Seed: 3 
 
-slurmstepd: error: *** JOB 3400218 ON gpu16 CANCELLED AT 2022-04-29T12:55:14 DUE TO TIME LIMIT ***
+slurmstepd: error: *** JOB 3948510 ON gpu13 CANCELLED AT 2022-05-23T01:24:32 DUE TO TIME LIMIT ***
+Job has already finished for job 3948510
