@@ -113,7 +113,7 @@ run_mode:
 
     #General
     tr_eps: 350 #500
-    te_eps: 20
+    te_eps: 10 #20
     
     #Evaluation
     evaluate: True
@@ -138,15 +138,15 @@ run_mode:
     h_dr: &h_dr_run 128
     lr_dr: &lr_dr_run 3.0e-4
     T_dr_init: 100
-    T_dr: &T_dr_run 25
-    H_dr: &H_dr_run 25
+    T_dr: &T_dr_run 30 #25
+    H_dr: &H_dr_run 30 #25
     b_dr: 256 #batch size
     epochs_dr: 30
     
     #MAML
     # n: 2 #no. of NN layers
-    h_maml: &h_agent 256 #100 #size of hidden layers
-    lr_maml: &lr_agent 0.001
+    h_maml: *h_agent_run #100 #size of hidden layers
+    lr_maml: *lr_agent_run
     b_maml: *n_workers_run #batch size: Number of trajectories (rollouts) to sample from each task
     #meta_b: 40
     
