@@ -112,7 +112,7 @@ debug_mode:
 run_mode:
 
     #General
-    tr_eps: 350 #500
+    tr_eps: 500 #350 #500
     te_eps: 10 #20
     
     #Evaluation
