@@ -479,8 +479,8 @@ if __name__ == '__main__':
         if evaluate and t_eval>eval_freq:
             t_eval %= eval_freq
             eval_rewards=[]
-            lower = 0. if "auto_dr" not in args.dr_type else (phis[dim_name]["low"]-low)/(high-low)
-            higher=1.0 if "auto_dr" not in args.dr_type else (phis[dim_name]["high"]-low)/(high-low)
+            lower = 0. #if "auto_dr" not in args.dr_type else (phis[dim_name]["low"]-low)/(high-low)
+            higher=1.0 #if "auto_dr" not in args.dr_type else (phis[dim_name]["high"]-low)/(high-low)
 
             for _ in range(eval_eps):
                 if args.dr_type:

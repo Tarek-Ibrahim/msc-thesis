@@ -19,10 +19,10 @@ from baselines.common.vec_env import CloudpickleWrapper
 import queue as Q
 import gym
 #------only for spyder IDE
-for env in gym.envs.registration.registry.env_specs.copy():
-      if 'custom' in env:
-          print('Remove {} from registry'.format(env))
-          del gym.envs.registration.registry.env_specs[env]
+#for env in gym.envs.registration.registry.copy():
+#      if 'custom' in env:
+#          print('Remove {} from registry'.format(env))
+#          del gym.envs.registration.registry[env]
 #------
 import gym_custom
 import multiprocessing as mp
