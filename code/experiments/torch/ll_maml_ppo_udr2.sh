@@ -10,8 +10,10 @@
 #SBATCH --mail-user=tarek.ibrahim@tuni.fi
 #SBATCH --array=0-2
 
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib/nvidia
+module load mesa/21.2.3-opengl-osmesa-python3-llvm
 module load anaconda
-module load mujoco/2.0
+module load mujoco/2.1.0
 
 case $SLURM_ARRAY_TASK_ID in
    0)  SEED=101 ;;
