@@ -126,13 +126,13 @@ for include_maml in includes_maml:
                         filename=("maml_" if include_maml else "")+alg+("_" if dr_type else "")+dr_type+(f"_{active_dr_rewarder}_{active_dr_opt}" if dr_type=="active_dr" else "")+(f"_{sac_entropy_tuning_method}" if dr_type=="active_dr" and active_dr_opt=="sac" and sac_entropy_tuning_method else "")
                         label=("MAML" if include_maml else alg.upper())+(f" + {dr_type}" if dr_type else "")+(f" ({active_dr_rewarder} / {active_dr_opt}" if dr_type=="active_dr" else "")+(f" / {sac_entropy_tuning_method})" if dr_type=="active_dr" and active_dr_opt=="sac" and sac_entropy_tuning_method else ")" if "active_dr" in dr_type else "")+(f" (seed {seed})" if seeds else "")
                         common_name = "_"+filename+"_"+env_key+(f"_seed{seed}" if seeds else "")
-                        if any("model_running"+common_name in name for name in os.listdir(models_dir)) and common_name not in filenames:
+                        if any("model"+common_name in name for name in os.listdir(models_dir)) and common_name not in filenames:
                             filenames.append(common_name)
                             labels.append(label)
                             if plot_sampled_regs and ("active_dr" in label.lower() or "auto_dr" in label.lower()): labels_sr.append(label)
                             if plot_tr_results or plot_sample_eff: dfs.append(pd.read_pickle(f"{plots_tr_dir}results{common_name}.pkl"))
                             policy=PolicyNetwork(in_size,h,out_size).to(device)
-                            policy.load_state_dict(torch.load(f"{models_dir}model_running{common_name}"+".pt",map_location=device))
+                            policy.load_state_dict(torch.load(f"{models_dir}model{common_name}"+".pt",map_location=device))
                             policy.eval()
                             policies.append(policy)
                             if plot_sampled_regs and ("active_dr" in common_name or "auto_dr" in common_name):
@@ -140,7 +140,7 @@ for include_maml in includes_maml:
                                 filenames_sr.append(common_name)
 if args.include_oracle:
     for rv in [0.0,0.25,0.5,0.75,1.0]:
-        filename=f'model_{alg}_oracle_{str(rv)}_{env_key}'+(f"_seed{oracle_seed}" if oracle_seed is not None else "")
+        filename=f'model_running_{alg}_oracle_{str(rv)}_{env_key}'+(f"_seed{oracle_seed}" if oracle_seed is not None else "")
         filenames=filenames+[filename]
         labels=labels+["Oracle"+(f" (seed {oracle_seed})" if oracle_seed is not None else "")]
         policy=PolicyNetwork(in_size,h,out_size).to(device)
