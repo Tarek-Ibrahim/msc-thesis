@@ -102,12 +102,12 @@ plot_control_acs=args.plot_control_acs
 plot_ts_results=args.plot_ts_results
 save_results=args.save_results
 
-includes_maml=[True] #[True,False] #[True,False]
-dr_types=["uniform_dr"] #["uniform_dr","active_dr","auto_dr"] #["","uniform_dr","auto_dr"] #["","uniform_dr","active_dr","auto_dr"]
+includes_maml=[True,False] #[True,False] #[True,False]
+dr_types=["","auto_dr"] #["uniform_dr","active_dr","auto_dr"] #["","uniform_dr","auto_dr"] #["","uniform_dr","active_dr","auto_dr"]
 active_dr_rewarders=["map_delta"] #["disc","map_delta"] #["disc","map_neg","map_delta"]
 active_dr_opts=["sac"] #["svpg_a2c","svpg_ddpg","ddpg","sac"]
 sac_entropy_tuning_methods=[""] #["","learn","anneal"]
-seeds=[104] #[101,102,103] #[]
+seeds=[101] #[101,102,103] #[]
 oracle_seed=10 #None
 
 current_dir=os.path.dirname(os.path.abspath(__file__))
@@ -125,7 +125,7 @@ for include_maml in includes_maml:
                     
                         filename=("maml_" if include_maml else "")+alg+("_" if dr_type else "")+dr_type+(f"_{active_dr_rewarder}_{active_dr_opt}" if dr_type=="active_dr" else "")+(f"_{sac_entropy_tuning_method}" if dr_type=="active_dr" and active_dr_opt=="sac" and sac_entropy_tuning_method else "")
                         label=("MAML" if include_maml else alg.upper())+(f" + {dr_type}" if dr_type else "")+(f" ({active_dr_rewarder} / {active_dr_opt}" if dr_type=="active_dr" else "")+(f" / {sac_entropy_tuning_method})" if dr_type=="active_dr" and active_dr_opt=="sac" and sac_entropy_tuning_method else ")" if "active_dr" in dr_type else "")+(f" (seed {seed})" if seeds else "")
-                        common_name = "_"+filename+"_"+env_key+(f"_seed{seed}" if seeds else "")
+                        common_name = "_"+filename+"_"+env_key #+(f"_seed{seed}" if seeds else "")
                         if any("model"+common_name in name for name in os.listdir(models_dir)) and common_name not in filenames:
                             filenames.append(common_name)
                             labels.append(label)
@@ -140,9 +140,9 @@ for include_maml in includes_maml:
                                 filenames_sr.append(common_name)
 if args.include_oracle:
     for rv in [0.0,0.25,0.5,0.75,1.0]:
-        filename=f'model_running_{alg}_oracle_{str(rv)}_{env_key}'+(f"_seed{oracle_seed}" if oracle_seed is not None else "")
+        filename=f'model_{alg}_oracle_{str(rv)}_{env_key}'+(f"_seed{oracle_seed}" if oracle_seed is not None else "")
         filenames=filenames+[filename]
-        labels=labels+["Oracle"+(f" (seed {oracle_seed})" if oracle_seed is not None else "")]
+        labels=labels+["Oracle"] #["Oracle"+(f" (seed {oracle_seed})" if oracle_seed is not None else "")]
         policy=PolicyNetwork(in_size,h,out_size).to(device)
         policy.load_state_dict(torch.load(models_dir + filename+".pt",map_location=device))
         policy.eval()
@@ -293,7 +293,7 @@ if plot_control_acs or plot_ts_results or visualize:
             default_value_idx = list(scaled_values).index(min(scaled_values, key=lambda x:abs(x-env.unwrapped.dimensions[dim].default_value)) if test_random else 0)
             if args.verbose: print(f"For Dim: {dim_name}: \n")
             for j, rand_value in enumerate(rand_range):
-                if "oracle" not in filenames[i] or (rand_value <= float(filenames[i].split("_")[4])+0.06 and rand_value >= float(filenames[i].split("_")[4])-0.06):
+                if "oracle" not in filenames[i] or (rand_value <= float(filenames[i].split("_")[3])+0.06 and rand_value >= float(filenames[i].split("_")[3])-0.06):
                     rand_value_rewards=[]
                     values[dim]=rand_value #randomizing current dim while fixing rest to their default values
                     if test_random and args.verbose: print(f"For Rand Value = {scaled_values[j]}: \n")
