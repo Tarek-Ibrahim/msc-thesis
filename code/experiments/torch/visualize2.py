@@ -102,12 +102,12 @@ plot_control_acs=args.plot_control_acs
 plot_ts_results=args.plot_ts_results
 save_results=args.save_results
 
-includes_maml=[False] #[True,False] #[True,False]
-dr_types=["active_dr"] #["uniform_dr","active_dr","auto_dr"] #["","uniform_dr","auto_dr"] #["","uniform_dr","active_dr","auto_dr"]
-active_dr_rewarders=["map_delta"] #["map_thr"] #["map_delta"] #["disc","map_delta"] #["disc","map_neg","map_delta"]
+includes_maml=[True] #[True,False] #[True,False]
+dr_types=["uniform_dr"] #["uniform_dr","active_dr","auto_dr"] #["","uniform_dr","auto_dr"] #["","uniform_dr","active_dr","auto_dr"]
+active_dr_rewarders=["map_delta"] #["disc","map_delta"] #["disc","map_neg","map_delta"]
 active_dr_opts=["sac"] #["svpg_a2c","svpg_ddpg","ddpg","sac"]
 sac_entropy_tuning_methods=[""] #["","learn","anneal"]
-seeds=[101,102,103] #[]
+seeds=[104] #[101,102,103] #[]
 oracle_seed=10 #None
 
 current_dir=os.path.dirname(os.path.abspath(__file__))
@@ -293,7 +293,7 @@ if plot_control_acs or plot_ts_results or visualize:
             default_value_idx = list(scaled_values).index(min(scaled_values, key=lambda x:abs(x-env.unwrapped.dimensions[dim].default_value)) if test_random else 0)
             if args.verbose: print(f"For Dim: {dim_name}: \n")
             for j, rand_value in enumerate(rand_range):
-                if "oracle" not in filenames[i] or (rand_value <= float(filenames[i].split("_")[3])+0.06 and rand_value >= float(filenames[i].split("_")[3])-0.06):
+                if "oracle" not in filenames[i] or (rand_value <= float(filenames[i].split("_")[4])+0.06 and rand_value >= float(filenames[i].split("_")[4])-0.06):
                     rand_value_rewards=[]
                     values[dim]=rand_value #randomizing current dim while fixing rest to their default values
                     if test_random and args.verbose: print(f"For Rand Value = {scaled_values[j]}: \n")
