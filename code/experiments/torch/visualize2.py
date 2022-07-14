@@ -103,7 +103,7 @@ plot_ts_results=args.plot_ts_results
 save_results=args.save_results
 
 includes_maml=[True,False] #[True,False] #[True,False]
-dr_types=["","auto_dr"] #["uniform_dr","active_dr","auto_dr"] #["","uniform_dr","auto_dr"] #["","uniform_dr","active_dr","auto_dr"]
+dr_types=["","active_dr"] #["uniform_dr","active_dr","auto_dr"] #["","uniform_dr","auto_dr"] #["","uniform_dr","active_dr","auto_dr"]
 active_dr_rewarders=["map_delta"] #["disc","map_delta"] #["disc","map_neg","map_delta"]
 active_dr_opts=["sac"] #["svpg_a2c","svpg_ddpg","ddpg","sac"]
 sac_entropy_tuning_methods=[""] #["","learn","anneal"]
@@ -124,8 +124,8 @@ for include_maml in includes_maml:
                     for seed in seeds:
                     
                         filename=("maml_" if include_maml else "")+alg+("_" if dr_type else "")+dr_type+(f"_{active_dr_rewarder}_{active_dr_opt}" if dr_type=="active_dr" else "")+(f"_{sac_entropy_tuning_method}" if dr_type=="active_dr" and active_dr_opt=="sac" and sac_entropy_tuning_method else "")
-                        label=("MAML" if include_maml else alg.upper())+(f" + {dr_type}" if dr_type else "")+(f" ({active_dr_rewarder} / {active_dr_opt}" if dr_type=="active_dr" else "")+(f" / {sac_entropy_tuning_method})" if dr_type=="active_dr" and active_dr_opt=="sac" and sac_entropy_tuning_method else ")" if "active_dr" in dr_type else "")+(f" (seed {seed})" if seeds else "")
-                        common_name = "_"+filename+"_"+env_key #+(f"_seed{seed}" if seeds else "")
+                        label=("MAML" if include_maml else alg.upper())+(f" + {dr_type}" if dr_type else "")+(f" ({active_dr_rewarder} / {active_dr_opt}" if dr_type=="active_dr" else "")+(f" / {sac_entropy_tuning_method})" if dr_type=="active_dr" and active_dr_opt=="sac" and sac_entropy_tuning_method else ")" if "active_dr" in dr_type else "") #+(f" (seed {seed})" if seeds else "")
+                        common_name = "_"+filename+"_"+env_key+(f"_seed{seed}" if seeds else "")
                         if any("model"+common_name in name for name in os.listdir(models_dir)) and common_name not in filenames:
                             filenames.append(common_name)
                             labels.append(label)
@@ -369,8 +369,8 @@ if plot_ts_results:
             plt.fill_between(oracle_scaled_values, np.array(oracle_rewards) + np.array(oracle_rewards_var), np.array(oracle_rewards) - np.array(oracle_rewards_var), alpha=0.2)
             break
     
-    plt.axhline(y = thr_r, color = 'r', linestyle = '--',label='Solved')
-    plt.axvline(x = env.unwrapped.dimensions[0].default_value, color = 'b', linestyle = '--',label='Default Value')
+    #plt.axhline(y = thr_r, color = 'r', linestyle = '--',label='Solved')
+    #plt.axvline(x = env.unwrapped.dimensions[0].default_value, color = 'b', linestyle = '--',label='Default Value')
     plt.xlabel("Randomization Range")
     plt.ylabel("Rewards")
     plt.title(title)
