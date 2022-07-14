@@ -380,6 +380,28 @@ if plot_ts_results:
         plt.close()
     else:
         plt.show()
+    
+    
+    title=f"Expected Performance ({setting})"
+    plt.figure(figsize=figsize)
+    plt.grid(1)
+    for i, test_reward in enumerate(test_rewards):
+        if "oracle" not in filenames[i]:
+            plt.plot(scaled_values,[np.mean(test_reward)]*len(scaled_values),label=labels[i])
+            # plt.fill_between(scaled_values, np.array(test_reward) + np.array(test_rewards_var[i]), np.array(test_reward) - np.array(test_rewards_var[i]), alpha=0.2)
+        else:
+            plt.plot(oracle_scaled_values,[np.mean(oracle_rewards)]*len(oracle_scaled_values),label=labels[i])
+    # plt.hlines(y=hlines,xmin=scaled_values[0],xmax=scaled_values[-1])
+    # plt.axhline(y = thr_r, color = 'r', linestyle = '--',label='Solved')
+    plt.xlabel("Randomization Range")
+    plt.ylabel("Rewards")
+    plt.title(title)
+    plt.legend(loc="best")
+    if save_results:
+        plt.savefig(f'{plots_ts_dir}exp_ts_{test_eps}_episodes_{env_key}{xp_name}.png')
+        plt.close()
+    else:
+        plt.show()
 
 
 #control actions
