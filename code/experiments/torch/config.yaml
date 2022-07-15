@@ -9,7 +9,7 @@ plots_ts_dir: "results/plots/test/"
 models_dir: "saved_models/"
 
 #Misc
-figsize: [22,11]
+figsize: [10,5] #[22,11]
 
 #============================================
 #============================================
