@@ -103,7 +103,7 @@ plot_ts_results=args.plot_ts_results
 save_results=args.save_results
 
 includes_maml=[True,False] #[True,False] #[True,False]
-dr_types=["","active_dr"] #["uniform_dr","active_dr","auto_dr"] #["","uniform_dr","auto_dr"] #["","uniform_dr","active_dr","auto_dr"]
+dr_types=["","auto_dr"] #["uniform_dr","active_dr","auto_dr"] #["","uniform_dr","auto_dr"] #["","uniform_dr","active_dr","auto_dr"]
 active_dr_rewarders=["map_delta"] #["disc","map_delta"] #["disc","map_neg","map_delta"]
 active_dr_opts=["sac"] #["svpg_a2c","svpg_ddpg","ddpg","sac"]
 sac_entropy_tuning_methods=[""] #["","learn","anneal"]
@@ -390,7 +390,7 @@ if plot_ts_results:
             plt.plot(scaled_values,[np.mean(test_reward)]*len(scaled_values),label=labels[i])
             # plt.fill_between(scaled_values, np.array(test_reward) + np.array(test_rewards_var[i]), np.array(test_reward) - np.array(test_rewards_var[i]), alpha=0.2)
         else:
-            plt.plot(oracle_scaled_values,[np.mean(oracle_rewards)]*len(oracle_scaled_values),label=labels[i])
+            plt.plot(oracle_scaled_values,[np.mean(oracle_rewards)]*len(oracle_scaled_values),label=labels[i]); break
     # plt.hlines(y=hlines,xmin=scaled_values[0],xmax=scaled_values[-1])
     # plt.axhline(y = thr_r, color = 'r', linestyle = '--',label='Solved')
     plt.xlabel("Randomization Range")
