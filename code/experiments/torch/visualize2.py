@@ -103,7 +103,7 @@ plot_ts_results=args.plot_ts_results
 save_results=args.save_results
 
 includes_maml=[True,False] #[True,False] #[True,False]
-dr_types=["","active_dr"] #["uniform_dr","active_dr","auto_dr"] #["","uniform_dr","auto_dr"] #["","uniform_dr","active_dr","auto_dr"]
+dr_types=["","active_dr","auto_dr"] #["uniform_dr","active_dr","auto_dr"] #["","uniform_dr","auto_dr"] #["","uniform_dr","active_dr","auto_dr"]
 active_dr_rewarders=["map_delta"] #["disc","map_delta"] #["disc","map_neg","map_delta"]
 active_dr_opts=["sac"] #["svpg_a2c","svpg_ddpg","ddpg","sac"]
 sac_entropy_tuning_methods=[""] #["","learn","anneal"]
@@ -118,13 +118,15 @@ models_dir=config_file["models_dir"]
 filenames, filenames_sr, labels, labels_sr, policies, dfs, dfs_sr=[],[],[],[],[],[],[]
 for include_maml in includes_maml:
     for dr_type in dr_types:
+        if not include_maml and "auto_dr" in dr_type:
+            continue
         for active_dr_rewarder in active_dr_rewarders:
             for active_dr_opt in active_dr_opts:
                 for sac_entropy_tuning_method in sac_entropy_tuning_methods:
                     for seed in seeds:
                     
                         filename=("maml_" if include_maml else "")+alg+("_" if dr_type else "")+dr_type+(f"_{active_dr_rewarder}_{active_dr_opt}" if dr_type=="active_dr" else "")+(f"_{sac_entropy_tuning_method}" if dr_type=="active_dr" and active_dr_opt=="sac" and sac_entropy_tuning_method else "")
-                        label=("MAML" if include_maml else alg.upper())+(f" + {dr_type}" if dr_type else "")+(f" ({active_dr_rewarder} / {active_dr_opt}" if dr_type=="active_dr" else "")+(f" / {sac_entropy_tuning_method})" if dr_type=="active_dr" and active_dr_opt=="sac" and sac_entropy_tuning_method else ")" if "active_dr" in dr_type else "") #+(f" (seed {seed})" if seeds else "")
+                        label=("MAML" if include_maml else alg.upper())+(f" + {dr_type}" if dr_type else "")+(" (Baseline)" if not include_maml and not dr_type else "")+(f" ({active_dr_rewarder} / {active_dr_opt}" if dr_type=="active_dr" else "")+(f" / {sac_entropy_tuning_method})" if dr_type=="active_dr" and active_dr_opt=="sac" and sac_entropy_tuning_method else ")" if "active_dr" in dr_type else "") #+(f" (seed {seed})" if seeds else "")
                         common_name = "_"+filename+"_"+env_key+(f"_seed{seed}" if seeds else "")
                         if any("model"+common_name in name for name in os.listdir(models_dir)) and common_name not in filenames:
                             filenames.append(common_name)
@@ -190,6 +192,7 @@ test_rewards_var=[[] for _ in range(len(policies))]
 control_actions=[[] for _ in range(len(policies))]
 oracle_rewards=[]
 oracle_rewards_var=[]
+lowest_values={label:[] for label in labels}
 
 #%% Training Results
 
@@ -345,6 +348,8 @@ if plot_control_acs or plot_ts_results or visualize:
                             
                             R+=r
                         rand_value_rewards.append(R)
+                        if j==0:
+                            lowest_values[labels[i]].append(R)
                     if "oracle" not in filenames[i]:
                         test_rewards[i].append(np.array(rand_value_rewards).mean())
                         test_rewards_var[i].append(np.array(rand_value_rewards).std())
@@ -382,7 +387,7 @@ if plot_ts_results:
         plt.show()
     
     
-    title=f"Expected Performance ({setting})"
+    title=f"Average Performance ({setting})"
     plt.figure(figsize=figsize)
     plt.grid(1)
     for i, test_reward in enumerate(test_rewards):
@@ -420,3 +425,7 @@ if plot_control_acs:
             plt.close()
         else:
             plt.show()
+
+
+df=pd.DataFrame.from_dict(lowest_values)
+df.to_pickle("f{plots_ts_dir}lowest_values_{test_eps}_episodes_{env_key}{xp_name}.pkl")
