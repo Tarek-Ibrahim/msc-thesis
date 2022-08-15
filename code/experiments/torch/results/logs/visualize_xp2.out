@@ -1,0 +1,2 @@
+/share/apps/anaconda-ci/fgci-centos7-anaconda/software/anaconda/2022-02/73aef705/lib/python3.9/site-packages/requests/__init__.py:102: RequestsDependencyWarning: urllib3 (1.26.9) or chardet (5.0.0)/charset_normalizer (2.0.12) doesn't match a supported version!
+  warnings.warn("urllib3 ({}) or chardet ({})/charset_normalizer ({}) doesn't match a supported "
