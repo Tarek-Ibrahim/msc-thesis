@@ -14,5 +14,5 @@ module load mesa/21.2.3-opengl-osmesa-python3-llvm
 module load anaconda
 module load mujoco/2.1.0
 
-python visualize2.py --agent_alg=ppo --mode=1 --env_key=lunarlander --plot_ts_results --test_random --save_results --xp_name=xp_full --include_oracle
+python visualize2.py --agent_alg=ppo --mode=1 --env_key=lunarlander --plot_ts_results --test_random --save_results --xp_name=xp2_full --include_oracle
 
