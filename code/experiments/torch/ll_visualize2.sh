@@ -1,7 +1,7 @@
 #!/bin/bash -l
 
-#SBATCH --time=02:00:00
-#SBATCH --mem=2G
+#SBATCH --time=06:00:00
+#SBATCH --mem=8G
 #SBATCH --cpus-per-task=1
 #SBATCH --gres=gpu
 #SBATCH --job-name=visualize_xp2

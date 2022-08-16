@@ -113,7 +113,7 @@ run_mode:
 
     #General
     tr_eps: 500 #350 #500
-    te_eps: 50 #20
+    te_eps: 100 #50 #20
     
     #Evaluation
     evaluate: True
