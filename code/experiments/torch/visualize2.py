@@ -193,6 +193,7 @@ control_actions=[[] for _ in range(len(policies))]
 oracle_rewards=[]
 oracle_rewards_var=[]
 lowest_values={label:[] for label in labels}
+box_vars={label:{"var_of_means":0,"mean_of_vars":0} for label in labels}
 
 #%% Training Results
 
@@ -429,3 +430,14 @@ if plot_control_acs:
 
 df=pd.DataFrame.from_dict(lowest_values)
 df.to_pickle(f"{plots_ts_dir}lowest_values_{test_eps}_episodes_{env_key}{xp_name}.pkl")
+
+for i, test_reward in enumerate(test_rewards):
+    if "oracle" not in filenames[i]:
+        box_vars[labels[i]]["var_of_means"] = np.var(test_reward)
+        box_vars[labels[i]]["mean_of_vars"] = np.mean(test_rewards_var[i])
+    else:
+        box_vars[labels[i]]["var_of_means"] = np.var(oracle_rewards)
+        box_vars[labels[i]]["mean_of_vars"] = np.mean(oracle_rewards_var)
+
+df2=pd.DataFrame(box_vars)
+df2.to_pickle(f"{plots_ts_dir}box_vars_{test_eps}_episodes_{env_key}{xp_name}.pkl")
